@@ -82,6 +82,36 @@ public class CycleButtonWidget<T> extends JadeButton {
 	}
 
 	@Override
+	protected void drawMessage(net.minecraft.client.Minecraft mc) {
+		int valueColor = !active ? 10526880 : getValueColor();
+		int labelColor = !active ? 10526880 : 16777215;
+		int textY = y + (height - 8) / 2;
+		String valueText = nameProvider.apply(value).getString();
+		if (displayOnlyValue || label == null) {
+			drawCenteredString(mc.textRenderer, valueText, x + width / 2, textY, valueColor);
+			return;
+		}
+		String labelText = label.getString();
+		String separator = ": ";
+		int labelWidth = mc.textRenderer.getWidth(labelText);
+		int separatorWidth = mc.textRenderer.getWidth(separator);
+		int valueWidth = mc.textRenderer.getWidth(valueText);
+		int textX = x + width / 2 - (labelWidth + separatorWidth + valueWidth) / 2;
+		mc.textRenderer.draw(labelText, textX, textY, labelColor);
+		textX += labelWidth;
+		mc.textRenderer.draw(separator, textX, textY, labelColor);
+		textX += separatorWidth;
+		mc.textRenderer.draw(valueText, textX, textY, valueColor);
+	}
+
+	private int getValueColor() {
+		if (value instanceof Boolean) {
+			return (Boolean) value ? 0xFFB9F6CA : 0xFFFF8A80;
+		}
+		return 16777215;
+	}
+
+	@Override
 	public boolean mouseClicked(int mouseX, int mouseY, int button) {
 		if (!active || !visible || button != 0) {
 			return false;

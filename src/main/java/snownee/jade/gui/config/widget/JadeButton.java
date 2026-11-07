@@ -10,7 +10,7 @@ public class JadeButton extends ButtonWidget implements JadeWidget {
 
 	@Nullable
 	private Text tooltip;
-	private int textColor = 14737632;
+	private int textColor = 16777215;
 
 	public JadeButton(int x, int y, int width, int height, String message) {
 		super(0, x, y, width, height, message);
@@ -70,6 +70,10 @@ public class JadeButton extends ButtonWidget implements JadeWidget {
 		net.minecraft.client.render.platform.GlStateManager.blendFunc(net.minecraft.client.render.platform.GlStateManager.SourceFactor.SRC_ALPHA, net.minecraft.client.render.platform.GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
 		drawTexture(x, y, 0, 46 + yImage * 20, width / 2, height);
 		drawTexture(x + width / 2, y, 200 - width / 2, 46 + yImage * 20, width / 2, height);
+		drawMessage(mc);
+	}
+
+	protected void drawMessage(Minecraft mc) {
 		int color = !active ? 10526880 : textColor;
 		drawCenteredString(mc.textRenderer, message, x + width / 2, y + (height - 8) / 2, color);
 	}
