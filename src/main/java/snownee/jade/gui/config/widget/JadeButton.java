@@ -76,7 +76,14 @@ public class JadeButton extends ButtonWidget implements JadeWidget {
 
 	@Override
 	public boolean mouseClicked(int mouseX, int mouseY, int button) {
-		return active && visible && mouseClicked(Minecraft.getInstance(), mouseX, mouseY);
+		if (button != 0 || !active || !visible) {
+			return false;
+		}
+		boolean clicked = mouseClicked(Minecraft.getInstance(), mouseX, mouseY);
+		if (clicked) {
+			playClickSound(Minecraft.getInstance().getSoundManager());
+		}
+		return clicked;
 	}
 
 	@Override

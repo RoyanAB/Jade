@@ -169,8 +169,8 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 				minecraft.options.save();
 				try {
 					int themesHash = Jade.CONFIG.get().getOverlay().themesHash;
-					Jade.CONFIG.getFile().delete();
-					PluginConfig.INSTANCE.getFile().delete();
+					com.google.common.base.Preconditions.checkState(Jade.CONFIG.getFile().delete());
+					com.google.common.base.Preconditions.checkState(PluginConfig.INSTANCE.getFile().delete());
 					Jade.CONFIG.invalidate();
 					Jade.CONFIG.get().getOverlay().themesHash = themesHash;
 					Jade.CONFIG.save();
@@ -181,7 +181,7 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 			}
 			minecraft.openScreen(WailaConfigScreen.this);
 			WailaConfigScreen.this.options.setScrollAmount(WailaConfigScreen.this.options.getMaxScroll());
-		}, title.getString(), I18n.translate(OptionsList.Entry.makeKey("reset_settings.confirm")), I18n.translate("gui.yes"), I18n.translate("gui.cancel"), 0)))));
+		}, Formatting.RED + title.getString(), I18n.translate(OptionsList.Entry.makeKey("reset_settings.confirm")), I18n.translate("gui.yes"), I18n.translate("gui.cancel"), 0)))));
 
 		return options;
 	}

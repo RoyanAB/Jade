@@ -8,6 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.TextRenderer;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.text.Text;
 import snownee.jade.gui.config.widget.JadeWidget;
 
@@ -29,6 +30,7 @@ public class NotUglyEditBox extends TextFieldWidget implements JadeWidget {
 	private int textColorUneditable = 0x707070;
 	private long focusedTime;
 	private boolean mouseOverCross;
+	private int displayPos;
 	private boolean visible = true;
 
 	public NotUglyEditBox(TextRenderer textRenderer, int x, int y, int width, int height, @Nullable NotUglyEditBox previous, Text hint) {
@@ -38,7 +40,7 @@ public class NotUglyEditBox extends TextFieldWidget implements JadeWidget {
 		this.height = height;
 		this.hint = hint;
 		setHasBorder(false);
-		setMaxLength(100);
+		setMaxLength(32);
 		if (previous != null) {
 			setText(previous.getText());
 		}
@@ -132,34 +134,54 @@ public class NotUglyEditBox extends TextFieldWidget implements JadeWidget {
 		}
 		String text = getText();
 		int color = editable ? textColor : textColorUneditable;
-		int cursor = Math.min(getCursor(), text.length());
-		int selectionEnd = Math.min(getSelectionEnd(), text.length());
-		String shown = textRenderer.trim(text, innerWidth());
+		int length = text.length();
+		int cursor = MathHelper.clamp(getCursor(), 0, length);
+		int selectionEnd = MathHelper.clamp(getSelectionEnd(), 0, length);
+		int inner = innerWidth();
+		if (displayPos > length) {
+			displayPos = length;
+		}
+		if (cursor < displayPos) {
+			displayPos = cursor;
+		}
+		while (displayPos > 0 && textRenderer.getWidth(text.substring(displayPos - 1)) <= inner) {
+			displayPos--;
+		}
+		while (displayPos < cursor && textRenderer.getWidth(text.substring(displayPos, cursor)) > inner) {
+			displayPos++;
+		}
+		String shown = textRenderer.trim(text.substring(displayPos), inner);
+		int shownEnd = displayPos + shown.length();
+		while (cursor > shownEnd && displayPos < cursor) {
+			displayPos++;
+			shown = textRenderer.trim(text.substring(displayPos), inner);
+			shownEnd = displayPos + shown.length();
+		}
 		int textX = x + paddingLeft;
 		int textY = y + paddingTop;
 		if (!shown.isEmpty()) {
 			textRenderer.draw(shown, textX, textY, color);
 		}
 		boolean focused = isFocused();
-		boolean blink = focused && (Minecraft.getTime() - focusedTime) / 300L % 2L == 0L;
-		if (!shown.isEmpty() || focused) {
-			int cursorX = textX + textRenderer.getWidth(text.substring(0, Math.min(cursor, shown.length())));
-			if (selectionEnd != cursor) {
-				int start = Math.min(cursor, selectionEnd);
-				int end = Math.max(cursor, selectionEnd);
-				int x1 = textX + textRenderer.getWidth(text.substring(0, start));
-				int x2 = textX + textRenderer.getWidth(text.substring(0, end));
-				GuiElement.fill(x1, textY - 1, x2, textY + textRenderer.fontHeight, 0x800000FF);
+		int cursorIndex = MathHelper.clamp(cursor, displayPos, shownEnd);
+		int cursorX = textX + textRenderer.getWidth(shown.substring(0, Math.max(0, Math.min(cursorIndex - displayPos, shown.length()))));
+		if (selectionEnd != cursor) {
+			int start = Math.max(Math.min(cursor, selectionEnd), displayPos);
+			int end = Math.min(Math.max(cursor, selectionEnd), shownEnd);
+			if (start < end) {
+				int x1 = textX + textRenderer.getWidth(shown.substring(0, start - displayPos));
+				int x2 = textX + textRenderer.getWidth(shown.substring(0, end - displayPos));
+				GuiElement.fill(x1, textY - 1, x2, textY + textRenderer.fontHeight, 0xFF0000FF);
 			}
-			if (blink) {
-				GuiElement.fill(cursorX, textY - 1, cursorX + 1, textY + textRenderer.fontHeight, 0xFFD0D0D0);
-			}
+		}
+		if (focused && (Minecraft.getTime() - focusedTime) / 300L % 2L == 0L) {
+			GuiElement.fill(cursorX, textY - 1, cursorX + 1, textY + textRenderer.fontHeight, 0xFFD0D0D0);
 		}
 		if (hint != null && text.isEmpty() && !focused) {
 			textRenderer.draw(hint.getString(), textX, textY, 0x808080);
 		}
 		if (editable && !text.isEmpty()) {
-			mouseOverCross = mouseX >= x + width - 12 && mouseX < x + width - 2 && mouseY >= y + paddingTop && mouseY < y + paddingTop + 10;
+			mouseOverCross = mouseX >= x + width - 14 && mouseX < x + width - 2 && mouseY >= y + paddingTop && mouseY < y + paddingTop + 10;
 			int crossColor = mouseOverCross ? textColor : textColorUneditable;
 			textRenderer.draw("×", x + width - 10, y + paddingTop + 1, crossColor);
 		}
@@ -176,21 +198,22 @@ public class NotUglyEditBox extends TextFieldWidget implements JadeWidget {
 		if (mouseOverCross) {
 			setText("");
 			setFocused(true);
+			Minecraft.getInstance().getSoundManager().play(net.minecraft.client.sound.instance.SimpleSoundInstance.of(net.minecraft.sound.SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			return true;
 		}
 		setFocused(true);
 		int relative = mouseX - x - paddingLeft;
 		String text = getText();
-		String shown = textRenderer.trim(text, innerWidth());
+		String shown = textRenderer.trim(text.substring(displayPos), innerWidth());
 		int cursor = 0;
 		for (int i = 1; i <= shown.length(); i++) {
-			if (textRenderer.getWidth(text.substring(0, i)) > relative) {
+			if (textRenderer.getWidth(shown.substring(0, i)) > relative) {
 				break;
 			}
 			cursor = i;
 		}
-		setCursor(cursor);
-		setSelectionEnd(cursor);
+		setCursor(displayPos + cursor);
+		setSelectionEnd(displayPos + cursor);
 		return true;
 	}
 

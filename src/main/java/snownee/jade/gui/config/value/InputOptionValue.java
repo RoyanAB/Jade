@@ -64,7 +64,6 @@ public class InputOptionValue<T> extends OptionValue<T> {
 
 	@Override
 	public void setValue(T value) {
-		this.value = value;
 		textField.setText(String.valueOf(value));
 	}
 

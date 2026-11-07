@@ -15,6 +15,12 @@ public class OptionButton extends OptionsList.Entry {
 		this.title = title;
 		addMessage(title.getString());
 		if (button != null) {
+			if (button instanceof snownee.jade.gui.config.widget.JadeButton) {
+				String buttonMessage = ((snownee.jade.gui.config.widget.JadeButton) button).message;
+				if (buttonMessage != null && !buttonMessage.isEmpty()) {
+					addMessage(buttonMessage);
+				}
+			}
 			addWidget(button, 0);
 		}
 	}

@@ -121,7 +121,7 @@ public class OptionsList extends ListWidget {
 	}
 
 	public int getRowLeft() {
-		return minX + width / 2 - getRowWidth() / 2;
+		return minX + width / 2 - getRowWidth() / 2 + 2;
 	}
 
 	public boolean isMouseOver(int mouseX, int mouseY) {
@@ -129,10 +129,14 @@ public class OptionsList extends ListWidget {
 	}
 
 	public int getEntryAt(int mouseX, int mouseY) {
-		if (mouseX < minX || mouseX >= maxX || mouseY < minY || mouseY >= maxY) {
+		int rowLeft = getRowLeft();
+		int rowRight = rowLeft + getRowWidth();
+		if (mouseX < rowLeft || mouseX > rowRight || mouseY < minY || mouseY >= maxY) {
 			return -1;
 		}
-		return super.getEntryAt(mouseX, mouseY);
+		int k = mouseY - minY - headerHeight + (int) scrollAmount - 4;
+		int l = k / entryHeight;
+		return l >= 0 && k >= 0 && l < size() ? l : -1;
 	}
 
 	@Override
@@ -163,31 +167,12 @@ public class OptionsList extends ListWidget {
 		entry.render(index, y, x, getRowWidth(), entryHeight, mouseX, mouseY, tickDelta);
 	}
 
-	private void drawListBackground() {
-		Minecraft mc = Minecraft.getInstance();
-		mc.getTextureManager().bind(GuiElement.BACKGROUND_LOCATION);
-		net.minecraft.client.render.platform.GlStateManager.color4f(0.125F, 0.125F, 0.125F, 1.0F);
-		net.minecraft.client.render.vertex.Tesselator tesselator = net.minecraft.client.render.vertex.Tesselator.getInstance();
-		net.minecraft.client.render.vertex.BufferBuilder buffer = tesselator.getBuffer();
-		buffer.begin(7, net.minecraft.client.render.vertex.DefaultVertexFormat.POSITION_TEX);
-		float f = 32.0F;
-		float u = maxX / f;
-		float v = (maxY + (int) scrollAmount) / f;
-		float u2 = u + width / f;
-		float v2 = v + (maxY - minY) / f;
-		buffer.vertex(minX, maxY, 0.0).texture(u, v2).nextVertex();
-		buffer.vertex(maxX, maxY, 0.0).texture(u2, v2).nextVertex();
-		buffer.vertex(maxX, minY, 0.0).texture(u2, v).nextVertex();
-		buffer.vertex(minX, minY, 0.0).texture(u, v).nextVertex();
-		tesselator.end();
-		net.minecraft.client.render.platform.GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-	}
-
 	@Override
 	public void render(int mouseX, int mouseY, float tickDelta) {
 		this.mouseX = mouseX;
 		this.mouseY = mouseY;
-		targetScroll = MathHelper.clamp(targetScroll, 0, getMaxScroll());
+		int maxScroll = getMaxScroll();
+		targetScroll = MathHelper.clamp(targetScroll, 0, maxScroll);
 		float diff = targetScroll - scrollAmount;
 		if (Math.abs(diff) > 0.0003F) {
 			scrollAmount += diff * tickDelta;
@@ -216,19 +201,21 @@ public class OptionsList extends ListWidget {
 			}
 		}
 
+		if (!org.lwjgl.input.Mouse.isButtonDown(0) && widgetInteracting) {
+			if (draggingSlider != null) {
+				draggingSlider.stopDragging();
+			}
+			draggingSlider = null;
+			widgetInteracting = false;
+		}
 		if (visible) {
 			net.minecraft.client.render.platform.GlStateManager.disableLighting();
 			net.minecraft.client.render.platform.GlStateManager.disableFog();
-			capScrolling();
-			drawListBackground();
-			int rowLeft = getRowLeft() + 2;
+			int rowLeft = getRowLeft();
 			int rowTop = minY + 4 - (int) scrollAmount;
 			DisplayHelper.pushScissor(minX, minY, maxX - minX, maxY - minY);
 			renderList(rowLeft, rowTop, mouseX, mouseY, tickDelta);
 			DisplayHelper.popScissor();
-			DisplayHelper.INSTANCE.drawGradientRect(minX, minY, maxX - minX, 4, 0xFF000000, 0x00000000);
-			DisplayHelper.INSTANCE.drawGradientRect(minX, maxY - 4, maxX - minX, 4, 0x00000000, 0xFF000000);
-			int maxScroll = getMaxScroll();
 			if (maxScroll > 0) {
 				int scrollbarX = getScrollbarPosition();
 				int thumbHeight = (maxY - minY) * (maxY - minY) / Math.max(1, getHeight());
@@ -253,10 +240,13 @@ public class OptionsList extends ListWidget {
 			net.minecraft.client.render.vertex.BufferBuilder buffer = tesselator.getBuffer();
 			buffer.begin(7, net.minecraft.client.render.vertex.DefaultVertexFormat.POSITION_TEX);
 			float f = 32.0F;
-			buffer.vertex(0.0, owner.height, 0.0).texture(0.0F, owner.height / f).nextVertex();
-			buffer.vertex(owner.width, owner.height, 0.0).texture(owner.width / f, owner.height / f).nextVertex();
-			buffer.vertex(owner.width, top, 0.0).texture(owner.width / f, top / f).nextVertex();
-			buffer.vertex(0.0, top, 0.0).texture(0.0F, top / f).nextVertex();
+			float u = owner.width / f;
+			float v = 1.0F;
+			float u2 = u + owner.width / f;
+			buffer.vertex(0.0, owner.height, 0.0).texture(u, v + 1).nextVertex();
+			buffer.vertex(owner.width, owner.height, 0.0).texture(u2, v + 1).nextVertex();
+			buffer.vertex(owner.width, top, 0.0).texture(u2, v).nextVertex();
+			buffer.vertex(0.0, top, 0.0).texture(u, v).nextVertex();
 			tesselator.end();
 			net.minecraft.client.render.platform.GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			DisplayHelper.INSTANCE.drawGradientRect(0, top - 4, owner.width, 4, 0x00000000, 0xEE000000);
@@ -464,7 +454,7 @@ public class OptionsList extends ListWidget {
 	}
 
 	public void clearTextFocus() {
-		for (Entry entry : visibleEntries) {
+		for (Entry entry : entries) {
 			for (JadeWidget widget : entry.getWidgets()) {
 				if (widget instanceof TextFieldWidget && ((TextFieldWidget) widget).isFocused()) {
 					((TextFieldWidget) widget).setFocused(false);

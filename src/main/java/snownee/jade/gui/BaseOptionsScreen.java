@@ -105,7 +105,7 @@ public abstract class BaseOptionsScreen extends Screen {
 		if (entry instanceof OptionValue && ((OptionValue<?>) entry).serverFeature) {
 			int x = entry.getTextX(options.getRowWidth()) + entry.getTextWidth() + 1;
 			int rowTop = options.getRowTop(options.children().indexOf(entry)) + 7;
-			if (mouseX >= x && mouseX < x + 5 && mouseY >= rowTop && mouseY < rowTop + 5) {
+			if (mouseX >= x && mouseX < x + 4 && mouseY >= rowTop && mouseY < rowTop + 4) {
 				renderTooltip(I18n.translate("gui.jade.server_feature"), mouseX, mouseY);
 			}
 		}
@@ -190,12 +190,10 @@ public abstract class BaseOptionsScreen extends Screen {
 		if (wheel != 0) {
 			int mouseX = Mouse.getX() * width / minecraft.width;
 			int mouseY = height - Mouse.getY() * height / minecraft.height - 1;
-			if (mouseY < height - 32) {
-				if (mouseX < 120) {
-					optionsNav.scroll(wheel > 0 ? -optionsNav.getEntryHeight() / 2 : optionsNav.getEntryHeight() / 2);
-				} else {
-					options.scrollSmooth(wheel);
-				}
+			if (mouseX < 120 && mouseY >= 18 && mouseY < height - 14) {
+				optionsNav.scroll(wheel > 0 ? -optionsNav.getEntryHeight() / 2 : optionsNav.getEntryHeight() / 2);
+			} else {
+				options.scrollSmooth(wheel);
 			}
 		} else if (!options.isWidgetInteracting()) {
 			options.handleMouse();
@@ -217,13 +215,8 @@ public abstract class BaseOptionsScreen extends Screen {
 			return;
 		}
 		searchBox.setFocused(false);
-		if (mouseY >= 0 && mouseY < height - 32) {
-			if (mouseX < 120 && optionsNav.mouseClicked(mouseX, mouseY, button)) {
-				return;
-			}
-			if (mouseX >= 120 && options.mouseClicked(mouseX, mouseY, button)) {
-				return;
-			}
+		if (mouseY >= 0 && mouseY < height - 32 && mouseX >= 120 && options.mouseClicked(mouseX, mouseY, button)) {
+			return;
 		}
 		super.mouseClicked(mouseX, mouseY, button);
 	}
@@ -286,8 +279,4 @@ public abstract class BaseOptionsScreen extends Screen {
 		}
 	}
 
-	@Override
-	public boolean shouldPauseGame() {
-		return false;
-	}
 }

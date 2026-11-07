@@ -82,7 +82,8 @@ public class KeybindOptionButton extends OptionButton {
 
 		@Override
 		public boolean mouseClicked(int mouseX, int mouseY, int button) {
-			if (this.button.isActive() && this.button.isVisible()) {
+			if (button == 0 && this.button.isActive() && this.button.isVisible()) {
+				this.button.playClickSound(net.minecraft.client.Minecraft.getInstance().getSoundManager());
 				onClick.run();
 				return true;
 			}

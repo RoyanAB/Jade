@@ -127,6 +127,7 @@ public abstract class PreviewOptionsScreen extends BaseOptionsScreen {
 			} else {
 				adjustingPosition = false;
 				adjustDragging = false;
+				minecraft.getSoundManager().play(net.minecraft.client.sound.instance.SimpleSoundInstance.of(net.minecraft.sound.SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			}
 			return;
 		}
@@ -148,6 +149,7 @@ public abstract class PreviewOptionsScreen extends BaseOptionsScreen {
 			if (keyCode == 1) {
 				adjustingPosition = false;
 				adjustDragging = false;
+				minecraft.getSoundManager().play(net.minecraft.client.sound.instance.SimpleSoundInstance.of(net.minecraft.sound.SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			}
 			return;
 		}

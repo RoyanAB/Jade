@@ -31,6 +31,9 @@ public class OptionsNav extends ListWidget {
 
 	@Override
 	protected void entryClicked(int index, boolean doubleClick, int mouseX, int mouseY) {
+		if (mouseX >= getScrollbarPosition()) {
+			return;
+		}
 		if (index >= 0 && index < entries.size()) {
 			options.showOnTop(entries.get(index));
 		}
@@ -53,7 +56,7 @@ public class OptionsNav extends ListWidget {
 
 	@Override
 	protected int getScrollbarPosition() {
-		return maxX - 8;
+		return 2 + getRowWidth() - 8;
 	}
 
 	@Override
@@ -122,15 +125,6 @@ public class OptionsNav extends ListWidget {
 			GuiElement.fill(scrollbarX, minY, scrollbarX + 6, maxY, 0xFF000000);
 			GuiElement.fill(scrollbarX, thumbY, scrollbarX + 6, thumbY + thumbHeight, 0xFF808080);
 		}
-	}
-
-	public boolean mouseClicked(int mouseX, int mouseY, int button) {
-		int index = getEntryAt(mouseX, mouseY);
-		if (index == -1) {
-			return false;
-		}
-		options.showOnTop(entries.get(index));
-		return true;
 	}
 
 	public void refresh() {

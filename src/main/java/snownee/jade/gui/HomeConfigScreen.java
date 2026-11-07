@@ -53,9 +53,6 @@ public class HomeConfigScreen extends Screen {
 		LiteralText heart = new LiteralText("❤");
 		heart.setStyle(new net.minecraft.text.Style().setColor(Formatting.RED));
 		credit = new net.minecraft.text.TranslatableText("gui.jade.by", heart);
-		if (festival != 0 && festival != 1) {
-			credit.setStyle(new net.minecraft.text.Style().setColor(Formatting.GOLD));
-		}
 	}
 
 	private static boolean isLunarNewYear(LocalDate now) {
@@ -155,7 +152,7 @@ public class HomeConfigScreen extends Screen {
 				nextParticleIn = ticks + 10 + random.nextFloat() * 10;
 				int color = color(1 - random.nextFloat() * 0.6F, 1, 1);
 				color |= (random.nextInt(80) + 40) << 24;
-				int x = 40 + random.nextInt(width + 60);
+				int x = 40 + random.nextInt(width + 61);
 				TextParticle particle = new TextParticle("❄", x, -20, -0.3F, 0.5f, color, 2F + random.nextFloat());
 				particle.gravity = 0F;
 				particles.add(particle);
@@ -367,7 +364,6 @@ public class HomeConfigScreen extends Screen {
 				if (greaterThanZero && age <= 0) {
 					text = random.nextBoolean() ? "✴" : "✳";
 					color = random.nextBoolean() ? 0xFFD427 : 0xF0C415;
-					minecraft.getSoundManager().play(net.minecraft.client.sound.instance.SimpleSoundInstance.of(random.nextBoolean() ? net.minecraft.sound.SoundEvents.ENTITY_FIREWORK_BLAST : net.minecraft.sound.SoundEvents.ENTITY_FIREWORK_LARGE_BLAST, 0.7F));
 				}
 			} else if (festival == 1) {
 				age -= partialTicks;
@@ -389,8 +385,4 @@ public class HomeConfigScreen extends Screen {
 		}
 	}
 
-	@Override
-	public boolean shouldPauseGame() {
-		return false;
-	}
 }

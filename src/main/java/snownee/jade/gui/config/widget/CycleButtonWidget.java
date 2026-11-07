@@ -87,6 +87,7 @@ public class CycleButtonWidget<T> extends JadeButton {
 			return false;
 		}
 		cycle();
+		playClickSound(net.minecraft.client.Minecraft.getInstance().getSoundManager());
 		return true;
 	}
 

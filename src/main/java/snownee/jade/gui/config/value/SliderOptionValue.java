@@ -64,6 +64,8 @@ public class SliderOptionValue extends OptionValue<Float> {
 		public void setValue(float value) {
 			this.value = (float) fromScaled(value, parent.min, parent.max);
 			updateMessage();
+			parent.value = toScaled();
+			parent.save();
 		}
 
 		private void updateMessage() {
@@ -71,7 +73,11 @@ public class SliderOptionValue extends OptionValue<Float> {
 		}
 
 		private void updateFromMouse(int mouseX) {
-			value = MathHelper.clamp((float) (mouseX - (x + 4)) / (float) (width - 8), 0, 1);
+			float newValue = MathHelper.clamp((float) (mouseX - (x + 4)) / (float) (width - 8), 0, 1);
+			if (Math.abs(newValue - value) < 1.0E-5F) {
+				return;
+			}
+			value = newValue;
 			updateMessage();
 			parent.value = toScaled();
 			parent.save();
