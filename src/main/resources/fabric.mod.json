@@ -28,7 +28,8 @@
 			"snownee.jade.util.ClientProxy"
 		],
 		"jade": [
-			"snownee.jade.addon.core.CorePlugin"
+			"snownee.jade.addon.core.CorePlugin",
+			"snownee.jade.addon.debug.DebugPlugin"
 		]
 	},
 	"mixins": [

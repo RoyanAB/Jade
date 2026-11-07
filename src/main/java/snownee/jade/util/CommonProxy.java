@@ -13,7 +13,9 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.minecraft.block.Block;
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.state.BlockState;
+import net.minecraft.entity.Entities;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ShearsItem;
@@ -90,6 +92,16 @@ public final class CommonProxy implements ModInitializer {
 
 	public static Identifier getId(Block block) {
 		return Block.REGISTRY.getKey(block);
+	}
+
+	public static Identifier getId(Entity entity) {
+		Identifier id = Entities.getKey(entity);
+		return id == null ? new Identifier("unknown") : id;
+	}
+
+	public static Identifier getId(BlockEntity blockEntity) {
+		Identifier id = BlockEntity.getKey(blockEntity.getClass());
+		return id == null ? new Identifier("unknown") : id;
 	}
 
 	public static String getPlatformIdentifier() {

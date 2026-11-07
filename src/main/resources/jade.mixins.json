@@ -11,7 +11,8 @@
 		"BossEventOverlayAccess",
 		"PlayerTabOverlayAccess",
 		"ChatScreenMixin",
-		"TextRendererMixin"
+		"TextRendererMixin",
+		"ReloadableIdSearchTreeMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

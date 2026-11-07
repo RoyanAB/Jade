@@ -7,6 +7,8 @@ import org.jetbrains.annotations.Nullable;
 import com.google.common.collect.Lists;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.toast.SystemToast;
+import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.item.ItemStack;
@@ -52,6 +54,12 @@ public final class JadeClient {
 			DisplayMode mode = general.getDisplayMode();
 			if (mode == IWailaConfig.DisplayMode.TOGGLE) {
 				general.setDisplayTooltip(!general.shouldDisplayTooltip());
+				if (!general.shouldDisplayTooltip() && general.hintOverlayToggle) {
+					SystemToast.addOrUpdate(Minecraft.getInstance().getToasts(), SystemToast.Type.TUTORIAL_HINT,
+							new LiteralText(I18n.translate("toast.jade.toggle_hint.1")),
+							new LiteralText(I18n.translate("toast.jade.toggle_hint.2", GameOptions.getKeyName(showOverlay.getKeyCode()))));
+					general.hintOverlayToggle = false;
+				}
 				Jade.CONFIG.save();
 			}
 		}
@@ -64,6 +72,12 @@ public final class JadeClient {
 		while (narrate != null && narrate.consumeClick()) {
 			if (general.getTTSMode() == TTSMode.TOGGLE) {
 				general.toggleTTS();
+				if (general.shouldEnableTextToSpeech() && general.hintNarratorToggle) {
+					SystemToast.addOrUpdate(Minecraft.getInstance().getToasts(), SystemToast.Type.NARRATOR_TOGGLE,
+							new LiteralText(I18n.translate("toast.jade.tts_hint.1")),
+							new LiteralText(I18n.translate("toast.jade.tts_hint.2", GameOptions.getKeyName(narrate.getKeyCode()))));
+					general.hintNarratorToggle = false;
+				}
 				Jade.CONFIG.save();
 			}
 		}
@@ -74,6 +88,9 @@ public final class JadeClient {
 
 	public static void onTooltip(java.util.List<String> tooltip, ItemStack stack, TooltipFlag context) {
 		appendModName(tooltip, stack, context);
+		if (Jade.CONFIG.get().getGeneral().isDebug() && stack.hasNbt()) {
+			tooltip.add(stack.getNbt().toString());
+		}
 	}
 
 	private static void appendModName(java.util.List<String> tooltip, ItemStack stack, TooltipFlag context) {
