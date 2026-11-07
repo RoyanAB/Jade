@@ -1,14 +1,15 @@
 package snownee.jade.overlay;
 
-import java.util.List;
-import com.google.common.base.Predicate;
-
 import org.jetbrains.annotations.Nullable;
 
+import com.google.common.base.Predicate;
+
+import net.minecraft.block.Blocks;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.player.PlayerEntity;
+import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
@@ -16,6 +17,7 @@ import net.minecraft.world.HitResult;
 import net.minecraft.world.World;
 import snownee.jade.Jade;
 import snownee.jade.api.Accessor;
+import snownee.jade.api.config.IWailaConfig.FluidMode;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.impl.ObjectDataCenter;
 import snownee.jade.impl.WailaClientRegistration;
@@ -34,43 +36,42 @@ public class RayTracing {
 
 	public static BlockState wrapBlock(World world, HitResult hit) {
 		if (hit.type != HitResult.Type.BLOCK) {
-			return net.minecraft.block.Blocks.AIR.defaultState();
+			return Blocks.AIR.defaultState();
 		}
 		return world.getBlockState(hit.getPos());
 	}
 
+	/**
+	 * Equivalent of 1.12's Entity.rayTrace + AABB clip used by ProjectileUtil.
+	 */
 	@Nullable
-	public static Entity getEntityHit(World world, Entity viewpoint, Vec3d start, Vec3d end, Predicate<Entity> filter) {
+	public static HitResult getEntityHit(World world, Entity viewpoint, Vec3d start, Vec3d end, Predicate<Entity> filter) {
 		Entity best = null;
+		Vec3d bestPos = null;
 		double bestDist = Double.MAX_VALUE;
-		Box traceBox = new Box(start, end).expanded(1.0, 1.0, 1.0);
-		for (Entity entity : world.getEntities(viewpoint, traceBox, filter)) {
-			Box box = entity.getShape().expanded(0.3, 0.3, 0.3);
-			double dist;
-			if (box.contains(start)) {
-				dist = 0;
-			} else {
-				Vec3d center = new Vec3d(entity.x, entity.y + entity.height / 2, entity.z);
-				dist = distanceSqToSegment(center, start, end);
-				if (dist > (entity.width * entity.width + entity.height * entity.height) / 4 + 0.09) {
-					continue;
-				}
+		Box bound = new Box(start, end).expanded(1.0, 1.0, 1.0);
+		for (Entity entity : world.getEntities(viewpoint, bound, filter)) {
+			Box box = entity.getShape();
+			if (box.getAverageSideLength() < 0.3) {
+				box = box.expanded(0.3, 0.3, 0.3);
 			}
+			if (box.contains(start)) {
+				best = entity;
+				bestPos = start;
+				break;
+			}
+			HitResult hit = box.clip(start, end);
+			if (hit == null || hit.facePos == null) {
+				continue;
+			}
+			double dist = start.squaredDistanceTo(hit.facePos);
 			if (dist < bestDist) {
 				best = entity;
+				bestPos = hit.facePos;
 				bestDist = dist;
 			}
 		}
-		return best;
-	}
-
-	private static double distanceSqToSegment(Vec3d point, Vec3d start, Vec3d end) {
-		Vec3d ab = end.subtract(start);
-		Vec3d ap = point.subtract(start);
-		double abLen = ab.squaredDistanceToOrigin();
-		double t = abLen <= 1.0E-7 ? 0 : Math.max(0, Math.min(1, ap.dot(ab) / abLen));
-		Vec3d projection = start.add(ab.scale(t));
-		return point.squaredDistanceTo(projection);
+		return best == null ? null : new HitResult(best, bestPos);
 	}
 
 	public static boolean isEmptyElement(IElement element) {
@@ -101,25 +102,48 @@ public class RayTracing {
 	@Nullable
 	public HitResult rayTrace(Entity entity, double playerReach, float partialTicks) {
 		Vec3d eyePosition = entity.getEyePosition(partialTicks);
-		Vec3d lookVector = entity.getRotationVec(partialTicks);
-		Vec3d traceEnd = eyePosition.add(lookVector.x * playerReach, lookVector.y * playerReach, lookVector.z * playerReach);
+		Vec3d traceEnd;
+		if (mc.crosshairTarget != null && mc.crosshairTarget.type == HitResult.Type.BLOCK && mc.crosshairTarget.facePos != null) {
+			// extend the trace a bit so the block already under the crosshair cannot disappear due to floating point error
+			traceEnd = eyePosition.add(mc.crosshairTarget.facePos.subtract(eyePosition).scale(1.01));
+		} else {
+			Vec3d lookVector = entity.getRotationVec(partialTicks);
+			traceEnd = eyePosition.add(lookVector.x * playerReach, lookVector.y * playerReach, lookVector.z * playerReach);
+		}
 
 		World world = entity.world;
-		Box bound = new Box(eyePosition, traceEnd);
 		Predicate<Entity> predicate = e -> canBeTarget(e, entity);
-		Entity entityResult = getEntityHit(world, entity, eyePosition, traceEnd, predicate);
+		HitResult entityResult = getEntityHit(world, entity, eyePosition, traceEnd, predicate);
 
-		HitResult blockResult = world.rayTrace(eyePosition, traceEnd, false);
+		if (mc.crosshairTarget != null && mc.crosshairTarget.type == HitResult.Type.BLOCK) {
+			Vec3d lookVector = entity.getRotationVec(partialTicks);
+			traceEnd = eyePosition.add(lookVector.x * playerReach, lookVector.y * playerReach, lookVector.z * playerReach);
+		}
+
+		FluidMode fluidMode = Jade.CONFIG.get().getGeneral().getDisplayFluids();
+		boolean allowLiquids = fluidMode != FluidMode.NONE;
+		BlockPos eyePos = new BlockPos(eyePosition);
+		if (world.getBlockState(eyePos).getMaterial().isLiquid()) {
+			// do not target the fluid the player is inside of
+			allowLiquids = false;
+		}
+		HitResult blockResult = world.rayTrace(eyePosition, traceEnd, allowLiquids);
+		if (blockResult != null && blockResult.type == HitResult.Type.BLOCK && fluidMode == FluidMode.SOURCE_ONLY) {
+			net.minecraft.block.Block block = world.getBlockState(blockResult.getPos()).getBlock();
+			if (block == Blocks.FLOWING_WATER || block == Blocks.FLOWING_LAVA) {
+				blockResult = world.rayTrace(eyePosition, traceEnd, false);
+			}
+		}
 
 		if (entityResult != null) {
 			if (blockResult != null && blockResult.type == HitResult.Type.BLOCK) {
-				double entityDist = entityResult.squaredDistanceTo(eyePosition.x, eyePosition.y, eyePosition.z);
+				double entityDist = entityResult.facePos.squaredDistanceTo(eyePosition);
 				double blockDist = blockResult.facePos.squaredDistanceTo(eyePosition);
 				if (entityDist < blockDist) {
-					return new HitResult(entityResult, blockResult.facePos);
+					return entityResult;
 				}
 			} else {
-				return new HitResult(entityResult, traceEnd);
+				return entityResult;
 			}
 		}
 		if (blockResult != null && blockResult.type == HitResult.Type.BLOCK) {
@@ -134,12 +158,11 @@ public class RayTracing {
 	private boolean canBeTarget(Entity target, Entity viewEntity) {
 		if (target.removed)
 			return false;
-		if (target instanceof PlayerEntity) {
-			PlayerEntity player = (PlayerEntity) target;
-			if (player.isSpectator())
-				return false;
-		}
+		if (target instanceof PlayerEntity && ((PlayerEntity) target).isSpectator())
+			return false;
 		if (target == viewEntity.getVehicle())
+			return false;
+		if (target instanceof ProjectileEntity && target.ticks <= 10)
 			return false;
 		if (CommonProxy.isMultipartEntity(target))
 			return false;
