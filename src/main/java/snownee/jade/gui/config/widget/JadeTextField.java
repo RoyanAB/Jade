@@ -1,9 +1,9 @@
 package snownee.jade.gui.config.widget;
 
-import java.util.function.Consumer;
-
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.TextRenderer;
+
+import java.util.function.Consumer;
 
 public class JadeTextField extends TextFieldWidget implements JadeWidget {
 

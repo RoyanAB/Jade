@@ -1,11 +1,11 @@
 package snownee.jade.impl.config.entry;
 
-import java.util.function.Predicate;
-
 import net.minecraft.resource.Identifier;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.gui.config.value.OptionValue;
 import snownee.jade.impl.config.PluginConfig;
+
+import java.util.function.Predicate;
 
 public class StringConfigEntry extends ConfigEntry<String> {
 

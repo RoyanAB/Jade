@@ -1,22 +1,13 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
-import net.minecraft.block.ComparatorBlock;
-import net.minecraft.block.HopperBlock;
-import net.minecraft.block.LeverBlock;
-import net.minecraft.block.RepeaterBlock;
+import net.minecraft.block.*;
 import net.minecraft.block.entity.ComparatorBlockEntity;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
 
@@ -31,7 +22,7 @@ public enum RedstoneProvider implements IBlockComponentProvider, IServerDataProv
 		IThemeHelper t = IThemeHelper.get();
 		if (block instanceof LeverBlock) {
 			Text info = state.get(LeverBlock.POWERED) ? t.success(net.minecraft.client.resource.language.I18n.translate("tooltip.jade.state_on"))
-					: t.danger(net.minecraft.client.resource.language.I18n.translate("tooltip.jade.state_off"));
+				: t.danger(net.minecraft.client.resource.language.I18n.translate("tooltip.jade.state_off"));
 			tooltip.add(new LiteralText(net.minecraft.client.resource.language.I18n.translate("tooltip.jade.state", info.getFormattedString())));
 			return;
 		}

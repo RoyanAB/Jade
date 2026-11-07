@@ -1,20 +1,12 @@
 package snownee.jade.impl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.UnaryOperator;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec2f;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
@@ -24,6 +16,9 @@ import snownee.jade.api.ui.IElement.Align;
 import snownee.jade.api.ui.IElementHelper;
 import snownee.jade.impl.ui.ElementHelper;
 import snownee.jade.overlay.DisplayHelper;
+
+import java.util.*;
+import java.util.function.UnaryOperator;
 
 public class Tooltip implements ITooltip {
 
@@ -138,7 +133,7 @@ public class Tooltip implements ITooltip {
 
 	@Override
 	public boolean replace(Identifier tag, Text text) {
-		return replace(tag, $ -> Arrays.asList(Arrays.asList(IElementHelper.get().text(text))));
+		return replace(tag, $ -> Collections.singletonList(Collections.singletonList(IElementHelper.get().text(text))));
 	}
 
 	@Override

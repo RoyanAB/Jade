@@ -1,18 +1,11 @@
 package snownee.jade.impl;
 
-import java.util.List;
-import java.util.function.Function;
-
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.living.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.SpawnEggItem;
-import snownee.jade.api.AccessorClientHandler;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IEntityComponentProvider;
-import snownee.jade.api.IJadeProvider;
-import snownee.jade.api.ITooltip;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.impl.config.PluginConfig;
@@ -23,6 +16,9 @@ import snownee.jade.util.ClientProxy;
 import snownee.jade.util.CommonProxy;
 import snownee.jade.util.WailaExceptionHandler;
 
+import java.util.List;
+import java.util.function.Function;
+
 public class EntityAccessorClientHandler implements AccessorClientHandler<EntityAccessor> {
 
 	@Override
@@ -31,10 +27,7 @@ public class EntityAccessorClientHandler implements AccessorClientHandler<Entity
 		if (!general.getDisplayEntities()) {
 			return false;
 		}
-		if (!general.getDisplayBosses() && CommonProxy.isBoss(accessor.getEntity())) {
-			return false;
-		}
-		return true;
+		return general.getDisplayBosses() || !CommonProxy.isBoss(accessor.getEntity());
 	}
 
 	@Override

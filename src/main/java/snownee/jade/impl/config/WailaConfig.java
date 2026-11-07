@@ -1,11 +1,7 @@
 package snownee.jade.impl.config;
 
-import java.util.List;
-import java.util.Optional;
-
 import com.google.common.collect.Lists;
 import com.google.gson.annotations.Expose;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.living.Arm;
 import net.minecraft.resource.Identifier;
@@ -20,6 +16,9 @@ import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.theme.Theme;
 import snownee.jade.util.CommonProxy;
 import snownee.jade.util.ModIdentification;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Get this instance from {@link IWailaConfig#get()}

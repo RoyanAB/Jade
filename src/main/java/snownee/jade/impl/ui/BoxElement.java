@@ -1,12 +1,8 @@
 package snownee.jade.impl.ui;
 
-import java.util.Arrays;
-
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.client.Minecraft;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
@@ -14,15 +10,7 @@ import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.config.IWailaConfig.IConfigOverlay;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.theme.Theme;
-import snownee.jade.api.ui.BoxStyle;
-import snownee.jade.api.ui.Direction2D;
-import snownee.jade.api.ui.Element;
-import snownee.jade.api.ui.IBoxElement;
-import snownee.jade.api.ui.IDisplayHelper;
-import snownee.jade.api.ui.IElement;
-import snownee.jade.api.ui.MessageType;
-import snownee.jade.api.ui.Rect2i;
-import snownee.jade.api.ui.TooltipRect;
+import snownee.jade.api.ui.*;
 import snownee.jade.gui.PreviewOptionsScreen;
 import snownee.jade.impl.Tooltip;
 import snownee.jade.overlay.DisplayHelper;
@@ -30,6 +18,8 @@ import snownee.jade.overlay.OverlayRenderer;
 import snownee.jade.overlay.ProgressTracker;
 import snownee.jade.overlay.WailaTickHandler;
 import snownee.jade.util.ClientProxy;
+
+import java.util.Arrays;
 
 public class BoxElement extends Element implements IBoxElement {
 	private final Tooltip tooltip;

@@ -1,8 +1,5 @@
 package snownee.jade.addon.core;
 
-import java.text.DecimalFormat;
-import java.util.Locale;
-
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.resource.Identifier;
@@ -11,17 +8,13 @@ import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3i;
-import snownee.jade.api.Accessor;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IEntityComponentProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.ui.IElementHelper;
 import snownee.jade.impl.theme.ThemeHelper;
+
+import java.text.DecimalFormat;
 
 public enum DistanceProvider implements IBlockComponentProvider, IEntityComponentProvider {
 

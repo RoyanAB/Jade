@@ -1,20 +1,16 @@
 package snownee.jade.addon.vanilla;
 
-import java.util.UUID;
-
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.mob.passive.animal.tameable.TameableEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.LiteralText;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IEntityComponentProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.util.CommonProxy;
+
+import java.util.UUID;
 
 public enum AnimalOwnerProvider implements IEntityComponentProvider, IServerDataProvider<EntityAccessor> {
 

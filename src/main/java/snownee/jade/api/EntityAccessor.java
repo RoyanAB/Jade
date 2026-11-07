@@ -1,14 +1,13 @@
 package snownee.jade.api;
 
-import java.util.function.Supplier;
-
-import org.jetbrains.annotations.ApiStatus.NonExtendable;
-
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.player.PlayerEntity;
-import net.minecraft.world.World;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.HitResult;
+import net.minecraft.world.World;
+import org.jetbrains.annotations.ApiStatus.NonExtendable;
+
+import java.util.function.Supplier;
 
 /**
  * Class to get information of entity target and context.
@@ -31,7 +30,7 @@ public interface EntityAccessor extends Accessor<HitResult> {
 	}
 
 	@NonExtendable
-	public interface Builder {
+	interface Builder {
 		Builder level(World level);
 
 		Builder player(PlayerEntity player);

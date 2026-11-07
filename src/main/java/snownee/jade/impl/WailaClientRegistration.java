@@ -1,21 +1,7 @@
 package snownee.jade.impl;
 
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.client.Minecraft;
@@ -28,32 +14,24 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import snownee.jade.api.Accessor;
-import snownee.jade.api.AccessorClientHandler;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IEntityComponentProvider;
-import snownee.jade.api.IToggleableProvider;
-import snownee.jade.api.IWailaClientRegistration;
-import snownee.jade.api.callback.JadeAfterRenderCallback;
-import snownee.jade.api.callback.JadeBeforeRenderCallback;
-import snownee.jade.api.callback.JadeBeforeTooltipCollectCallback;
-import snownee.jade.api.callback.JadeItemModNameCallback;
-import snownee.jade.api.callback.JadeRayTraceCallback;
-import snownee.jade.api.callback.JadeTooltipCollectedCallback;
+import org.jetbrains.annotations.Nullable;
+import snownee.jade.api.*;
+import snownee.jade.api.callback.*;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.platform.CustomEnchantPower;
 import snownee.jade.gui.PluginsConfigScreen;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.impl.config.PluginConfig;
-import snownee.jade.impl.config.entry.BooleanConfigEntry;
-import snownee.jade.impl.config.entry.EnumConfigEntry;
-import snownee.jade.impl.config.entry.FloatConfigEntry;
-import snownee.jade.impl.config.entry.IntConfigEntry;
-import snownee.jade.impl.config.entry.StringConfigEntry;
+import snownee.jade.impl.config.entry.*;
 import snownee.jade.util.ClientProxy;
 import snownee.jade.util.ModIdentification;
+
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class WailaClientRegistration implements IWailaClientRegistration {
 
@@ -281,22 +259,22 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	public BlockAccessor.Builder blockAccessor() {
 		Minecraft mc = Minecraft.getInstance();
 		return new BlockAccessorImpl.Builder()
-				.level(mc.world)
-				.player(mc.player)
-				.serverConnected(isServerConnected())
-				.serverData(getServerData())
-				.showDetails(isShowDetailsPressed());
+			.level(mc.world)
+			.player(mc.player)
+			.serverConnected(isServerConnected())
+			.serverData(getServerData())
+			.showDetails(isShowDetailsPressed());
 	}
 
 	@Override
 	public EntityAccessor.Builder entityAccessor() {
 		Minecraft mc = Minecraft.getInstance();
 		return new EntityAccessorImpl.Builder()
-				.level(mc.world)
-				.player(mc.player)
-				.serverConnected(isServerConnected())
-				.serverData(getServerData())
-				.showDetails(isShowDetailsPressed());
+			.level(mc.world)
+			.player(mc.player)
+			.serverConnected(isServerConnected())
+			.serverData(getServerData())
+			.showDetails(isShowDetailsPressed());
 	}
 
 	@Override

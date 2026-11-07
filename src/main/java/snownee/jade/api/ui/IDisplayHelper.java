@@ -1,13 +1,12 @@
 package snownee.jade.api.ui;
 
-import java.text.Format;
-
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Internals;
+
+import java.text.Format;
 
 public interface IDisplayHelper {
 

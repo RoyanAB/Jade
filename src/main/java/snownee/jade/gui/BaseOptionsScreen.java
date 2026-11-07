@@ -1,10 +1,9 @@
 package snownee.jade.gui;
 
-import java.util.Objects;
-
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.platform.Lighting;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -15,7 +14,8 @@ import snownee.jade.gui.config.OptionsNav;
 import snownee.jade.gui.config.value.OptionValue;
 import snownee.jade.gui.config.widget.JadeButton;
 import snownee.jade.gui.config.widget.JadeWidget;
-import snownee.jade.util.ClientProxy;
+
+import java.util.Objects;
 
 public abstract class BaseOptionsScreen extends Screen {
 
@@ -145,10 +145,10 @@ public abstract class BaseOptionsScreen extends Screen {
 	}
 
 	private void drawTooltipAt(java.util.List<String> lines, int x, int y, int tooltipWidth, int tooltipHeight) {
-		net.minecraft.client.render.platform.GlStateManager.disableRescaleNormal();
-		net.minecraft.client.render.platform.Lighting.turnOff();
-		net.minecraft.client.render.platform.GlStateManager.disableLighting();
-		net.minecraft.client.render.platform.GlStateManager.disableDepthTest();
+		GlStateManager.disableRescaleNormal();
+		Lighting.turnOff();
+		GlStateManager.disableLighting();
+		GlStateManager.disableDepthTest();
 		int border1 = -267386864;
 		int border2 = 1347420415;
 		int border3 = 1344798847;
@@ -173,10 +173,10 @@ public abstract class BaseOptionsScreen extends Screen {
 		}
 		this.drawOffset = 0.0F;
 		this.itemRenderer.zOffset = 0.0F;
-		net.minecraft.client.render.platform.GlStateManager.enableLighting();
-		net.minecraft.client.render.platform.GlStateManager.enableDepthTest();
-		net.minecraft.client.render.platform.Lighting.turnOn();
-		net.minecraft.client.render.platform.GlStateManager.enableRescaleNormal();
+		GlStateManager.enableLighting();
+		GlStateManager.enableDepthTest();
+		Lighting.turnOn();
+		GlStateManager.enableRescaleNormal();
 	}
 
 	@Override

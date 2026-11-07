@@ -1,10 +1,10 @@
 package snownee.jade.gui.config.widget;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 
 public class JadeButton extends ButtonWidget implements JadeWidget {
 
@@ -63,11 +63,11 @@ public class JadeButton extends ButtonWidget implements JadeWidget {
 			return;
 		}
 		mc.getTextureManager().bind(WIDGETS_LOCATION);
-		net.minecraft.client.render.platform.GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.hovered = mouseX >= x && mouseY >= y && mouseX < x + width && mouseY < y + height;
 		int yImage = getYImage(this.hovered);
-		net.minecraft.client.render.platform.GlStateManager.enableBlend();
-		net.minecraft.client.render.platform.GlStateManager.blendFunc(net.minecraft.client.render.platform.GlStateManager.SourceFactor.SRC_ALPHA, net.minecraft.client.render.platform.GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		GlStateManager.enableBlend();
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
 		drawTexture(x, y, 0, 46 + yImage * 20, width / 2, height);
 		drawTexture(x + width / 2, y, 200 - width / 2, 46 + yImage * 20, width / 2, height);
 		drawMessage(mc);

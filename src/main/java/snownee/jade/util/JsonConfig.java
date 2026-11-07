@@ -1,32 +1,29 @@
 package snownee.jade.util;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Style;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.function.Supplier;
-
-import org.jetbrains.annotations.Nullable;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import net.minecraft.resource.Identifier;
-import net.minecraft.text.Style;
 
 public class JsonConfig<T> {
 
 	public static final Gson DEFAULT_GSON = new GsonBuilder()
-			.setPrettyPrinting()
-			.serializeNulls()
-			.enableComplexMapKeySerialization()
-			.registerTypeAdapter(Identifier.class, new Identifier.Serializer())
-			.registerTypeAdapter(Style.class, new Style.Serializer())
-			.setLenient()
-			.create();
+		.setPrettyPrinting()
+		.serializeNulls()
+		.enableComplexMapKeySerialization()
+		.registerTypeAdapter(Identifier.class, new Identifier.Serializer())
+		.registerTypeAdapter(Style.class, new Style.Serializer())
+		.setLenient()
+		.create();
 
 	private final File configFile;
 	private final CachedSupplier<T> configGetter;

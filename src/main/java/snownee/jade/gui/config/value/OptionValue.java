@@ -1,13 +1,13 @@
 package snownee.jade.gui.config.value;
 
-import java.util.function.Consumer;
-
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.gui.config.widget.JadeWidget;
+
+import java.util.function.Consumer;
 
 public abstract class OptionValue<T> extends OptionsList.Entry {
 
@@ -38,7 +38,7 @@ public abstract class OptionValue<T> extends OptionsList.Entry {
 		int top = rowTop + (height / 2) - (client.textRenderer.fontHeight / 2);
 		String titleText = title.getString();
 		if (!active) {
-			titleText = Formatting.STRIKETHROUGH.toString() + Formatting.GRAY.toString() + titleText;
+			titleText = Formatting.STRIKETHROUGH.toString() + Formatting.GRAY + titleText;
 		}
 		client.textRenderer.draw(titleText, left, top, 16777215);
 		if (serverFeature) {

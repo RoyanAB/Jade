@@ -1,11 +1,5 @@
 package snownee.jade;
 
-import java.util.Objects;
-
-import org.jetbrains.annotations.Nullable;
-
-import com.google.common.collect.Lists;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.toast.SystemToast;
 import net.minecraft.client.options.GameOptions;
@@ -13,21 +7,17 @@ import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.TooltipFlag;
-import net.minecraft.text.Text;
 import net.minecraft.text.LiteralText;
-import net.minecraft.text.Style;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.Accessor;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.config.IWailaConfig.DisplayMode;
 import snownee.jade.api.config.IWailaConfig.TTSMode;
 import snownee.jade.gui.HomeConfigScreen;
-import snownee.jade.impl.config.PluginConfig;
 import snownee.jade.impl.config.WailaConfig.ConfigGeneral;
-import snownee.jade.overlay.OverlayRenderer;
-import snownee.jade.overlay.WailaTickHandler;
-import snownee.jade.util.ClientProxy;
-import snownee.jade.util.CommonProxy;
 import snownee.jade.util.ModIdentification;
+
+import java.util.Objects;
 
 public final class JadeClient {
 
@@ -56,8 +46,8 @@ public final class JadeClient {
 				general.setDisplayTooltip(!general.shouldDisplayTooltip());
 				if (!general.shouldDisplayTooltip() && general.hintOverlayToggle) {
 					SystemToast.addOrUpdate(Minecraft.getInstance().getToasts(), SystemToast.Type.TUTORIAL_HINT,
-							new LiteralText(I18n.translate("toast.jade.toggle_hint.1")),
-							new LiteralText(I18n.translate("toast.jade.toggle_hint.2", GameOptions.getKeyName(showOverlay.getKeyCode()))));
+						new LiteralText(I18n.translate("toast.jade.toggle_hint.1")),
+						new LiteralText(I18n.translate("toast.jade.toggle_hint.2", GameOptions.getKeyName(showOverlay.getKeyCode()))));
 					general.hintOverlayToggle = false;
 				}
 				Jade.CONFIG.save();
@@ -74,8 +64,8 @@ public final class JadeClient {
 				general.toggleTTS();
 				if (general.shouldEnableTextToSpeech() && general.hintNarratorToggle) {
 					SystemToast.addOrUpdate(Minecraft.getInstance().getToasts(), SystemToast.Type.NARRATOR_TOGGLE,
-							new LiteralText(I18n.translate("toast.jade.tts_hint.1")),
-							new LiteralText(I18n.translate("toast.jade.tts_hint.2", GameOptions.getKeyName(narrate.getKeyCode()))));
+						new LiteralText(I18n.translate("toast.jade.tts_hint.1")),
+						new LiteralText(I18n.translate("toast.jade.tts_hint.2", GameOptions.getKeyName(narrate.getKeyCode()))));
 					general.hintNarratorToggle = false;
 				}
 				Jade.CONFIG.save();
@@ -103,7 +93,7 @@ public final class JadeClient {
 				break;
 			}
 		}
-		tooltip.add(i, net.minecraft.text.Formatting.BLUE.toString() + net.minecraft.text.Formatting.ITALIC.toString() + name);
+		tooltip.add(i, net.minecraft.text.Formatting.BLUE.toString() + net.minecraft.text.Formatting.ITALIC + name);
 	}
 
 	@Nullable

@@ -22,7 +22,7 @@ public enum MobSpawnerProvider implements IBlockComponentProvider {
 			return;
 		}
 		Text text = new LiteralText(net.minecraft.client.resource.language.I18n.translate("jade.spawner",
-				name.getFormattedString(), displayEntity.getDisplayName().getFormattedString()));
+			name.getFormattedString(), displayEntity.getDisplayName().getFormattedString()));
 		tooltip.replace(Identifiers.CORE_OBJECT_NAME, IThemeHelper.get().title(text));
 	}
 

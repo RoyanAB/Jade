@@ -1,19 +1,13 @@
 package snownee.jade.impl.ui;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec2f;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
-import snownee.jade.api.ui.BoxStyle;
-import snownee.jade.api.ui.IBoxElement;
-import snownee.jade.api.ui.IElement;
-import snownee.jade.api.ui.IElementHelper;
-import snownee.jade.api.ui.ITextElement;
-import snownee.jade.api.ui.ProgressStyle;
+import snownee.jade.api.ui.*;
 import snownee.jade.impl.Tooltip;
 
 public class ElementHelper implements IElementHelper {

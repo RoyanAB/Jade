@@ -26,7 +26,7 @@ public enum HorseStatsProvider implements IEntityComponentProvider {
 		Text valueText = t.info(DisplayHelper.dfCommas.format(value));
 		if (showMax) {
 			return new LiteralText(net.minecraft.client.resource.language.I18n.translate(key,
-					net.minecraft.client.resource.language.I18n.translate("jade.fraction", valueText.getFormattedString(), DisplayHelper.dfCommas.format(max))));
+				net.minecraft.client.resource.language.I18n.translate("jade.fraction", valueText.getFormattedString(), DisplayHelper.dfCommas.format(max))));
 		}
 		return new LiteralText(net.minecraft.client.resource.language.I18n.translate(key, valueText.getFormattedString()));
 	}

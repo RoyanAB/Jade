@@ -1,16 +1,15 @@
 package snownee.jade.addon.harvest;
 
-import java.util.List;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import net.minecraft.block.state.BlockState;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
+
+import java.util.List;
 
 public class SimpleToolHandler implements ToolHandler {
 

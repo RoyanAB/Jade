@@ -1,11 +1,10 @@
 package snownee.jade.api.ui;
 
-import java.util.Objects;
-
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.resource.Identifier;
 import net.minecraft.util.math.Vec2f;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Objects;
 
 /**
  * A general implementation of {@link IElement}

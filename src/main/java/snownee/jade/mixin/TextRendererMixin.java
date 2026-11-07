@@ -1,14 +1,13 @@
 package snownee.jade.mixin;
 
+import net.minecraft.client.render.TextRenderer;
+import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.util.math.MathHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import net.minecraft.client.render.TextRenderer;
-import net.minecraft.client.render.platform.GlStateManager;
-import net.minecraft.util.math.MathHelper;
 import snownee.jade.gui.JadeFont;
 
 @Mixin(TextRenderer.class)

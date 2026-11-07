@@ -1,7 +1,5 @@
 package snownee.jade.addon.harvest;
 
-import java.util.List;
-
 import net.minecraft.block.Blocks;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.item.ItemStack;

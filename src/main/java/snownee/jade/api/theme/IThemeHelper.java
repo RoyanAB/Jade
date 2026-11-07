@@ -1,12 +1,11 @@
 package snownee.jade.api.theme;
 
-import java.util.Collection;
-
-import org.jetbrains.annotations.NotNull;
-
-import net.minecraft.text.Text;
 import net.minecraft.resource.Identifier;
+import net.minecraft.text.Text;
+import org.jetbrains.annotations.NotNull;
 import snownee.jade.Internals;
+
+import java.util.Collection;
 
 public interface IThemeHelper {
 	static IThemeHelper get() {

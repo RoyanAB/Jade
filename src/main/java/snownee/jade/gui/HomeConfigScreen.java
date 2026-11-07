@@ -1,11 +1,6 @@
 package snownee.jade.gui;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Random;
-
 import com.google.common.collect.Lists;
-
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.render.Window;
 import net.minecraft.client.render.platform.GlStateManager;
@@ -19,6 +14,10 @@ import snownee.jade.gui.config.widget.JadeButton;
 import snownee.jade.impl.config.PluginConfig;
 import snownee.jade.util.ModIdentification;
 import snownee.jade.util.SmoothChasingValue;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Random;
 
 public class HomeConfigScreen extends Screen {
 
@@ -59,26 +58,66 @@ public class HomeConfigScreen extends Screen {
 		int year = now.getYear();
 		int newYearMonthAndDay;
 		switch (year) {
-			case 2025: newYearMonthAndDay = 129; break;
-			case 2026: newYearMonthAndDay = 217; break;
-			case 2027: newYearMonthAndDay = 206; break;
-			case 2028: newYearMonthAndDay = 126; break;
-			case 2029: newYearMonthAndDay = 213; break;
-			case 2030: newYearMonthAndDay = 203; break;
-			case 2031: newYearMonthAndDay = 123; break;
-			case 2032: newYearMonthAndDay = 211; break;
-			case 2033: newYearMonthAndDay = 131; break;
-			case 2034: newYearMonthAndDay = 219; break;
-			case 2035: newYearMonthAndDay = 208; break;
-			case 2036: newYearMonthAndDay = 128; break;
-			case 2037: newYearMonthAndDay = 215; break;
-			case 2038: newYearMonthAndDay = 204; break;
-			case 2039: newYearMonthAndDay = 124; break;
-			case 2040: newYearMonthAndDay = 212; break;
-			case 2041: newYearMonthAndDay = 201; break;
-			case 2042: newYearMonthAndDay = 122; break;
-			case 2043: newYearMonthAndDay = 210; break;
-			default: newYearMonthAndDay = 0; break;
+			case 2025:
+				newYearMonthAndDay = 129;
+				break;
+			case 2026:
+				newYearMonthAndDay = 217;
+				break;
+			case 2027:
+				newYearMonthAndDay = 206;
+				break;
+			case 2028:
+				newYearMonthAndDay = 126;
+				break;
+			case 2029:
+				newYearMonthAndDay = 213;
+				break;
+			case 2030:
+				newYearMonthAndDay = 203;
+				break;
+			case 2031:
+				newYearMonthAndDay = 123;
+				break;
+			case 2032:
+				newYearMonthAndDay = 211;
+				break;
+			case 2033:
+				newYearMonthAndDay = 131;
+				break;
+			case 2034:
+				newYearMonthAndDay = 219;
+				break;
+			case 2035:
+				newYearMonthAndDay = 208;
+				break;
+			case 2036:
+				newYearMonthAndDay = 128;
+				break;
+			case 2037:
+				newYearMonthAndDay = 215;
+				break;
+			case 2038:
+				newYearMonthAndDay = 204;
+				break;
+			case 2039:
+				newYearMonthAndDay = 124;
+				break;
+			case 2040:
+				newYearMonthAndDay = 212;
+				break;
+			case 2041:
+				newYearMonthAndDay = 201;
+				break;
+			case 2042:
+				newYearMonthAndDay = 122;
+				break;
+			case 2043:
+				newYearMonthAndDay = 210;
+				break;
+			default:
+				newYearMonthAndDay = 0;
+				break;
 		}
 		if (newYearMonthAndDay == 0) {
 			return false;
@@ -338,10 +377,10 @@ public class HomeConfigScreen extends Screen {
 		private String text;
 		private float x;
 		private float y;
-		private float motionX;
+		private final float motionX;
 		private float motionY;
 		private int color;
-		private float scale;
+		private final float scale;
 		private float gravity = 0.98F;
 
 		public TextParticle(String text, float x, float y, float motionX, float motionY, int color, float scale) {

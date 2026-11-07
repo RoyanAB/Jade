@@ -1,15 +1,14 @@
 package snownee.jade.gui.config.value;
 
-import java.text.DecimalFormat;
-import java.text.ParseException;
-import java.util.function.Consumer;
-
 import it.unimi.dsi.fastutil.floats.FloatUnaryOperator;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.util.math.MathHelper;
 import snownee.jade.gui.config.widget.JadeButton;
+
+import java.text.DecimalFormat;
+import java.text.ParseException;
+import java.util.function.Consumer;
 
 public class SliderOptionValue extends OptionValue<Float> {
 

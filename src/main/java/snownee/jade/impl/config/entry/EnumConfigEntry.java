@@ -1,12 +1,12 @@
 package snownee.jade.impl.config.entry;
 
-import java.util.Locale;
-
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.resource.Identifier;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.gui.config.value.OptionValue;
 import snownee.jade.impl.config.PluginConfig;
+
+import java.util.Locale;
 
 public class EnumConfigEntry<E extends Enum<E>> extends ConfigEntry<E> {
 

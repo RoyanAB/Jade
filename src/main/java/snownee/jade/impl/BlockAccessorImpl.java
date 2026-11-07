@@ -1,17 +1,9 @@
 package snownee.jade.impl;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.base.Suppliers;
-
 import net.minecraft.block.Block;
-import net.minecraft.block.state.BlockState;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.state.BlockState;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -22,12 +14,18 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.HitResult;
 import net.minecraft.world.World;
 import net.ornithemc.osl.networking.api.PacketBuffer;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.AccessorImpl;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IServerDataProvider;
 import snownee.jade.util.CommonProxy;
 import snownee.jade.util.WailaExceptionHandler;
+
+import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Class to get information of block target and context.
@@ -69,14 +67,14 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 				return;
 
 			BlockAccessor accessor = new Builder()
-					.level(world)
-					.player(player)
-					.serverConnected(true)
-					.showDetails(data.showDetails)
-					.hit(data.hit)
-					.blockState(world.getBlockState(pos))
-					.blockEntity(tile)
-					.build();
+				.level(world)
+				.player(player)
+				.serverConnected(true)
+				.showDetails(data.showDetails)
+				.hit(data.hit)
+				.blockState(world.getBlockState(pos))
+				.blockEntity(tile)
+				.build();
 
 			NbtCompound tag = new NbtCompound();
 			for (IServerDataProvider<BlockAccessor> provider : providers) {

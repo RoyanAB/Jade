@@ -1,10 +1,9 @@
 package snownee.jade.api.ui;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
 import net.minecraft.resource.Identifier;
+import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Internals;
 import snownee.jade.api.ITooltip;
 

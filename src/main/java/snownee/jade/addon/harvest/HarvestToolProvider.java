@@ -1,16 +1,10 @@
 package snownee.jade.addon.harvest;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
 import net.minecraft.block.state.BlockState;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -20,11 +14,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
-import snownee.jade.api.TooltipPosition;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.ui.IElement;
@@ -32,6 +22,11 @@ import snownee.jade.api.ui.IElement.Align;
 import snownee.jade.api.ui.IElementHelper;
 import snownee.jade.util.ClientProxy;
 import snownee.jade.util.CommonProxy;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 public class HarvestToolProvider implements IBlockComponentProvider {
 
@@ -44,15 +39,15 @@ public class HarvestToolProvider implements IBlockComponentProvider {
 	static {
 		if (CommonProxy.isPhysicallyClient()) {
 			registerHandler(SimpleToolHandler.create(Identifiers.JADE("pickaxe"), true, java.util.Arrays.asList(
-					Items.WOODEN_PICKAXE, Items.STONE_PICKAXE, Items.IRON_PICKAXE, Items.DIAMOND_PICKAXE)));
+				Items.WOODEN_PICKAXE, Items.STONE_PICKAXE, Items.IRON_PICKAXE, Items.DIAMOND_PICKAXE)));
 			registerHandler(SimpleToolHandler.create(Identifiers.JADE("axe"), true, java.util.Arrays.asList(
-					Items.WOODEN_AXE, Items.STONE_AXE, Items.IRON_AXE, Items.DIAMOND_AXE)));
+				Items.WOODEN_AXE, Items.STONE_AXE, Items.IRON_AXE, Items.DIAMOND_AXE)));
 			registerHandler(SimpleToolHandler.create(Identifiers.JADE("shovel"), true, java.util.Arrays.asList(
-					Items.WOODEN_SHOVEL, Items.STONE_SHOVEL, Items.IRON_SHOVEL, Items.DIAMOND_SHOVEL)));
+				Items.WOODEN_SHOVEL, Items.STONE_SHOVEL, Items.IRON_SHOVEL, Items.DIAMOND_SHOVEL)));
 			registerHandler(SimpleToolHandler.create(Identifiers.JADE("hoe"), true, java.util.Arrays.asList(
-					Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.DIAMOND_HOE)));
+				Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.DIAMOND_HOE)));
 			registerHandler(SimpleToolHandler.create(Identifiers.JADE("sword"), false, java.util.Collections.singletonList(Items.WOODEN_SWORD))
-					.addBlock(net.minecraft.block.Blocks.WEB));
+				.addBlock(net.minecraft.block.Blocks.WEB));
 			registerHandler(new ShearsToolHandler());
 		}
 	}
@@ -151,10 +146,10 @@ public class HarvestToolProvider implements IBlockComponentProvider {
 				IThemeHelper t = IThemeHelper.get();
 				Text text = canHarvest ? t.success("✔") : t.danger("✕");
 				elements.add(IElementHelper.get().text(text)
-						.scale(0.75F)
-						.zOffset(800)
-						.size(Vec2f.ZERO)
-						.translate(new Vec2f(-3, 6.25F + offsetY)));
+					.scale(0.75F)
+					.zOffset(800)
+					.size(Vec2f.ZERO)
+					.translate(new Vec2f(-3, 6.25F + offsetY)));
 			}
 		}
 

@@ -1,9 +1,8 @@
 package snownee.jade.api.ui;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.resource.Identifier;
 import net.minecraft.util.math.Vec2f;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A basic render-able element to be drawn in Jade's tooltip.

@@ -1,11 +1,10 @@
 package snownee.jade.mixin;
 
+import net.minecraft.client.gui.overlay.BossEventOverlay;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import net.minecraft.client.gui.overlay.BossEventOverlay;
 import snownee.jade.Jade;
 import snownee.jade.api.config.IWailaConfig.BossBarOverlapMode;
 import snownee.jade.overlay.OverlayRenderer;

@@ -20,7 +20,7 @@ public enum EnchantmentPowerProvider implements IBlockComponentProvider {
 		float power = CommonProxy.getEnchantPowerBonus(accessor.getBlockState(), accessor.getLevel(), accessor.getPosition());
 		if (power > 0) {
 			tooltip.add(new LiteralText(net.minecraft.client.resource.language.I18n.translate("jade.ench_power",
-					IThemeHelper.get().info(DisplayHelper.dfCommas.format(power)).getFormattedString())));
+				IThemeHelper.get().info(DisplayHelper.dfCommas.format(power)).getFormattedString())));
 		}
 	}
 

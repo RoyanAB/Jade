@@ -1,8 +1,7 @@
 package snownee.jade.api.theme;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.text.Style;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.ui.ColorPalette;
 
 public class TextSetting {

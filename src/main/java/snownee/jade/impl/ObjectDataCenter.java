@@ -1,8 +1,7 @@
 package snownee.jade.impl;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.nbt.NbtCompound;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.Accessor;
 import snownee.jade.api.AccessorClientHandler;
 import snownee.jade.api.ui.IElement;

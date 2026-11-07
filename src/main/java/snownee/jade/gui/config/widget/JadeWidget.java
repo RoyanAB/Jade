@@ -1,8 +1,7 @@
 package snownee.jade.gui.config.widget;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 
 public interface JadeWidget {
 

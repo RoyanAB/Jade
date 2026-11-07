@@ -1,12 +1,11 @@
 package snownee.jade.overlay;
 
-import java.util.List;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
-
 import net.minecraft.resource.Identifier;
 import snownee.jade.util.SmoothChasingValue;
+
+import java.util.List;
 
 public class ProgressTracker {
 

@@ -1,9 +1,9 @@
 package snownee.jade.api.config;
 
-import java.util.Set;
-
 import net.minecraft.resource.Identifier;
 import snownee.jade.api.IToggleableProvider;
+
+import java.util.Set;
 
 /**
  * Read-only interface for Waila internal config storage.<br>

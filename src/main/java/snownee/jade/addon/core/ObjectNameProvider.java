@@ -10,20 +10,13 @@ import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.world.Nameable;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IEntityComponentProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
-import snownee.jade.api.TooltipPosition;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.impl.WailaClientRegistration;
 
 public enum ObjectNameProvider
-		implements IBlockComponentProvider, IEntityComponentProvider, IServerDataProvider<BlockAccessor> {
+	implements IBlockComponentProvider, IEntityComponentProvider, IServerDataProvider<BlockAccessor> {
 
 	INSTANCE;
 

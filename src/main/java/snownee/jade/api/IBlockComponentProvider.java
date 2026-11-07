@@ -1,8 +1,7 @@
 package snownee.jade.api;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.nbt.NbtCompound;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.ui.IElement;
 

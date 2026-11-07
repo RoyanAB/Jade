@@ -1,14 +1,8 @@
 package snownee.jade.util;
 
-import java.io.File;
-import java.util.Set;
-import java.util.UUID;
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
-
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModMetadata;
@@ -30,6 +24,7 @@ import net.ornithemc.osl.networking.api.ChannelRegistry;
 import net.ornithemc.osl.networking.api.PacketBuffer;
 import net.ornithemc.osl.networking.api.server.ServerPacketListener;
 import net.ornithemc.osl.networking.api.server.ServerPlayNetworking;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.Identifiers;
@@ -38,7 +33,10 @@ import snownee.jade.impl.BlockAccessorImpl;
 import snownee.jade.impl.EntityAccessorImpl;
 import snownee.jade.impl.WailaClientRegistration;
 import snownee.jade.impl.WailaCommonRegistration;
-import snownee.jade.impl.config.PluginConfig;
+
+import java.io.File;
+import java.util.Set;
+import java.util.UUID;
 
 public final class CommonProxy implements ModInitializer {
 
@@ -58,9 +56,9 @@ public final class CommonProxy implements ModInitializer {
 	public static boolean isShearable(BlockState state) {
 		net.minecraft.block.Block block = state.getBlock();
 		return block == net.minecraft.block.Blocks.LEAVES || block == net.minecraft.block.Blocks.LEAVES2 ||
-				block == net.minecraft.block.Blocks.WEB || block == net.minecraft.block.Blocks.VINE ||
-				block == net.minecraft.block.Blocks.TALLGRASS || block == net.minecraft.block.Blocks.DEADBUSH ||
-				block == net.minecraft.block.Blocks.TRIPWIRE || block == net.minecraft.block.Blocks.WOOL;
+			block == net.minecraft.block.Blocks.WEB || block == net.minecraft.block.Blocks.VINE ||
+			block == net.minecraft.block.Blocks.TALLGRASS || block == net.minecraft.block.Blocks.DEADBUSH ||
+			block == net.minecraft.block.Blocks.TRIPWIRE || block == net.minecraft.block.Blocks.WOOL;
 	}
 
 	public static boolean isCorrectToolForDrops(BlockState state, net.minecraft.entity.living.player.PlayerEntity player) {
@@ -225,7 +223,7 @@ public final class CommonProxy implements ModInitializer {
 		ChannelRegistry.register(Networking.channel(Identifiers.PACKET_RECEIVE_DATA), true, false);
 		ChannelRegistry.register(Networking.channel(Identifiers.PACKET_SERVER_PING), true, false);
 		ChannelRegistry.register(Networking.channel(Identifiers.PACKET_SHOW_OVERLAY), true, false);
-		ServerPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_REQUEST_ENTITY), (ServerPacketListener.Buffer) (ctx, data) -> {
+		ServerPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_REQUEST_ENTITY), (ctx, data) -> {
 			EntityAccessorImpl.SyncData syncData = new EntityAccessorImpl.SyncData(data);
 			ctx.ensureOnMainThread();
 			EntityAccessorImpl.handleRequest(syncData, ctx.player(), task -> task.run(), tag -> {
@@ -234,7 +232,7 @@ public final class CommonProxy implements ModInitializer {
 				ServerPlayNetworking.send(ctx.player(), Networking.channel(Identifiers.PACKET_RECEIVE_DATA), buf);
 			});
 		});
-		ServerPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_REQUEST_TILE), (ServerPacketListener.Buffer) (ctx, data) -> {
+		ServerPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_REQUEST_TILE), (ctx, data) -> {
 			BlockAccessorImpl.SyncData syncData = new BlockAccessorImpl.SyncData(data);
 			ctx.ensureOnMainThread();
 			BlockAccessorImpl.handleRequest(syncData, ctx.player(), task -> task.run(), tag -> {

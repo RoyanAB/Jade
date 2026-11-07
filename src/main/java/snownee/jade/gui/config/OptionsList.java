@@ -1,20 +1,8 @@
 package snownee.jade.gui.config;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
 import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 import it.unimi.dsi.fastutil.floats.FloatUnaryOperator;
 import net.minecraft.client.Minecraft;
@@ -22,13 +10,17 @@ import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ListWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.vertex.BufferBuilder;
+import net.minecraft.client.render.vertex.DefaultVertexFormat;
+import net.minecraft.client.render.vertex.Tesselator;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
-
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.gui.BaseOptionsScreen;
 import snownee.jade.gui.PreviewOptionsScreen;
 import snownee.jade.gui.config.value.CycleOptionValue;
@@ -38,6 +30,14 @@ import snownee.jade.gui.config.value.SliderOptionValue;
 import snownee.jade.gui.config.widget.JadeWidget;
 import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.util.ClientProxy;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 public class OptionsList extends ListWidget {
 
@@ -209,8 +209,8 @@ public class OptionsList extends ListWidget {
 			widgetInteracting = false;
 		}
 		if (visible) {
-			net.minecraft.client.render.platform.GlStateManager.disableLighting();
-			net.minecraft.client.render.platform.GlStateManager.disableFog();
+			GlStateManager.disableLighting();
+			GlStateManager.disableFog();
 			int rowLeft = getRowLeft();
 			int rowTop = minY + 4 - (int) scrollAmount;
 			DisplayHelper.pushScissor(minX, minY, maxX - minX, maxY - minY);
@@ -235,10 +235,10 @@ public class OptionsList extends ListWidget {
 			int top = owner.height - 32;
 			Minecraft mc = Minecraft.getInstance();
 			mc.getTextureManager().bind(GuiElement.BACKGROUND_LOCATION);
-			net.minecraft.client.render.platform.GlStateManager.color4f(0.35F, 0.35F, 0.35F, 1.0F);
-			net.minecraft.client.render.vertex.Tesselator tesselator = net.minecraft.client.render.vertex.Tesselator.getInstance();
-			net.minecraft.client.render.vertex.BufferBuilder buffer = tesselator.getBuffer();
-			buffer.begin(7, net.minecraft.client.render.vertex.DefaultVertexFormat.POSITION_TEX);
+			GlStateManager.color4f(0.35F, 0.35F, 0.35F, 1.0F);
+			Tesselator tesselator = Tesselator.getInstance();
+			BufferBuilder buffer = tesselator.getBuffer();
+			buffer.begin(7, DefaultVertexFormat.POSITION_TEX);
 			float f = 32.0F;
 			float u = owner.width / f;
 			float v = 1.0F;
@@ -265,21 +265,21 @@ public class OptionsList extends ListWidget {
 		float r2 = (endColor >> 16 & 255) / 255.0F;
 		float g2 = (endColor >> 8 & 255) / 255.0F;
 		float b2 = (endColor & 255) / 255.0F;
-		net.minecraft.client.render.platform.GlStateManager.disableTexture();
-		net.minecraft.client.render.platform.GlStateManager.enableBlend();
-		net.minecraft.client.render.platform.GlStateManager.blendFunc(net.minecraft.client.render.platform.GlStateManager.SourceFactor.SRC_ALPHA, net.minecraft.client.render.platform.GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-		net.minecraft.client.render.platform.GlStateManager.shadeModel(7425);
-		net.minecraft.client.render.vertex.Tesselator tesselator = net.minecraft.client.render.vertex.Tesselator.getInstance();
-		net.minecraft.client.render.vertex.BufferBuilder buffer = tesselator.getBuffer();
-		buffer.begin(7, net.minecraft.client.render.vertex.DefaultVertexFormat.POSITION_COLOR);
+		GlStateManager.disableTexture();
+		GlStateManager.enableBlend();
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		GlStateManager.shadeModel(7425);
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder buffer = tesselator.getBuffer();
+		buffer.begin(7, DefaultVertexFormat.POSITION_COLOR);
 		buffer.vertex(left + width, top, 0.0).color(r1, g1, b1, a1).nextVertex();
 		buffer.vertex(left, top, 0.0).color(r1, g1, b1, a1).nextVertex();
 		buffer.vertex(left, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
 		buffer.vertex(left + width, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
 		tesselator.end();
-		net.minecraft.client.render.platform.GlStateManager.shadeModel(7424);
-		net.minecraft.client.render.platform.GlStateManager.disableBlend();
-		net.minecraft.client.render.platform.GlStateManager.enableTexture();
+		GlStateManager.shadeModel(7424);
+		GlStateManager.disableBlend();
+		GlStateManager.enableTexture();
 	}
 
 	public void syncScrollTarget() {
@@ -556,7 +556,7 @@ public class OptionsList extends ListWidget {
 		@Nullable
 		protected String description;
 		private Entry parent;
-		private List<Entry> children = Lists.newArrayList();
+		private final List<Entry> children = Lists.newArrayList();
 
 		public Entry() {
 			client = Minecraft.getInstance();

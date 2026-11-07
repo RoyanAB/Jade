@@ -1,11 +1,7 @@
 package snownee.jade.util;
 
-import java.util.Map;
-import java.util.Optional;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
@@ -13,6 +9,9 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Identifier;
 import snownee.jade.api.callback.JadeItemModNameCallback;
 import snownee.jade.impl.WailaClientRegistration;
+
+import java.util.Map;
+import java.util.Optional;
 
 public class ModIdentification {
 
@@ -61,7 +60,7 @@ public class ModIdentification {
 		if (entity instanceof ItemEntity) {
 			return getModName(((ItemEntity) entity).getItem());
 		}
-		Identifier id = net.minecraft.entity.Entities.REGISTRY.getKey((Class<? extends net.minecraft.entity.Entity>) entity.getClass());
+		Identifier id = net.minecraft.entity.Entities.REGISTRY.getKey(entity.getClass());
 		return id == null ? "minecraft" : getModName(id.getNamespace()).orElse(id.getNamespace());
 	}
 

@@ -1,8 +1,7 @@
 package snownee.jade.api.callback;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 @FunctionalInterface
 public interface JadeItemModNameCallback {

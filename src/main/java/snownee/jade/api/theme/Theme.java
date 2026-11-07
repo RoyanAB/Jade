@@ -1,8 +1,7 @@
 package snownee.jade.api.theme;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.resource.Identifier;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.ui.BoxStyle;
 import snownee.jade.api.ui.IBoxElement;

@@ -1,23 +1,7 @@
 package snownee.jade.impl.theme;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeMap;
-
-import org.jetbrains.annotations.NotNull;
-
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resource.Resource;
 import net.minecraft.client.resource.manager.ResourceManager;
@@ -26,6 +10,7 @@ import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.NotNull;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
 import snownee.jade.api.config.IWailaConfig;
@@ -38,6 +23,11 @@ import snownee.jade.api.ui.ColorPalette;
 import snownee.jade.impl.config.WailaConfig;
 import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.overlay.OverlayRenderer;
+
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 
 public class ThemeHelper implements IThemeHelper {
 	public static final ThemeHelper INSTANCE = new ThemeHelper();

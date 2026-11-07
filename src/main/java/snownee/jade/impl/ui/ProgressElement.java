@@ -1,16 +1,11 @@
 package snownee.jade.impl.ui;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
-import snownee.jade.api.ui.BoxStyle;
-import snownee.jade.api.ui.Element;
-import snownee.jade.api.ui.IDisplayHelper;
-import snownee.jade.api.ui.IElement;
-import snownee.jade.api.ui.ProgressStyle;
+import org.jetbrains.annotations.Nullable;
+import snownee.jade.api.ui.*;
 import snownee.jade.overlay.ProgressTracker.TrackInfo;
 import snownee.jade.overlay.WailaTickHandler;
 
@@ -21,7 +16,7 @@ public class ProgressElement extends Element implements StyledElement {
 	private final ProgressStyle style;
 	private final BoxStyle boxStyle;
 	private TrackInfo track;
-	private boolean canDecrease;
+	private final boolean canDecrease;
 
 	public ProgressElement(float progress, @Nullable Text text, ProgressStyle style, BoxStyle boxStyle, boolean canDecrease) {
 		this.progress = MathHelper.clamp(progress, 0, 1);

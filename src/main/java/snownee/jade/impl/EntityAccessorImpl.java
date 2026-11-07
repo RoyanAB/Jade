@@ -1,11 +1,5 @@
 package snownee.jade.impl;
 
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import com.google.common.base.Suppliers;
-
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -21,6 +15,10 @@ import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.IServerDataProvider;
 import snownee.jade.util.CommonProxy;
 import snownee.jade.util.WailaExceptionHandler;
+
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Class to get information of entity target and context.
@@ -47,13 +45,13 @@ public class EntityAccessorImpl extends AccessorImpl<HitResult> implements Entit
 				return;
 
 			EntityAccessor accessor = new Builder()
-					.level(player.world)
-					.player(player)
-					.serverConnected(true)
-					.showDetails(data.showDetails)
-					.entity(() -> target)
-					.hit(() -> new HitResult(target, data.hitVec))
-					.build();
+				.level(player.world)
+				.player(player)
+				.serverConnected(true)
+				.showDetails(data.showDetails)
+				.entity(() -> target)
+				.hit(() -> new HitResult(target, data.hitVec))
+				.build();
 
 			NbtCompound tag = new NbtCompound();
 			for (IServerDataProvider<EntityAccessor> provider : providers) {

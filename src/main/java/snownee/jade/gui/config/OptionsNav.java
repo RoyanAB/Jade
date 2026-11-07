@@ -1,14 +1,17 @@
 package snownee.jade.gui.config;
 
-import java.util.List;
-
 import com.google.common.collect.Lists;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.widget.ListWidget;
+import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.vertex.BufferBuilder;
+import net.minecraft.client.render.vertex.DefaultVertexFormat;
+import net.minecraft.client.render.vertex.Tesselator;
 import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.util.SmoothChasingValue;
+
+import java.util.List;
 
 public class OptionsNav extends ListWidget {
 
@@ -87,13 +90,13 @@ public class OptionsNav extends ListWidget {
 		this.mouseY = mouseY;
 		capScrolling();
 		Minecraft mc = Minecraft.getInstance();
-		net.minecraft.client.render.platform.GlStateManager.disableLighting();
-		net.minecraft.client.render.platform.GlStateManager.disableFog();
+		GlStateManager.disableLighting();
+		GlStateManager.disableFog();
 		mc.getTextureManager().bind(GuiElement.BACKGROUND_LOCATION);
-		net.minecraft.client.render.platform.GlStateManager.color4f(0.125F, 0.125F, 0.125F, 1.0F);
-		net.minecraft.client.render.vertex.Tesselator tesselator = net.minecraft.client.render.vertex.Tesselator.getInstance();
-		net.minecraft.client.render.vertex.BufferBuilder buffer = tesselator.getBuffer();
-		buffer.begin(7, net.minecraft.client.render.vertex.DefaultVertexFormat.POSITION_TEX);
+		GlStateManager.color4f(0.125F, 0.125F, 0.125F, 1.0F);
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder buffer = tesselator.getBuffer();
+		buffer.begin(7, DefaultVertexFormat.POSITION_TEX);
 		float f = 32.0F;
 		float u = maxX / f;
 		float v = (maxY + (int) scrollAmount) / f;

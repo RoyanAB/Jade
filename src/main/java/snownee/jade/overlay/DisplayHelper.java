@@ -1,12 +1,5 @@
 package snownee.jade.overlay;
 
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.text.Format;
-import java.text.NumberFormat;
-
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.vertex.BufferBuilder;
@@ -17,15 +10,21 @@ import net.minecraft.resource.Identifier;
 import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.config.IWailaConfig.IConfigOverlay;
-import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.ui.Color;
 import snownee.jade.api.ui.IDisplayHelper;
+
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.Format;
+import java.text.NumberFormat;
 
 public class DisplayHelper implements IDisplayHelper {
 
 	public static final DisplayHelper INSTANCE = new DisplayHelper();
+
 	public static int guiWidth() {
 		return new net.minecraft.client.render.Window(net.minecraft.client.Minecraft.getInstance()).getWidth();
 	}

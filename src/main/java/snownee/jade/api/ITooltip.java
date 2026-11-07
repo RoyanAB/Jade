@@ -1,14 +1,14 @@
 package snownee.jade.api;
 
-import java.util.List;
-import java.util.function.UnaryOperator;
-
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.Text;
 import snownee.jade.api.ui.Direction2D;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.IElement.Align;
 import snownee.jade.api.ui.IElementHelper;
+
+import java.util.List;
+import java.util.function.UnaryOperator;
 
 /**
  * Tooltip that you can append text and other render-able stuffs to.

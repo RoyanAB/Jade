@@ -1,9 +1,9 @@
 package snownee.jade.gui.config.value;
 
+import snownee.jade.gui.config.widget.JadeTextField;
+
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
-import snownee.jade.gui.config.widget.JadeTextField;
 
 public class InputOptionValue<T> extends OptionValue<T> {
 

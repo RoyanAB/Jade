@@ -1,5 +1,15 @@
 package snownee.jade.util;
 
+import com.google.common.collect.Sets;
+import net.minecraft.text.Formatting;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.jetbrains.annotations.Nullable;
+import snownee.jade.Jade;
+import snownee.jade.api.IJadeProvider;
+import snownee.jade.api.ITooltip;
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -8,18 +18,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Set;
-
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.jetbrains.annotations.Nullable;
-
-import com.google.common.collect.Sets;
-
-import net.minecraft.text.Formatting;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
-import snownee.jade.Jade;
-import snownee.jade.api.IJadeProvider;
-import snownee.jade.api.ITooltip;
 
 public class WailaExceptionHandler {
 

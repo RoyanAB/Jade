@@ -1,22 +1,7 @@
 package snownee.jade.addon.vanilla;
 
-import java.util.Arrays;
-import java.util.List;
-
-import net.minecraft.block.Block;
-import net.minecraft.block.BrewingStandBlock;
-import net.minecraft.block.CommandBlock;
-import net.minecraft.block.FurnaceBlock;
-import net.minecraft.block.JukeboxBlock;
-import net.minecraft.block.MobSpawnerBlock;
-import net.minecraft.block.NoteBlock;
-import net.minecraft.block.SkullBlock;
-import net.minecraft.block.TntBlock;
-import net.minecraft.block.entity.BrewingStandBlockEntity;
-import net.minecraft.block.entity.CommandBlockBlockEntity;
-import net.minecraft.block.entity.ComparatorBlockEntity;
-import net.minecraft.block.entity.FurnaceBlockEntity;
-import net.minecraft.block.entity.HopperBlockEntity;
+import net.minecraft.block.*;
+import net.minecraft.block.entity.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.ItemEntity;
@@ -32,11 +17,10 @@ import net.minecraft.entity.living.mob.passive.animal.HorseBaseEntity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import snownee.jade.addon.harvest.HarvestToolProvider;
-import snownee.jade.api.IWailaClientRegistration;
-import snownee.jade.api.IWailaCommonRegistration;
-import snownee.jade.api.IWailaPlugin;
-import snownee.jade.api.Identifiers;
-import snownee.jade.api.WailaPlugin;
+import snownee.jade.api.*;
+
+import java.util.Arrays;
+import java.util.List;
 
 @WailaPlugin
 public class VanillaPlugin implements IWailaPlugin {

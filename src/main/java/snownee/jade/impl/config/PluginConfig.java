@@ -1,25 +1,5 @@
 package snownee.jade.impl.config;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.ToIntFunction;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
@@ -29,11 +9,12 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
-
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import snownee.jade.Jade;
 import snownee.jade.api.IToggleableProvider;
 import snownee.jade.api.config.IPluginConfig;
@@ -43,6 +24,15 @@ import snownee.jade.impl.config.entry.ConfigEntry;
 import snownee.jade.util.CommonProxy;
 import snownee.jade.util.JsonConfig;
 import snownee.jade.util.ModIdentification;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.ToIntFunction;
+import java.util.stream.Collectors;
 
 public class PluginConfig implements IPluginConfig {
 
@@ -97,10 +87,10 @@ public class PluginConfig implements IPluginConfig {
 			return (Boolean) getEntry(key).getValue();
 		} else {
 			return Optional.ofNullable(serverConfigs)
-					.map($ -> $.getAsJsonObject(key.getNamespace()))
-					.map($ -> $.get(key.getPath()))
-					.map(JsonElement::getAsBoolean)
-					.orElse(false);
+				.map($ -> $.getAsJsonObject(key.getNamespace()))
+				.map($ -> $.get(key.getPath()))
+				.map(JsonElement::getAsBoolean)
+				.orElse(false);
 		}
 	}
 

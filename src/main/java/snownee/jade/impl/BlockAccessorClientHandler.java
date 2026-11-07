@@ -1,18 +1,11 @@
 package snownee.jade.impl;
 
-import java.util.List;
-import java.util.function.Function;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import snownee.jade.api.AccessorClientHandler;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IJadeProvider;
-import snownee.jade.api.ITooltip;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.impl.config.PluginConfig;
@@ -21,6 +14,9 @@ import snownee.jade.impl.ui.ItemStackElement;
 import snownee.jade.overlay.RayTracing;
 import snownee.jade.util.ClientProxy;
 import snownee.jade.util.WailaExceptionHandler;
+
+import java.util.List;
+import java.util.function.Function;
 
 public class BlockAccessorClientHandler implements AccessorClientHandler<BlockAccessor> {
 

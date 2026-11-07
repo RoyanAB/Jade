@@ -1,8 +1,8 @@
 package snownee.jade.overlay;
 
-import net.minecraft.block.state.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.state.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
@@ -18,7 +18,6 @@ import snownee.jade.api.callback.JadeTooltipCollectedCallback;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.config.IWailaConfig.DisplayMode;
 import snownee.jade.api.config.IWailaConfig.IConfigGeneral;
-import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.theme.Theme;
 import snownee.jade.gui.BaseOptionsScreen;
 import snownee.jade.impl.ObjectDataCenter;
@@ -82,23 +81,23 @@ public class WailaTickHandler {
 			BlockState state = RayTracing.wrapBlock(world, target);
 			BlockEntity tileEntity = world.getBlockEntity(target.getPos());
 			accessor = WailaClientRegistration.instance().blockAccessor()
-					.blockState(state)
-					.blockEntity(tileEntity)
-					.hit(target)
-					.requireVerification()
-					.build();
+				.blockState(state)
+				.blockEntity(tileEntity)
+				.hit(target)
+				.requireVerification()
+				.build();
 		} else if (target.type == HitResult.Type.ENTITY && target.entity != null) {
 			accessor = WailaClientRegistration.instance().entityAccessor()
-					.hit(target)
-					.entity(target.entity)
-					.requireVerification()
-					.build();
+				.hit(target)
+				.entity(target.entity)
+				.requireVerification()
+				.build();
 		} else if (client.screen instanceof BaseOptionsScreen) {
 			BlockPos pos = new BlockPos(entity.x, entity.y, entity.z);
 			accessor = WailaClientRegistration.instance().blockAccessor()
-					.blockState(Blocks.GRASS.defaultState())
-					.hit(new HitResult(new net.minecraft.util.math.Vec3d(entity.x, entity.y + entity.getEyeHeight(), entity.z), Direction.UP, pos))
-					.build();
+				.blockState(Blocks.GRASS.defaultState())
+				.hit(new HitResult(new net.minecraft.util.math.Vec3d(entity.x, entity.y + entity.getEyeHeight(), entity.z), Direction.UP, pos))
+				.build();
 		}
 
 		Accessor<?> originalAccessor = accessor;

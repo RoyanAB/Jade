@@ -1,7 +1,5 @@
 package snownee.jade.addon.debug;
 
-import java.util.Collection;
-
 import net.minecraft.block.state.BlockState;
 import net.minecraft.block.state.property.BooleanProperty;
 import net.minecraft.block.state.property.Property;
@@ -12,11 +10,12 @@ import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
-import snownee.jade.api.TooltipPosition;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.ui.BoxStyle;
 import snownee.jade.api.ui.IElementHelper;
+
+import java.util.Collection;
 
 public enum BlockStatesProvider implements IBlockComponentProvider {
 

@@ -1,24 +1,17 @@
 package snownee.jade.impl;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.*;
+import net.minecraft.resource.Identifier;
+import snownee.jade.Jade;
+import snownee.jade.api.IJadeProvider;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-
-import net.minecraft.resource.Identifier;
-import snownee.jade.Jade;
-import snownee.jade.api.IJadeProvider;
 
 public class HierarchyLookup<T extends IJadeProvider> {
 

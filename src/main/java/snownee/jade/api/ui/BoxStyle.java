@@ -1,14 +1,10 @@
 package snownee.jade.api.ui;
 
-import java.util.function.Function;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
 import net.minecraft.resource.Identifier;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.impl.ui.StyledElement;

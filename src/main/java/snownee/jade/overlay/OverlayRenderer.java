@@ -1,17 +1,15 @@
 package snownee.jade.overlay;
 
-import org.apache.commons.lang3.mutable.MutableObject;
-import org.lwjgl.input.Keyboard;
-
+import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.block.Blocks;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.lwjgl.input.Keyboard;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
 import snownee.jade.api.Identifiers;
-import snownee.jade.api.callback.JadeAfterRenderCallback;
 import snownee.jade.api.callback.JadeBeforeRenderCallback;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.config.IWailaConfig.BossBarOverlapMode;
@@ -56,11 +54,7 @@ public class OverlayRenderer {
 			return false;
 
 		BossBarOverlapMode mode = Jade.CONFIG.get().getGeneral().getBossBarOverlapMode();
-		if (mode == BossBarOverlapMode.HIDE_TOOLTIP && ClientProxy.getBossBarRect() != null) {
-			return false;
-		}
-
-		return true;
+		return mode != BossBarOverlapMode.HIDE_TOOLTIP || ClientProxy.getBossBarRect() == null;
 	}
 
 	public static boolean shouldShowImmediately(BoxElement box) {
@@ -96,10 +90,7 @@ public class OverlayRenderer {
 		if (mc.options.debugEnabled && general.shouldHideFromDebug())
 			return false;
 
-		if (mc.gui.getPlayerTabOverlay() instanceof snownee.jade.mixin.PlayerTabOverlayAccess && ((snownee.jade.mixin.PlayerTabOverlayAccess) mc.gui.getPlayerTabOverlay()).isVisible() && general.shouldHideFromTabList())
-			return false;
-
-		return true;
+		return !(mc.gui.getPlayerTabOverlay() instanceof snownee.jade.mixin.PlayerTabOverlayAccess) || !((snownee.jade.mixin.PlayerTabOverlayAccess) mc.gui.getPlayerTabOverlay()).isVisible() || !general.shouldHideFromTabList();
 	}
 
 	public static void renderOverlay() {

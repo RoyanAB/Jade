@@ -1,7 +1,5 @@
 package snownee.jade.addon.vanilla;
 
-import java.util.Collection;
-
 import net.minecraft.entity.living.LivingEntity;
 import net.minecraft.entity.living.effect.StatusEffectInstance;
 import net.minecraft.nbt.NbtCompound;
@@ -9,15 +7,13 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IEntityComponentProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.ui.BoxStyle;
 import snownee.jade.api.ui.IElementHelper;
+
+import java.util.Collection;
 
 public enum StatusEffectsProvider implements IEntityComponentProvider, IServerDataProvider<EntityAccessor> {
 
@@ -53,7 +49,7 @@ public enum StatusEffectsProvider implements IEntityComponentProvider, IServerDa
 				duration = String.format("%d:%02d", seconds / 60, seconds % 60);
 			}
 			Text s = new LiteralText(net.minecraft.client.resource.language.I18n.translate("jade.potion",
-					getEffectName(effect).getFormattedString(), duration));
+				getEffectName(effect).getFormattedString(), duration));
 			box.add(effect.getEffect().isHarmful() ? IThemeHelper.get().danger(s) : IThemeHelper.get().success(s));
 		}
 		tooltip.add(helper.box(box, BoxStyle.getNestedBox()));

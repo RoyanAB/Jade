@@ -1,21 +1,16 @@
 package snownee.jade.impl;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.resource.Identifier;
 import snownee.jade.Jade;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IJadeProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.IWailaCommonRegistration;
+import snownee.jade.api.*;
 import snownee.jade.impl.config.PluginConfig;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class WailaCommonRegistration implements IWailaCommonRegistration {
 
@@ -31,9 +26,9 @@ public class WailaCommonRegistration implements IWailaCommonRegistration {
 		priorities = new PriorityStore<>(IJadeProvider::getDefaultPriority, IJadeProvider::getUid);
 		priorities.setSortingFunction((store, allKeys) -> {
 			List<Identifier> keys = allKeys.stream()
-					.filter(PluginConfig::isPrimaryKey)
-					.sorted(Comparator.comparingInt(store::byKey))
-					.collect(Collectors.toCollection(ArrayList::new));
+				.filter(PluginConfig::isPrimaryKey)
+				.sorted(Comparator.comparingInt(store::byKey))
+				.collect(Collectors.toCollection(ArrayList::new));
 			allKeys.stream().filter($ -> !PluginConfig.isPrimaryKey($)).forEach($ -> {
 				int index = keys.indexOf(PluginConfig.getPrimaryKey($));
 				keys.add(index + 1, $);

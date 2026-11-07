@@ -1,10 +1,9 @@
 package snownee.jade.api.ui;
 
-import java.util.Objects;
-
+import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.text.Text;
+import java.util.Objects;
 
 public abstract class ProgressStyle {
 

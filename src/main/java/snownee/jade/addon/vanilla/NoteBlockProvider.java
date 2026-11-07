@@ -2,7 +2,6 @@ package snownee.jade.addon.vanilla;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.NoteBlock;
 import net.minecraft.block.entity.NoteBlockBlockEntity;
 import net.minecraft.block.material.Material;
 import net.minecraft.resource.Identifier;
@@ -36,7 +35,7 @@ public enum NoteBlockProvider implements IBlockComponentProvider {
 		int instrument = getInstrument(world, pos);
 		String key = "jade.instrument." + INSTRUMENTS[instrument];
 		String name = net.minecraft.client.resource.language.I18n.hasTranslation(key)
-				? net.minecraft.client.resource.language.I18n.translate(key) : INSTRUMENTS[instrument];
+			? net.minecraft.client.resource.language.I18n.translate(key) : INSTRUMENTS[instrument];
 		String pitch = PITCH[note % PITCH.length];
 		Formatting octave = (snownee.jade.api.theme.IThemeHelper.get().isLightColorScheme() ? OCTAVE_LIGHT : OCTAVE)[note / PITCH.length];
 		tooltip.add(new LiteralText(name + " " + octave + pitch));

@@ -1,29 +1,23 @@
 package snownee.jade.util;
 
-import java.util.Optional;
-import java.util.function.Predicate;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
-
-import net.ornithemc.osl.entrypoints.api.client.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.GameMode;
+import net.ornithemc.osl.entrypoints.api.client.ClientModInitializer;
 import net.ornithemc.osl.keybinds.api.KeyBindingEvents;
 import net.ornithemc.osl.lifecycle.api.client.MinecraftClientEvents;
 import net.ornithemc.osl.networking.api.PacketBuffer;
 import net.ornithemc.osl.networking.api.client.ClientPacketListener;
 import net.ornithemc.osl.networking.api.client.ClientPlayNetworking;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
 import snownee.jade.api.BlockAccessor;
@@ -40,6 +34,8 @@ import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.overlay.OverlayRenderer;
 import snownee.jade.overlay.WailaTickHandler;
 
+import java.util.Optional;
+
 public final class ClientProxy implements ClientModInitializer {
 
 	public static boolean hasJEI = false;
@@ -53,9 +49,9 @@ public final class ClientProxy implements ClientModInitializer {
 			return Optional.of(I18n.translate(modMenuKey));
 		}
 		return FabricLoader.getInstance().getModContainer(namespace)
-				.map(ModContainer::getMetadata)
-				.map(ModMetadata::getName)
-				.filter(name -> !Strings.isNullOrEmpty(name));
+			.map(ModContainer::getMetadata)
+			.map(ModMetadata::getName)
+			.filter(name -> !Strings.isNullOrEmpty(name));
 	}
 
 	public static void onRenderTick() {
@@ -145,12 +141,12 @@ public final class ClientProxy implements ClientModInitializer {
 		});
 		MinecraftClientEvents.TICK_END.register(ClientProxy::onClientTick);
 
-		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_RECEIVE_DATA), (ClientPacketListener.Buffer) (ctx, buf) -> {
+		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_RECEIVE_DATA), (ctx, buf) -> {
 			NbtCompound nbt = buf.readNbtCompound();
 			ctx.ensureOnMainThread();
 			ObjectDataCenter.setServerData(nbt);
 		});
-		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_SERVER_PING), (ClientPacketListener.Buffer) (ctx, buf) -> {
+		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_SERVER_PING), (ctx, buf) -> {
 			String s = buf.readString(32767);
 			JsonObject json;
 			try {
@@ -167,7 +163,7 @@ public final class ClientProxy implements ClientModInitializer {
 				PluginConfig.INSTANCE.applyServerConfigs(json0);
 			Jade.LOGGER.info("Received config from the server: {}", s);
 		});
-		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_SHOW_OVERLAY), (ClientPacketListener.Buffer) (ctx, buf) -> {
+		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_SHOW_OVERLAY), (ctx, buf) -> {
 			boolean show = buf.readBoolean();
 			Jade.LOGGER.info("Received request from the server to {} overlay", show ? "show" : "hide");
 			ctx.ensureOnMainThread();

@@ -1,7 +1,6 @@
 package snownee.jade.addon.vanilla;
 
 import com.mojang.authlib.GameProfile;
-
 import net.minecraft.block.entity.SkullBlockEntity;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;

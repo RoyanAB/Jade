@@ -1,13 +1,12 @@
 package snownee.jade.mixin;
 
+import net.minecraft.entity.living.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.TooltipFlag;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-
-import net.minecraft.entity.living.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.TooltipFlag;
 import snownee.jade.JadeClient;
 
 @Mixin(ItemStack.class)

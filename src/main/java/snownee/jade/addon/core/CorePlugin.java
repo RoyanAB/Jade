@@ -1,23 +1,18 @@
 package snownee.jade.addon.core;
 
-import java.util.Arrays;
-
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.resource.Identifier;
 import snownee.jade.Jade;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IWailaClientRegistration;
-import snownee.jade.api.IWailaCommonRegistration;
-import snownee.jade.api.IWailaPlugin;
-import snownee.jade.api.Identifiers;
-import snownee.jade.api.WailaPlugin;
+import snownee.jade.api.*;
 import snownee.jade.api.config.TargetBlocklist;
 import snownee.jade.impl.BlockAccessorClientHandler;
 import snownee.jade.impl.EntityAccessorClientHandler;
 import snownee.jade.util.JsonConfig;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 @WailaPlugin
 public class CorePlugin implements IWailaPlugin {
@@ -66,7 +61,7 @@ public class CorePlugin implements IWailaPlugin {
 	public static JsonConfig<TargetBlocklist> createBlockBlocklist() {
 		return new JsonConfig<>(Jade.MODID + "/hide-blocks", TargetBlocklist.class, null, () -> {
 			TargetBlocklist blocklist = new TargetBlocklist();
-			blocklist.values = Arrays.asList("minecraft:barrier");
+			blocklist.values = Collections.singletonList("minecraft:barrier");
 			return blocklist;
 		});
 	}

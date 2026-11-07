@@ -1,7 +1,5 @@
 package snownee.jade.addon.vanilla;
 
-import java.util.Locale;
-
 import net.minecraft.entity.decoration.PaintingEntity;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
@@ -11,6 +9,8 @@ import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
+
+import java.util.Locale;
 
 public enum PaintingProvider implements IEntityComponentProvider {
 

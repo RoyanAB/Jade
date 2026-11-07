@@ -1,10 +1,9 @@
 package snownee.jade.impl.ui;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.ui.Element;
 import snownee.jade.overlay.DisplayHelper;
 

@@ -1,14 +1,13 @@
 package snownee.jade.api;
 
-import java.util.function.Supplier;
-
-import org.jetbrains.annotations.NotNull;
-
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.world.World;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.HitResult;
+import net.minecraft.world.World;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Supplier;
 
 /**
  * A generic class to get basic information of target and context.

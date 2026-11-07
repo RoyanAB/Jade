@@ -1,23 +1,21 @@
 package snownee.jade.gui;
 
-import java.util.Objects;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.client.gui.widget.ButtonWidget;
 import snownee.jade.Jade;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.ui.Rect2i;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.gui.config.widget.CycleButtonWidget;
-import snownee.jade.gui.config.widget.JadeButton;
 import snownee.jade.overlay.OverlayRenderer;
 import snownee.jade.util.ClientProxy;
+
+import java.util.Objects;
 
 public abstract class PreviewOptionsScreen extends BaseOptionsScreen {
 

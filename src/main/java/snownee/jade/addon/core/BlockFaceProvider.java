@@ -1,8 +1,5 @@
 package snownee.jade.addon.core;
 
-import java.util.List;
-import java.util.Locale;
-
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
@@ -13,6 +10,9 @@ import snownee.jade.api.Identifiers;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.IElementHelper;
+
+import java.util.List;
+import java.util.Locale;
 
 public enum BlockFaceProvider implements IBlockComponentProvider {
 

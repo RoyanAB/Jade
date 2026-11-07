@@ -1,12 +1,12 @@
 package snownee.jade.gui.config.value;
 
+import net.minecraft.text.Text;
+import snownee.jade.gui.config.widget.CycleButtonWidget;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import net.minecraft.text.Text;
-import snownee.jade.gui.config.widget.CycleButtonWidget;
 
 public class CycleOptionValue<T> extends OptionValue<T> {
 

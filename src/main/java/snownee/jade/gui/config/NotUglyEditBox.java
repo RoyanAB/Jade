@@ -1,16 +1,15 @@
 package snownee.jade.gui.config;
 
-import java.util.function.Consumer;
-
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.TextRenderer;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.MathHelper;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.gui.config.widget.JadeWidget;
+
+import java.util.function.Consumer;
 
 public class NotUglyEditBox extends TextFieldWidget implements JadeWidget {
 

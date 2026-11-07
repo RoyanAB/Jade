@@ -1,14 +1,12 @@
 package snownee.jade.impl.ui;
 
 import com.google.common.base.Preconditions;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec2f;
 import snownee.jade.api.config.IWailaConfig.IConfigOverlay;
 import snownee.jade.api.ui.Color;
 import snownee.jade.api.ui.Direction2D;
-import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.ProgressStyle;
 import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.overlay.OverlayRenderer;

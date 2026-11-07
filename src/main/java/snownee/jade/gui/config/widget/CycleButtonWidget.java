@@ -1,12 +1,11 @@
 package snownee.jade.gui.config.widget;
 
+import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.text.Text;
 
 public class CycleButtonWidget<T> extends JadeButton {
 

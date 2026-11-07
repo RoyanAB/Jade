@@ -1,8 +1,5 @@
 package snownee.jade.addon.vanilla;
 
-import java.util.List;
-import java.util.Objects;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
@@ -16,6 +13,9 @@ import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.util.ModIdentification;
+
+import java.util.List;
+import java.util.Objects;
 
 public enum ItemTooltipProvider implements IEntityComponentProvider {
 

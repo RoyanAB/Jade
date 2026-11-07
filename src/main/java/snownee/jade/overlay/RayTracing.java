@@ -1,9 +1,6 @@
 package snownee.jade.overlay;
 
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.base.Predicate;
-
 import net.minecraft.block.Blocks;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.client.Minecraft;
@@ -15,6 +12,7 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.HitResult;
 import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.Accessor;
 import snownee.jade.api.config.IWailaConfig.FluidMode;

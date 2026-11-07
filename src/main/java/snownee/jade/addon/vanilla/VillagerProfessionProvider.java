@@ -23,7 +23,7 @@ public enum VillagerProfessionProvider implements IEntityComponentProvider {
 		String name = profession >= 0 && profession < PROFESSIONS.length ? PROFESSIONS[profession] : "farmer";
 		String key = "entity.Villager." + name;
 		Text text = new LiteralText(net.minecraft.client.resource.language.I18n.hasTranslation(key)
-				? net.minecraft.client.resource.language.I18n.translate(key) : name);
+			? net.minecraft.client.resource.language.I18n.translate(key) : name);
 		tooltip.add(text);
 	}
 
