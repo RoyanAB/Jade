@@ -177,6 +177,7 @@ public final class ClientProxy implements ClientModInitializer {
 
 		net.ornithemc.osl.resource.loader.api.client.ClientResourceLoaderEvents.END_RESOURCE_RELOAD.register((manager, context) -> {
 			ThemeHelper.INSTANCE.reload();
+			snownee.jade.addon.harvest.HarvestToolProvider.clearCache();
 		});
 	}
 }

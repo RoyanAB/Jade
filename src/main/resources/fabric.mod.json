@@ -29,7 +29,8 @@
 		],
 		"jade": [
 			"snownee.jade.addon.core.CorePlugin",
-			"snownee.jade.addon.debug.DebugPlugin"
+			"snownee.jade.addon.debug.DebugPlugin",
+			"snownee.jade.addon.vanilla.VanillaPlugin"
 		]
 	},
 	"mixins": [

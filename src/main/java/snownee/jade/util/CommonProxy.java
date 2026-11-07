@@ -56,7 +56,11 @@ public final class CommonProxy implements ModInitializer {
 	}
 
 	public static boolean isShearable(BlockState state) {
-		return state.getBlock() == net.minecraft.block.Blocks.LEAVES || state.getBlock() == net.minecraft.block.Blocks.LEAVES2 || state.getBlock() == net.minecraft.block.Blocks.WEB;
+		net.minecraft.block.Block block = state.getBlock();
+		return block == net.minecraft.block.Blocks.LEAVES || block == net.minecraft.block.Blocks.LEAVES2 ||
+				block == net.minecraft.block.Blocks.WEB || block == net.minecraft.block.Blocks.VINE ||
+				block == net.minecraft.block.Blocks.TALLGRASS || block == net.minecraft.block.Blocks.DEADBUSH ||
+				block == net.minecraft.block.Blocks.TRIPWIRE || block == net.minecraft.block.Blocks.WOOL;
 	}
 
 	public static boolean isCorrectToolForDrops(BlockState state, net.minecraft.entity.living.player.PlayerEntity player) {
