@@ -22,6 +22,7 @@ import net.ornithemc.osl.entrypoints.api.ModInitializer;
 import net.ornithemc.osl.lifecycle.api.server.MinecraftServerEvents;
 import net.ornithemc.osl.networking.api.ChannelRegistry;
 import net.ornithemc.osl.networking.api.PacketBuffer;
+import net.ornithemc.osl.networking.api.server.ServerConnectionEvents;
 import net.ornithemc.osl.networking.api.server.ServerPacketListener;
 import net.ornithemc.osl.networking.api.server.ServerPlayNetworking;
 import org.jetbrains.annotations.Nullable;
@@ -33,8 +34,10 @@ import snownee.jade.impl.BlockAccessorImpl;
 import snownee.jade.impl.EntityAccessorImpl;
 import snownee.jade.impl.WailaClientRegistration;
 import snownee.jade.impl.WailaCommonRegistration;
+import snownee.jade.impl.config.PluginConfig;
 
 import java.io.File;
+import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
@@ -224,8 +227,8 @@ public final class CommonProxy implements ModInitializer {
 		ChannelRegistry.register(Networking.channel(Identifiers.PACKET_SERVER_PING), true, false);
 		ChannelRegistry.register(Networking.channel(Identifiers.PACKET_SHOW_OVERLAY), true, false);
 		ServerPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_REQUEST_ENTITY), (ctx, data) -> {
-			EntityAccessorImpl.SyncData syncData = new EntityAccessorImpl.SyncData(data);
 			ctx.ensureOnMainThread();
+			EntityAccessorImpl.SyncData syncData = new EntityAccessorImpl.SyncData(data);
 			EntityAccessorImpl.handleRequest(syncData, ctx.player(), task -> task.run(), tag -> {
 				PacketBuffer buf = Networking.buffer();
 				buf.writeNbtCompound(tag);
@@ -233,13 +236,27 @@ public final class CommonProxy implements ModInitializer {
 			});
 		});
 		ServerPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_REQUEST_TILE), (ctx, data) -> {
-			BlockAccessorImpl.SyncData syncData = new BlockAccessorImpl.SyncData(data);
 			ctx.ensureOnMainThread();
+			BlockAccessorImpl.SyncData syncData = new BlockAccessorImpl.SyncData(data);
 			BlockAccessorImpl.handleRequest(syncData, ctx.player(), task -> task.run(), tag -> {
 				PacketBuffer buf = Networking.buffer();
 				buf.writeNbtCompound(tag);
 				ServerPlayNetworking.send(ctx.player(), Networking.channel(Identifiers.PACKET_RECEIVE_DATA), buf);
 			});
+		});
+		ServerConnectionEvents.PLAY_READY.register(context -> {
+			net.minecraft.server.entity.living.player.ServerPlayerEntity player = context.player();
+			String configs = PluginConfig.INSTANCE.getServerConfigs();
+			if (!configs.isEmpty()) {
+				Jade.LOGGER.debug("Syncing config to {} ({})", player.getGameProfile().getName(), player.getGameProfile().getId());
+			}
+			Jade.LOGGER.debug("Sending Jade config to {} ({} chars, channelReady={})", player.getGameProfile().getName(), configs.length(), ServerPlayNetworking.isPlayReady(player, Networking.channel(Identifiers.PACKET_SERVER_PING)));
+			PacketBuffer buf = Networking.buffer();
+			buf.writeString(configs);
+			ServerPlayNetworking.sendNoCheck(player, Networking.channel(Identifiers.PACKET_SERVER_PING), buf);
+			if (context.server().isDedicated()) {
+				UsernameCache.setUsername(player.getUuid(), player.getGameProfile().getName());
+			}
 		});
 		UsernameCache.load();
 		MinecraftServerEvents.START.register(server -> {
@@ -249,12 +266,12 @@ public final class CommonProxy implements ModInitializer {
 		});
 	}
 
-	@SuppressWarnings("unused")
-	private static void sendShowOverlay(MinecraftServer server, Iterable<net.minecraft.server.entity.living.player.ServerPlayerEntity> players, boolean show) {
+	public static int showOrHideFromServer(Collection<net.minecraft.server.entity.living.player.ServerPlayerEntity> players, boolean show) {
 		for (net.minecraft.server.entity.living.player.ServerPlayerEntity player : players) {
 			PacketBuffer buf = Networking.buffer();
 			buf.writeBoolean(show);
 			ServerPlayNetworking.send(player, Networking.channel(Identifiers.PACKET_SHOW_OVERLAY), buf);
 		}
+		return players.size();
 	}
 }

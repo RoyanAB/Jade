@@ -74,6 +74,7 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 				.hit(data.hit)
 				.blockState(world.getBlockState(pos))
 				.blockEntity(tile)
+				.fakeBlock(data.fakeBlock)
 				.build();
 
 			NbtCompound tag = new NbtCompound();
@@ -271,14 +272,19 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 			showDetails = buf.readBoolean();
 			pos = buf.readBlockPos();
 			int face = buf.readByte();
-			hit = new HitResult(new Vec3d(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5), face < 0 || face > 5 ? Direction.UP : Direction.byId(face), pos);
+			Vec3d hitVec = new Vec3d(buf.readFloat(), buf.readFloat(), buf.readFloat());
+			hit = new HitResult(hitVec, face < 0 || face > 5 ? Direction.UP : Direction.byId(face), pos);
 			fakeBlock = buf.readItem();
 		}
 
 		public void write(PacketBuffer buf) {
 			buf.writeBoolean(showDetails);
 			buf.writeBlockPos(hit.getPos());
-			buf.writeByte(hit.face == null ? 0 : hit.face.ordinal());
+			buf.writeByte(hit.face == null ? 0 : hit.face.getId());
+			Vec3d hitVec = hit.facePos == null ? new Vec3d(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) : hit.facePos;
+			buf.writeFloat((float) hitVec.x);
+			buf.writeFloat((float) hitVec.y);
+			buf.writeFloat((float) hitVec.z);
 			buf.writeItem(fakeBlock);
 		}
 	}

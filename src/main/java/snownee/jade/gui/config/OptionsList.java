@@ -162,7 +162,7 @@ public class OptionsList extends ListWidget {
 		}
 		Entry entry = visibleEntries.get(index);
 		if (isEntrySelected(index) && isMouseInList(mouseY)) {
-			GuiElement.fill(minX, y - 2, maxX, y + height + 2, 0x33FFFFFF);
+			GuiElement.fill(minX, y - 2, maxX, y + entryHeight + 2, 0x33FFFFFF);
 		}
 		entry.render(index, y, x, getRowWidth(), entryHeight, mouseX, mouseY, tickDelta);
 	}

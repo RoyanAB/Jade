@@ -25,7 +25,7 @@ public class SpriteElement extends Element {
 	@Override
 	public void render(float x, float y, float maxX, float maxY) {
 		Vec2f size = getCachedSize();
-		IDisplayHelper.get().blitSprite(sprite, Math.round(x), Math.round(y), Math.round(size.x), Math.round(size.y));
+		IDisplayHelper.get().blitSprite(sprite, width, height, Math.round(x), Math.round(y), Math.round(size.x), Math.round(size.y));
 	}
 
 }

@@ -30,7 +30,7 @@ public interface IDisplayHelper {
 
 	Text stripColor(Text text);
 
-	void blitSprite(Identifier sprite, int x, int y, int width, int height);
+	void blitSprite(Identifier sprite, int spriteWidth, int spriteHeight, int x, int y, int width, int height);
 
 	void drawTexture(Identifier texture, float x, float y, float width, float height, float alpha);
 

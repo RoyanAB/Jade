@@ -16,6 +16,7 @@ import net.ornithemc.osl.keybinds.api.KeyBindingEvents;
 import net.ornithemc.osl.lifecycle.api.client.MinecraftClientEvents;
 import net.ornithemc.osl.networking.api.PacketBuffer;
 import net.ornithemc.osl.networking.api.client.ClientPacketListener;
+import net.ornithemc.osl.networking.api.client.ClientConnectionEvents;
 import net.ornithemc.osl.networking.api.client.ClientPlayNetworking;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
@@ -140,13 +141,15 @@ public final class ClientProxy implements ClientModInitializer {
 			ThemeHelper.INSTANCE.reload();
 		});
 		MinecraftClientEvents.TICK_END.register(ClientProxy::onClientTick);
+		ClientConnectionEvents.DISCONNECT.register(context -> ObjectDataCenter.serverConnected = false);
 
 		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_RECEIVE_DATA), (ctx, buf) -> {
-			NbtCompound nbt = buf.readNbtCompound();
 			ctx.ensureOnMainThread();
+			NbtCompound nbt = buf.readNbtCompound();
 			ObjectDataCenter.setServerData(nbt);
 		});
 		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_SERVER_PING), (ctx, buf) -> {
+			ctx.ensureOnMainThread();
 			String s = buf.readString(32767);
 			JsonObject json;
 			try {
@@ -156,7 +159,6 @@ public final class ClientProxy implements ClientModInitializer {
 				return;
 			}
 			final JsonObject json0 = json;
-			ctx.ensureOnMainThread();
 			ObjectDataCenter.serverConnected = true;
 			PluginConfig.INSTANCE.reload();
 			if (json0 != null && !json0.keySet().isEmpty())
@@ -164,9 +166,9 @@ public final class ClientProxy implements ClientModInitializer {
 			Jade.LOGGER.info("Received config from the server: {}", s);
 		});
 		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_SHOW_OVERLAY), (ctx, buf) -> {
+			ctx.ensureOnMainThread();
 			boolean show = buf.readBoolean();
 			Jade.LOGGER.info("Received request from the server to {} overlay", show ? "show" : "hide");
-			ctx.ensureOnMainThread();
 			Jade.CONFIG.get().getGeneral().setDisplayTooltip(show);
 			Jade.CONFIG.save();
 		});

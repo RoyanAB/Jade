@@ -234,8 +234,10 @@ public class DisplayHelper implements IDisplayHelper {
 	}
 
 	@Override
-	public void blitSprite(Identifier sprite, int x, int y, int width, int height) {
-		drawTexture(resolveSprite(sprite), x, y, width, height, opacity());
+	public void blitSprite(Identifier sprite, int spriteWidth, int spriteHeight, int x, int y, int width, int height) {
+		float u1 = spriteWidth <= 0 ? 1 : Math.min(1F, (float) width / spriteWidth);
+		float v1 = spriteHeight <= 0 ? 1 : Math.min(1F, (float) height / spriteHeight);
+		drawTextureRegion(resolveSprite(sprite), x, y, width, height, 0, 0, u1, v1, opacity());
 	}
 
 	public static Identifier resolveSprite(Identifier sprite) {
@@ -247,8 +249,12 @@ public class DisplayHelper implements IDisplayHelper {
 
 	@Override
 	public void drawTexture(Identifier texture, float x, float y, float width, float height, float alpha) {
+		drawTextureRegion(resolveSprite(texture), x, y, width, height, 0, 0, 1, 1, alpha);
+	}
+
+	private void drawTextureRegion(Identifier texture, float x, float y, float width, float height, float u1, float v1, float u2, float v2, float alpha) {
 		Minecraft mc = Minecraft.getInstance();
-		mc.getTextureManager().bind(resolveSprite(texture));
+		mc.getTextureManager().bind(texture);
 		GlStateManager.enableBlend();
 		GlStateManager.disableAlphaTest();
 		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
@@ -256,7 +262,6 @@ public class DisplayHelper implements IDisplayHelper {
 		Tesselator tesselator = Tesselator.getInstance();
 		BufferBuilder buffer = tesselator.getBuffer();
 		buffer.begin(7, DefaultVertexFormat.POSITION_TEX);
-		float u1 = 0, v1 = 0, u2 = 1, v2 = 1;
 		buffer.vertex(x, y + height, 0.0).texture(u1, v2).nextVertex();
 		buffer.vertex(x + width, y + height, 0.0).texture(u2, v2).nextVertex();
 		buffer.vertex(x + width, y, 0.0).texture(u2, v1).nextVertex();
