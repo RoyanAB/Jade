@@ -249,8 +249,37 @@ public class OptionsList extends ListWidget {
 			buffer.vertex(0.0, top, 0.0).texture(u, v).nextVertex();
 			tesselator.end();
 			net.minecraft.client.render.platform.GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			DisplayHelper.INSTANCE.drawGradientRect(0, top - 4, owner.width, 4, 0x00000000, 0xEE000000);
+			drawFooterGradient(0, top - 4, owner.width, 4, 0x00000000, 0xEE000000);
 		}
+	}
+
+	/**
+	 * Unlike {@link DisplayHelper#drawGradientRect}, this is independent of the overlay fade alpha.
+	 */
+	private void drawFooterGradient(int left, int top, int width, int height, int startColor, int endColor) {
+		float a1 = (startColor >> 24 & 255) / 255.0F;
+		float r1 = (startColor >> 16 & 255) / 255.0F;
+		float g1 = (startColor >> 8 & 255) / 255.0F;
+		float b1 = (startColor & 255) / 255.0F;
+		float a2 = (endColor >> 24 & 255) / 255.0F;
+		float r2 = (endColor >> 16 & 255) / 255.0F;
+		float g2 = (endColor >> 8 & 255) / 255.0F;
+		float b2 = (endColor & 255) / 255.0F;
+		net.minecraft.client.render.platform.GlStateManager.disableTexture();
+		net.minecraft.client.render.platform.GlStateManager.enableBlend();
+		net.minecraft.client.render.platform.GlStateManager.blendFunc(net.minecraft.client.render.platform.GlStateManager.SourceFactor.SRC_ALPHA, net.minecraft.client.render.platform.GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		net.minecraft.client.render.platform.GlStateManager.shadeModel(7425);
+		net.minecraft.client.render.vertex.Tesselator tesselator = net.minecraft.client.render.vertex.Tesselator.getInstance();
+		net.minecraft.client.render.vertex.BufferBuilder buffer = tesselator.getBuffer();
+		buffer.begin(7, net.minecraft.client.render.vertex.DefaultVertexFormat.POSITION_COLOR);
+		buffer.vertex(left + width, top, 0.0).color(r1, g1, b1, a1).nextVertex();
+		buffer.vertex(left, top, 0.0).color(r1, g1, b1, a1).nextVertex();
+		buffer.vertex(left, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
+		buffer.vertex(left + width, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
+		tesselator.end();
+		net.minecraft.client.render.platform.GlStateManager.shadeModel(7424);
+		net.minecraft.client.render.platform.GlStateManager.disableBlend();
+		net.minecraft.client.render.platform.GlStateManager.enableTexture();
 	}
 
 	public void syncScrollTarget() {
