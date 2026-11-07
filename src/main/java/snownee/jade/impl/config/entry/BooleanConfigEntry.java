@@ -1,0 +1,24 @@
+package snownee.jade.impl.config.entry;
+
+import net.minecraft.resource.Identifier;
+import snownee.jade.gui.config.OptionsList;
+import snownee.jade.gui.config.value.OptionValue;
+import snownee.jade.impl.config.PluginConfig;
+
+public class BooleanConfigEntry extends ConfigEntry<Boolean> {
+
+	public BooleanConfigEntry(Identifier id, boolean defaultValue) {
+		super(id, defaultValue);
+	}
+
+	@Override
+	public boolean isValidValue(Object value) {
+		return value.getClass() == Boolean.class;
+	}
+
+	@Override
+	public OptionValue<?> createUI(OptionsList options, String optionName) {
+		return options.choices(optionName, getValue(), b -> PluginConfig.INSTANCE.set(id, b));
+	}
+
+}

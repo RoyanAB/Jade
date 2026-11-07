@@ -1,0 +1,286 @@
+package snownee.jade.overlay;
+
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.text.Format;
+import java.text.NumberFormat;
+
+import org.jetbrains.annotations.Nullable;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.vertex.BufferBuilder;
+import net.minecraft.client.render.vertex.DefaultVertexFormat;
+import net.minecraft.client.render.vertex.Tesselator;
+import net.minecraft.item.ItemStack;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Formatting;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import snownee.jade.Jade;
+import snownee.jade.api.config.IWailaConfig.IConfigOverlay;
+import snownee.jade.api.theme.IThemeHelper;
+import snownee.jade.api.ui.Color;
+import snownee.jade.api.ui.IDisplayHelper;
+
+public class DisplayHelper implements IDisplayHelper {
+
+	public static final DisplayHelper INSTANCE = new DisplayHelper();
+	public static int guiWidth() {
+		return new net.minecraft.client.render.Window(net.minecraft.client.Minecraft.getInstance()).getWidth();
+	}
+
+	public static void pushScissor(int x, int y, int width, int height) {
+		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
+		int scale = new net.minecraft.client.render.Window(mc).getScale();
+		org.lwjgl.opengl.GL11.glEnable(org.lwjgl.opengl.GL11.GL_SCISSOR_TEST);
+		org.lwjgl.opengl.GL11.glScissor(x * scale, mc.height - (y + height) * scale, width * scale, height * scale);
+	}
+
+	public static void popScissor() {
+		org.lwjgl.opengl.GL11.glDisable(org.lwjgl.opengl.GL11.GL_SCISSOR_TEST);
+	}
+
+	public static int guiHeight() {
+		return new net.minecraft.client.render.Window(net.minecraft.client.Minecraft.getInstance()).getHeight();
+	}
+
+	public static DecimalFormat dfCommas = new DecimalFormat("0.##");
+	public static final DecimalFormat[] dfCommasArray = new DecimalFormat[]{dfCommas, new DecimalFormat("0.#"), new DecimalFormat("0")};
+
+	static {
+		for (DecimalFormat format : dfCommasArray) {
+			format.setRoundingMode(RoundingMode.DOWN);
+		}
+	}
+
+	public static void fill(float minX, float minY, float maxX, float maxY, int color) {
+		if (minX > maxX) {
+			float i = minX;
+			minX = maxX;
+			maxX = i;
+		}
+		if (minY > maxY) {
+			float j = minY;
+			minY = maxY;
+			maxY = j;
+		}
+
+		float a = (color >> 24 & 255) / 255.0F * OverlayRenderer.alpha;
+		float r = (color >> 16 & 255) / 255.0F;
+		float g = (color >> 8 & 255) / 255.0F;
+		float b = (color & 255) / 255.0F;
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder buffer = tesselator.getBuffer();
+		GlStateManager.enableBlend();
+		GlStateManager.disableTexture();
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		buffer.begin(7, DefaultVertexFormat.POSITION_COLOR);
+		buffer.vertex(minX, maxY, 0.0).color(r, g, b, a).nextVertex();
+		buffer.vertex(maxX, maxY, 0.0).color(r, g, b, a).nextVertex();
+		buffer.vertex(maxX, minY, 0.0).color(r, g, b, a).nextVertex();
+		buffer.vertex(minX, minY, 0.0).color(r, g, b, a).nextVertex();
+		tesselator.end();
+		GlStateManager.enableTexture();
+		GlStateManager.disableBlend();
+	}
+
+	@Override
+	public void drawItem(float x, float y, ItemStack stack, float scale, @Nullable String text) {
+		if (opacity() < 0.5F || stack.isEmpty()) {
+			return;
+		}
+		Minecraft mc = Minecraft.getInstance();
+		GlStateManager.pushMatrix();
+		GlStateManager.translatef(x, y, 0);
+		GlStateManager.scalef(scale, scale, scale);
+		GlStateManager.enableBlend();
+		GlStateManager.enableTexture();
+		mc.getItemRenderer().renderGuiItem(stack, 0, 0);
+		mc.getItemRenderer().renderGuiItemDecorations(mc.textRenderer, stack, 0, 0, text);
+		GlStateManager.disableBlend();
+		GlStateManager.popMatrix();
+	}
+
+	@Override
+	public void drawGradientRect(float left, float top, float width, float height, int startColor, int endColor) {
+		drawGradientRect(left, top, width, height, startColor, endColor, false);
+	}
+
+	public void drawGradientRect(float left, float top, float width, float height, int startColor, int endColor, boolean horizontal) {
+		if (startColor == -1 && endColor == -1) {
+			return;
+		}
+
+		float a1 = (startColor >> 24 & 255) / 255.0F * opacity();
+		float r1 = (startColor >> 16 & 255) / 255.0F;
+		float g1 = (startColor >> 8 & 255) / 255.0F;
+		float b1 = (startColor & 255) / 255.0F;
+		float a2 = (endColor >> 24 & 255) / 255.0F * opacity();
+		float r2 = (endColor >> 16 & 255) / 255.0F;
+		float g2 = (endColor >> 8 & 255) / 255.0F;
+		float b2 = (endColor & 255) / 255.0F;
+
+		GlStateManager.enableBlend();
+		GlStateManager.disableTexture();
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		GlStateManager.shadeModel(7425);
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder buffer = tesselator.getBuffer();
+		buffer.begin(7, DefaultVertexFormat.POSITION_COLOR);
+		if (horizontal) {
+			buffer.vertex(left + width, top, 0.0).color(r2, g2, b2, a2).nextVertex();
+			buffer.vertex(left, top, 0.0).color(r1, g1, b1, a1).nextVertex();
+			buffer.vertex(left, top + height, 0.0).color(r1, g1, b1, a1).nextVertex();
+			buffer.vertex(left + width, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
+		} else {
+			buffer.vertex(left + width, top, 0.0).color(r1, g1, b1, a1).nextVertex();
+			buffer.vertex(left, top, 0.0).color(r1, g1, b1, a1).nextVertex();
+			buffer.vertex(left, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
+			buffer.vertex(left + width, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
+		}
+		tesselator.end();
+		GlStateManager.shadeModel(7424);
+		GlStateManager.enableTexture();
+		GlStateManager.disableBlend();
+	}
+
+	@Override
+	public void drawBorder(float minX, float minY, float maxX, float maxY, float width, int color, boolean corner) {
+		fill(minX + width, minY, maxX - width, minY + width, color);
+		fill(minX + width, maxY - width, maxX - width, maxY, color);
+		if (corner) {
+			fill(minX, minY, minX + width, maxY, color);
+			fill(maxX - width, minY, maxX, maxY, color);
+		} else {
+			fill(minX, minY + width, minX + width, maxY - width, color);
+			fill(maxX - width, minY + width, maxX, maxY - width, color);
+		}
+	}
+
+	@Override
+	public String humanReadableNumber(double number, String unit, boolean milli) {
+		return humanReadableNumber(number, unit, milli, dfCommas);
+	}
+
+	@Override
+	public String humanReadableNumber(double number, String unit, boolean milli, @Nullable Format formatter) {
+		StringBuilder sb = new StringBuilder();
+		boolean n = number < 0;
+		if (n) {
+			number = -number;
+			sb.append('-');
+		}
+		if (milli && number >= 1000) {
+			number /= 1000;
+			milli = false;
+		}
+		int exp = 0;
+		if (number < 1000 || formatter == null && number < 10000) {
+			formatter = dfCommasArray[2];
+		} else {
+			exp = (int) Math.log10(number) / 3;
+			if (exp > 7)
+				exp = 7;
+			if (exp > 0)
+				number /= Math.pow(1000, exp);
+			if (formatter == null) {
+				if (number < 10) {
+					formatter = dfCommasArray[0];
+				} else if (number < 100) {
+					formatter = dfCommasArray[1];
+				} else {
+					formatter = dfCommasArray[2];
+				}
+			}
+		}
+		if (formatter instanceof NumberFormat) {
+			sb.append(((NumberFormat) formatter).format(number));
+		} else {
+			sb.append(formatter.format(new Object[]{number}));
+		}
+		if (exp == 0) {
+			if (milli && number != 0) {
+				sb.append('m');
+			}
+		} else {
+			char pre = "kMGTPEZ".charAt(exp - 1);
+			sb.append(pre);
+		}
+		sb.append(unit);
+		return sb.toString();
+	}
+
+	@Override
+	public void drawText(String text, float x, float y, int color) {
+		drawText(new LiteralText(text), x, y, color);
+	}
+
+	@Override
+	public void drawText(Text text, float x, float y, int color) {
+		boolean shadow = Jade.CONFIG.get().getOverlay().getTheme().text.shadow();
+		if (opacity() != 1) {
+			color = IConfigOverlay.applyAlpha(color, opacity());
+		}
+		String s = shadow ? text.getFormattedString() : Formatting.strip(text.getFormattedString());
+		Minecraft.getInstance().textRenderer.draw(s, (int) x, (int) y, color, shadow);
+	}
+
+	@Override
+	public Text stripColor(Text text) {
+		return new LiteralText(Formatting.strip(text.getFormattedString()));
+	}
+
+	@Override
+	public void blitSprite(Identifier sprite, int x, int y, int width, int height) {
+		drawTexture(resolveSprite(sprite), x, y, width, height, opacity());
+	}
+
+	public static Identifier resolveSprite(Identifier sprite) {
+		if (sprite.getPath().endsWith(".png")) {
+			return sprite;
+		}
+		return new Identifier(sprite.getNamespace(), "textures/gui/sprites/" + sprite.getPath() + ".png");
+	}
+
+	@Override
+	public void drawTexture(Identifier texture, float x, float y, float width, float height, float alpha) {
+		Minecraft mc = Minecraft.getInstance();
+		mc.getTextureManager().bind(resolveSprite(texture));
+		GlStateManager.enableBlend();
+		GlStateManager.disableAlphaTest();
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		GlStateManager.color4f(1, 1, 1, alpha);
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder buffer = tesselator.getBuffer();
+		buffer.begin(7, DefaultVertexFormat.POSITION_TEX);
+		float u1 = 0, v1 = 0, u2 = 1, v2 = 1;
+		buffer.vertex(x, y + height, 0.0).texture(u1, v2).nextVertex();
+		buffer.vertex(x + width, y + height, 0.0).texture(u2, v2).nextVertex();
+		buffer.vertex(x + width, y, 0.0).texture(u2, v1).nextVertex();
+		buffer.vertex(x, y, 0.0).texture(u1, v1).nextVertex();
+		tesselator.end();
+		GlStateManager.color4f(1, 1, 1, 1);
+		GlStateManager.enableAlphaTest();
+		GlStateManager.disableBlend();
+	}
+
+	@Override
+	public void drawGradientProgress(float left, float top, float width, float height, float progress, int progressColor1, int progressColor2) {
+		Color color = Color.rgb(progressColor1);
+		Color highlight = Color.hsl(color.getHue(), color.getSaturation(), Math.min(color.getLightness() + 0.2, 1), color.getOpacity());
+		if (progress < 0.1F) {
+			drawGradientRect(left, top, width * progress, height, progressColor1, highlight.toInt(), true);
+		} else {
+			float hlWidth = width * 0.1F;
+			float normalWidth = width * progress - hlWidth;
+			fill(left, top, left + normalWidth, top + height, progressColor1);
+			drawGradientRect(left + normalWidth, top, hlWidth, height, progressColor1, highlight.toInt(), true);
+		}
+	}
+
+	@Override
+	public float opacity() {
+		return OverlayRenderer.alpha;
+	}
+}
