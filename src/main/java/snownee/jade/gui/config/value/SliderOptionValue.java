@@ -1,5 +1,6 @@
 package snownee.jade.gui.config.value;
 
+import org.lwjgl.input.Mouse;
 import it.unimi.dsi.fastutil.floats.FloatUnaryOperator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GlStateManager;
@@ -87,7 +88,7 @@ public class SliderOptionValue extends OptionValue<Float> {
 			if (!visible) {
 				return;
 			}
-			if (dragging && !org.lwjgl.input.Mouse.isButtonDown(0)) {
+			if (dragging && !Mouse.isButtonDown(0)) {
 				dragging = false;
 			}
 			if (dragging) {

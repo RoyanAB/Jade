@@ -41,6 +41,14 @@ public class ThemeHelper implements IThemeHelper {
 		return new Style().setColor(formatting);
 	}
 
+	/**
+	 * 1.12 {@link Formatting} only supports the 16 vanilla colors, so any RGB color is mapped to the closest one.
+	 */
+	private static final int[] VANILLA_COLORS = {
+		0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
+		0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF
+	};
+
 	private static Formatting nearestFormatting(int color) {
 		Formatting best = Formatting.GRAY;
 		double bestDist = Double.MAX_VALUE;
@@ -48,10 +56,11 @@ public class ThemeHelper implements IThemeHelper {
 		int g = (color >> 8) & 0xFF;
 		int b = color & 0xFF;
 		for (Formatting formatting : Formatting.values()) {
-			if (!formatting.isColor()) {
+			int id = formatting.getId();
+			if (!formatting.isColor() || id < 0 || id >= VANILLA_COLORS.length) {
 				continue;
 			}
-			int c = formatting.getId();
+			int c = VANILLA_COLORS[id];
 			int cr = (c >> 16) & 0xFF;
 			int cg = (c >> 8) & 0xFF;
 			int cb = c & 0xFF;
@@ -124,7 +133,9 @@ public class ThemeHelper implements IThemeHelper {
 	}
 
 	private Theme defaultTheme() {
-		return new Theme(BoxStyle.GradientBorder.DEFAULT_NESTED_BOX.clone(), BoxStyle.GradientBorder.DEFAULT_NESTED_BOX.clone(), BoxStyle.GradientBorder.DEFAULT_VIEW_GROUP.clone(), TextSetting.DEFAULT, null, 0, false, false, null, 0);
+		Theme theme = new Theme(BoxStyle.GradientBorder.DEFAULT_NESTED_BOX.clone(), BoxStyle.GradientBorder.DEFAULT_NESTED_BOX.clone(), BoxStyle.GradientBorder.DEFAULT_VIEW_GROUP.clone(), TextSetting.DEFAULT, null, 0, false, false, null, 0);
+		theme.id = Theme.DEFAULT_THEME_ID;
+		return theme;
 	}
 
 	private static Theme parse(Identifier id, JsonObject o) {
@@ -141,7 +152,15 @@ public class ThemeHelper implements IThemeHelper {
 			}
 			boolean shadow = !t.has("shadow") || t.get("shadow").getAsBoolean();
 			int itemAmountColor = getColor(t, "itemAmountColor", 0xFFFFFFFF);
-			text = new TextSetting(colors, shadow, null, itemAmountColor);
+			Style modNameStyle = null;
+			if (t.has("modNameStyle")) {
+				try {
+					modNameStyle = new Style.Serializer().deserialize(t.get("modNameStyle"), Style.class, null);
+				} catch (Exception e) {
+					Jade.LOGGER.warn("Failed to parse modNameStyle of theme " + id, e);
+				}
+			}
+			text = new TextSetting(colors, shadow, modNameStyle, itemAmountColor);
 		}
 		Boolean roundCorner = o.has("changeRoundCorner") ? o.get("changeRoundCorner").getAsBoolean() : null;
 		float changeOpacity = o.has("changeOpacity") ? o.get("changeOpacity").getAsFloat() : 0;
@@ -236,7 +255,13 @@ public class ThemeHelper implements IThemeHelper {
 		} else {
 			text = new LiteralText(Objects.toString(componentOrString));
 		}
-		return text.setStyle(IWailaConfig.get().getFormatting().getItemModNameStyle());
+		Style itemStyle = IWailaConfig.get().getFormatting().getItemModNameStyle();
+		Style themeStyle = theme().text.modNameStyle();
+		if (themeStyle != null) {
+			// theme style wins, unset attributes fall back to the global item mod name style
+			return text.setStyle(themeStyle.copy().setParent(itemStyle));
+		}
+		return text.setStyle(itemStyle);
 	}
 
 	@Override

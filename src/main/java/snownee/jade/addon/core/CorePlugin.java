@@ -2,6 +2,7 @@ package snownee.jade.addon.core;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entities;
 import net.minecraft.entity.Entity;
 import net.minecraft.resource.Identifier;
 import snownee.jade.Jade;
@@ -11,6 +12,7 @@ import snownee.jade.impl.BlockAccessorClientHandler;
 import snownee.jade.impl.EntityAccessorClientHandler;
 import snownee.jade.util.JsonConfig;
 
+import java.util.Arrays;
 import java.util.Collections;
 
 @WailaPlugin
@@ -45,6 +47,12 @@ public class CorePlugin implements IWailaPlugin {
 		registration.markAsClientFeature(Identifiers.CORE_MOD_NAME);
 		registration.markAsClientFeature(Identifiers.CORE_BLOCK_FACE);
 
+		for (String id : createEntityBlocklist().get().values) {
+			Class<? extends Entity> entityType = Entities.REGISTRY.get(new Identifier(id));
+			if (entityType != null) {
+				registration.hideTarget(entityType);
+			}
+		}
 		for (String id : createBlockBlocklist().get().values) {
 			Identifier identifier = new Identifier(id);
 			if (Block.REGISTRY.containsKey(identifier)) {
@@ -54,7 +62,11 @@ public class CorePlugin implements IWailaPlugin {
 	}
 
 	public static JsonConfig<TargetBlocklist> createEntityBlocklist() {
-		return new JsonConfig<>(Jade.MODID + "/hide-entities", TargetBlocklist.class, null, TargetBlocklist::new);
+		return new JsonConfig<>(Jade.MODID + "/hide-entities", TargetBlocklist.class, null, () -> {
+			TargetBlocklist blocklist = new TargetBlocklist();
+			blocklist.values = Arrays.asList("minecraft:area_effect_cloud", "minecraft:fireworks_rocket");
+			return blocklist;
+		});
 	}
 
 	public static JsonConfig<TargetBlocklist> createBlockBlocklist() {

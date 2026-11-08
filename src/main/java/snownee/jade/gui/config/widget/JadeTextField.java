@@ -12,13 +12,19 @@ public class JadeTextField extends TextFieldWidget implements JadeWidget {
 	private boolean active = true;
 	private boolean visible = true;
 	public Consumer<String> responder;
-	public int paddingLeft;
-	public int paddingTop;
 
 	public JadeTextField(TextRenderer textRenderer, int x, int y, int width, int height) {
 		super(0, textRenderer, x, y, width, height);
 		this.w = width;
 		this.h = height;
+	}
+
+	@Override
+	public void setText(String text) {
+		super.setText(text);
+		if (responder != null) {
+			responder.accept(getText());
+		}
 	}
 
 	@Override

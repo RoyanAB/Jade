@@ -1,5 +1,7 @@
 package snownee.jade.util;
 
+import snownee.jade.mixin.BossEventOverlayAccess;
+import org.lwjgl.input.Keyboard;
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
@@ -21,6 +23,7 @@ import net.ornithemc.osl.resource.loader.api.client.ClientResourceLoaderEvents;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
+import snownee.jade.addon.harvest.HarvestToolProvider;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.Identifiers;
@@ -95,10 +98,10 @@ public final class ClientProxy implements ClientModInitializer {
 	@Nullable
 	public static Rect2i getBossBarRect() {
 		Minecraft mc = Minecraft.getInstance();
-		if (!(mc.gui.getBossEventOverlay() instanceof snownee.jade.mixin.BossEventOverlayAccess)) {
+		if (!(mc.gui.getBossEventOverlay() instanceof BossEventOverlayAccess)) {
 			return null;
 		}
-		int size = ((snownee.jade.mixin.BossEventOverlayAccess) mc.gui.getBossEventOverlay()).getBossEvents().size();
+		int size = ((BossEventOverlayAccess) mc.gui.getBossEventOverlay()).getBossEvents().size();
 		if (size == 0) {
 			return null;
 		}
@@ -110,7 +113,7 @@ public final class ClientProxy implements ClientModInitializer {
 	}
 
 	public static boolean isShowDetailsPressed() {
-		return Screen.isShiftDown() || (JadeClient.showDetails != null && org.lwjgl.input.Keyboard.isKeyDown(JadeClient.showDetails.getKeyCode()));
+		return Screen.isShiftDown() || (JadeClient.showDetails != null && JadeClient.showDetails.isPressed());
 	}
 
 	public static boolean shouldShowWithOverlay(Minecraft mc, @Nullable Screen screen) {
@@ -133,11 +136,11 @@ public final class ClientProxy implements ClientModInitializer {
 	@Override
 	public void initClient() {
 		KeyBindingEvents.REGISTER_KEYBINDS.register(registry -> {
-			JadeClient.openConfig = registry.register("key.jade.config", org.lwjgl.input.Keyboard.KEY_NUMPAD0, "Jade");
-			JadeClient.showOverlay = registry.register("key.jade.show_overlay", org.lwjgl.input.Keyboard.KEY_NUMPAD1, "Jade");
-			JadeClient.toggleLiquid = registry.register("key.jade.toggle_liquid", org.lwjgl.input.Keyboard.KEY_NUMPAD2, "Jade");
-			JadeClient.narrate = registry.register("key.jade.narrate", org.lwjgl.input.Keyboard.KEY_NUMPAD5, "Jade");
-			JadeClient.showDetails = registry.register("key.jade.show_details_alternative", org.lwjgl.input.Keyboard.KEY_NONE, "Jade");
+			JadeClient.openConfig = registry.register("key.jade.config", Keyboard.KEY_NUMPAD0, "Jade");
+			JadeClient.showOverlay = registry.register("key.jade.show_overlay", Keyboard.KEY_NUMPAD1, "Jade");
+			JadeClient.toggleLiquid = registry.register("key.jade.toggle_liquid", Keyboard.KEY_NUMPAD2, "Jade");
+			JadeClient.narrate = registry.register("key.jade.narrate", Keyboard.KEY_NUMPAD5, "Jade");
+			JadeClient.showDetails = registry.register("key.jade.show_details_alternative", Keyboard.KEY_NONE, "Jade");
 		});
 		MinecraftClientEvents.READY.register(mc -> {
 			CommonProxy.loadComplete();
@@ -178,7 +181,8 @@ public final class ClientProxy implements ClientModInitializer {
 
 		ClientResourceLoaderEvents.END_RESOURCE_RELOAD.register((manager, context) -> {
 			ThemeHelper.INSTANCE.reload();
-			snownee.jade.addon.harvest.HarvestToolProvider.clearCache();
+			ModIdentification.INSTANCE.onResourceManagerReload();
+			HarvestToolProvider.clearCache();
 		});
 	}
 }

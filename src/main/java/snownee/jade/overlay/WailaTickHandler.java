@@ -1,5 +1,6 @@
 package snownee.jade.overlay;
 
+import snownee.jade.api.AccessorClientHandler;
 import com.google.common.base.Preconditions;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
@@ -112,7 +113,7 @@ public class WailaTickHandler {
 			return;
 		}
 
-		snownee.jade.api.AccessorClientHandler<Accessor<?>> handler = WailaClientRegistration.instance().getAccessorHandler(accessor.getAccessorType());
+		AccessorClientHandler<Accessor<?>> handler = WailaClientRegistration.instance().getAccessorHandler(accessor.getAccessorType());
 		if (!handler.shouldDisplay(accessor)) {
 			rootElement = null;
 			return;

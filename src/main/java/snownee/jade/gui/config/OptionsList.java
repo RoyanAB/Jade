@@ -1,5 +1,7 @@
 package snownee.jade.gui.config;
 
+import org.lwjgl.input.Mouse;
+import org.lwjgl.input.Keyboard;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -204,7 +206,7 @@ public class OptionsList extends ListWidget {
 			}
 		}
 
-		if (!org.lwjgl.input.Mouse.isButtonDown(0) && widgetInteracting) {
+		if (!Mouse.isButtonDown(0) && widgetInteracting) {
 			if (draggingSlider != null) {
 				draggingSlider.stopDragging();
 			}
@@ -537,7 +539,7 @@ public class OptionsList extends ListWidget {
 	public boolean keyPressed(char chr, int keyCode) {
 		if (selectedKey != null) {
 			GameOptions options = Minecraft.getInstance().options;
-			options.setKeyCode(selectedKey, keyCode == 1 ? org.lwjgl.input.Keyboard.KEY_NONE : keyCode);
+			options.setKeyCode(selectedKey, keyCode == 1 ? Keyboard.KEY_NONE : keyCode);
 			selectedKey = null;
 			resetMappingAndUpdateButtons();
 			return true;

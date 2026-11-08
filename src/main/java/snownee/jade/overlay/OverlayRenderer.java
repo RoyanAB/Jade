@@ -1,5 +1,7 @@
 package snownee.jade.overlay;
 
+import snownee.jade.mixin.PlayerTabOverlayAccess;
+import org.lwjgl.input.Mouse;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GlStateManager;
@@ -76,8 +78,8 @@ public class OverlayRenderer {
 			if (!general.previewOverlay) {
 				return false;
 			}
-			int x = org.lwjgl.input.Mouse.getX() * DisplayHelper.guiWidth() / mc.width;
-			int y = DisplayHelper.guiHeight() - org.lwjgl.input.Mouse.getY() * DisplayHelper.guiHeight() / mc.height - 1;
+			int x = Mouse.getX() * DisplayHelper.guiWidth() / mc.width;
+			int y = DisplayHelper.guiHeight() - Mouse.getY() * DisplayHelper.guiHeight() / mc.height - 1;
 			if (rect.expectedRect.contains(x, y)) {
 				return false;
 			}
@@ -89,7 +91,7 @@ public class OverlayRenderer {
 		if (mc.options.debugEnabled && general.shouldHideFromDebug())
 			return false;
 
-		return !(mc.gui.getPlayerTabOverlay() instanceof snownee.jade.mixin.PlayerTabOverlayAccess) || !((snownee.jade.mixin.PlayerTabOverlayAccess) mc.gui.getPlayerTabOverlay()).isVisible() || !general.shouldHideFromTabList();
+		return !(mc.gui.getPlayerTabOverlay() instanceof PlayerTabOverlayAccess) || !((PlayerTabOverlayAccess) mc.gui.getPlayerTabOverlay()).isVisible() || !general.shouldHideFromTabList();
 	}
 
 	/**

@@ -1,6 +1,7 @@
 package snownee.jade.impl.ui;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.vertex.BufferBuilder;
@@ -74,7 +75,7 @@ public class HealthElement extends Element {
 		}
 
 		if (showNumbers) {
-			IDisplayHelper.get().drawText(text, x + ICON_SIZE, y, IThemeHelper.get().getNormalColor());
+			IDisplayHelper.get().drawText(text, x + ICON_SIZE - 1, y, IThemeHelper.get().getNormalColor());
 		}
 	}
 
@@ -96,6 +97,6 @@ public class HealthElement extends Element {
 
 	@Override
 	public @Nullable String getMessage() {
-		return null;
+		return I18n.translate("narration.jade.health", DisplayHelper.dfCommas.format(health));
 	}
 }

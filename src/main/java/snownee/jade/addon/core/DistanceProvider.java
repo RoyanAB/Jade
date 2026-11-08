@@ -32,17 +32,20 @@ public enum DistanceProvider implements IBlockComponentProvider, IEntityComponen
 	}
 
 	public static Text display(int i, int colorIndex) {
+		if (IThemeHelper.get().isLightColorScheme())
+			colorIndex += 3;
 		return new LiteralText(Integer.toString(i)).setStyle(ThemeHelper.colorStyle(colors[colorIndex]));
 	}
 
 	public static void xyz(ITooltip tooltip, Vec3i pos) {
-		Text display = new LiteralText("").append(display(pos.getX(), 0)).append(new LiteralText(", ")).append(display(pos.getY(), 1)).append(new LiteralText(", ")).append(display(pos.getZ(), 2));
+		Text display = new LiteralText("")
+			.append(display(pos.getX(), 0))
+			.append(new LiteralText(" "))
+			.append(display(pos.getY(), 1))
+			.append(new LiteralText(" "))
+			.append(display(pos.getZ(), 2));
 		String narrate = I18n.translate("narration.jade.blockpos", narrate(pos.getX()), narrate(pos.getY()), narrate(pos.getZ()));
 		tooltip.add(IElementHelper.get().text(display).message(narrate));
-	}
-
-	private static int colorIndex(int i) {
-		return IThemeHelper.get().isLightColorScheme() ? i + 3 : i;
 	}
 
 	public static String narrate(int i) {

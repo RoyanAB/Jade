@@ -7,11 +7,14 @@
 ## 1. 总体结论
 
 - 原版未排除包共 **145** 个 Java 文件，移植版对应 **119** 个，另有 **44** 个 1.12 专用/移植新增文件。
-- 已配对文件中，原版注释行 **579**，移植版 **544**，保留率约 **94%**；API 接口的主要 Javadoc 已补回。
-- 发现并修复 **16 类实际逻辑/效果问题**，其中 3 类会直接影响玩家可见效果：
+- 已配对文件中，原版注释行 **579**，移植版 **545**，保留率约 **94%**；API 接口的主要 Javadoc 已补回。
+- 发现并修复 **23 类实际逻辑/效果问题**，其中影响最明显的几类：
   1. 物品 tooltip 不显示堆叠数量；
   2. tooltip/overlay/进度条动画速度不正确；
-  3. 语言文件 `{0}` 占位符不生效。
+  3. 语言文件 `{0}` 占位符不生效（繁殖/成长/下蛋倒计时全部显示成字面量）；
+  4. 主题颜色映射错误，info/success/warning/danger/title/坐标颜色全部偏色；
+  5. 主题关闭文字阴影时颜色被一起剥离，彩色文字变纯白；
+  6. `hide-entities.json` 实体黑名单从未生效。
 - 仍有若干**功能性缺口**（流体视图、TTS、数据包伪装、1.12 不存在的内容等），见第 5 节。
 - 当前 clean build 成功。
 
@@ -36,10 +39,10 @@
 |---|---:|---:|---:|---|
 | `Internals.java` | 28 / 28 | 0 / 0 | 0 | 对应基本一致 |
 | `Jade.java` | 53 / 38 | 4 / 3 | 0 | 对应基本一致 |
-| `JadeClient.java` | 298 / 212 | 0 / 0 | 1 | format 改 MessageFormat；模组名样式/去重、breaking 世界重置已修；mob effect fog 仍 no-op。 |
+| `JadeClient.java` | 298 / 204 | 0 / 0 | 1 | format 改 MessageFormat；模组名样式/去重、breaking 世界重置已修；mob effect fog 仍 no-op。 |
 | `addon/core/BlockFaceProvider.java` | 44 / 45 | 0 / 0 | 0 | 对应基本一致 |
-| `addon/core/CorePlugin.java` | 83 / 67 | 0 / 0 | 0 | 对应基本一致 |
-| `addon/core/DistanceProvider.java` | 93 / 97 | 0 / 0 | 0 | 对应基本一致 |
+| `addon/core/CorePlugin.java` | 83 / 79 | 0 / 0 | 0 | hide-entities 之前未生效，已接上；默认隐藏 area_effect_cloud/fireworks_rocket。 |
+| `addon/core/DistanceProvider.java` | 93 / 101 | 0 / 0 | 0 | 坐标浅色主题配色、空格分隔已修。 |
 | `addon/core/ModNameProvider.java` | 58 / 51 | 0 / 0 | 0 | 对应基本一致 |
 | `addon/core/ObjectNameProvider.java` | 130 / 102 | 0 / 1 | 0 | 对应基本一致 |
 | `addon/debug/BlockStatesProvider.java` | 57 / 62 | 0 / 0 | 0 | 对应基本一致 |
@@ -89,7 +92,7 @@
 | `api/ui/MessageType.java` | 13 / 13 | 0 / 0 | 0 | 对应基本一致 |
 | `api/ui/ProgressStyle.java` | 59 / 57 | 0 / 0 | 0 | 对应基本一致 |
 | `api/ui/TooltipRect.java` | 9 / 7 | 0 / 0 | 0 | 对应基本一致 |
-| `gui/BaseOptionsScreen.java` | 169 / 282 | 0 / 0 | 4 | 1.12 手工布局/tooltip；缺 narration/focus API。 |
+| `gui/BaseOptionsScreen.java` | 169 / 282 | 0 / 0 | 4 | 保存/取消流程与原版一致；1.12 手工布局/tooltip。 |
 | `gui/HomeConfigScreen.java` | 374 / 427 | 0 / 0 | 1 | 缺方法 onClose |
 | `gui/JadeFont.java` | 8 / 9 | 0 / 0 | 0 | 对应基本一致 |
 | `gui/PluginsConfigScreen.java` | 75 / 74 | 0 / 0 | 0 | 对应基本一致 |
@@ -98,12 +101,12 @@
 | `gui/config/KeybindOptionButton.java` | 35 / 124 | 0 / 0 | 0 | 结构差异较大 |
 | `gui/config/NotUglyEditBox.java` | 547 / 257 | 0 / 0 | 37 | 基于 1.12 TextFieldWidget 重写，方法集差异大。 |
 | `gui/config/OptionButton.java` | 34 / 34 | 0 / 0 | 0 | 对应基本一致 |
-| `gui/config/OptionsList.java` | 540 / 730 | 0 / 3 | 9 | 手工 ListWidget 实现，结构差异大；滚动/悬浮/搜索已调平。 |
+| `gui/config/OptionsList.java` | 540 / 732 | 0 / 3 | 9 | 手工 ListWidget 实现，结构差异大；搜索/保存态/滚动已对齐。 |
 | `gui/config/OptionsNav.java` | 107 / 147 | 0 / 0 | 6 | 手工导航列表渲染；锚点/滚动一致。 |
 | `gui/config/value/CycleOptionValue.java` | 26 / 56 | 0 / 0 | 0 | 结构差异较大 |
 | `gui/config/value/InputOptionValue.java` | 70 / 70 | 1 / 1 | 0 | 对应基本一致 |
 | `gui/config/value/OptionValue.java` | 103 / 98 | 0 / 0 | 1 | 缺方法 updateNarration |
-| `gui/config/value/SliderOptionValue.java` | 77 / 139 | 2 / 0 | 1 | 缺方法 applyValue；原注释未保留；结构差异较大 |
+| `gui/config/value/SliderOptionValue.java` | 77 / 140 | 2 / 0 | 1 | 缺方法 applyValue；原注释未保留；结构差异较大 |
 | `impl/BlockAccessorClientHandler.java` | 95 / 87 | 0 / 0 | 0 | 对应基本一致 |
 | `impl/BlockAccessorImpl.java` | 282 / 291 | 3 / 3 | 2 | SyncData 1.12 化；方块状态未传输、服务端用世界状态；fakeBlock/hit 点已传。 |
 | `impl/CallbackContainer.java` | 32 / 32 | 0 / 0 | 0 | 对应基本一致 |
@@ -123,15 +126,15 @@
 | `impl/config/entry/FloatConfigEntry.java` | 43 / 43 | 0 / 0 | 0 | 对应基本一致 |
 | `impl/config/entry/IntConfigEntry.java` | 42 / 42 | 0 / 0 | 0 | 对应基本一致 |
 | `impl/config/entry/StringConfigEntry.java` | 29 / 29 | 0 / 0 | 0 | 对应基本一致 |
-| `impl/theme/ThemeHelper.java` | 209 / 269 | 0 / 0 | 1 | GSON 主题加载；fallback 防递归；文本样式保留已修；ThemeCodecs 缺失。 |
+| `impl/theme/ThemeHelper.java` | 209 / 294 | 0 / 4 | 1 | 颜色映射改用 16 色 RGB 表；支持 modNameStyle；fallback 防递归；ThemeCodecs 缺失。 |
 | `impl/ui/ArmorElement.java` | 86 / 96 | 0 / 0 | 0 | 对应基本一致 |
-| `impl/ui/BoxElement.java` | 373 / 320 | 7 / 0 | 0 | 动画 delta 修正；debug border 恢复；无 fluid sprite/九宫格。 |
+| `impl/ui/BoxElement.java` | 373 / 323 | 7 / 0 | 0 | 动画 delta 修正；rect 计算顺序对齐原版；debug border 恢复；无 fluid sprite/九宫格。 |
 | `impl/ui/CompoundElement.java` | 34 / 30 | 0 / 0 | 0 | 对应基本一致 |
 | `impl/ui/ElementHelper.java` | 119 / 97 | 5 / 0 | 2 | 缺 fluid/sub 元素。 |
-| `impl/ui/HealthElement.java` | 94 / 101 | 0 / 0 | 0 | 对应基本一致 |
+| `impl/ui/HealthElement.java` | 94 / 102 | 0 / 0 | 0 | 心形/文本偏移与 narration 已对齐原版；1.12 用 icons.png。 |
 | `impl/ui/HorizontalLineElement.java` | 33 / 32 | 0 / 0 | 0 | 对应基本一致 |
 | `impl/ui/ItemStackElement.java` | 60 / 59 | 0 / 0 | 0 | drawItem 修复后物品数量恢复。 |
-| `impl/ui/ProgressElement.java` | 85 / 79 | 0 / 0 | 0 | track tick 改为真实 frame delta。 |
+| `impl/ui/ProgressElement.java` | 85 / 78 | 0 / 0 | 0 | track tick 改为真实 frame delta。 |
 | `impl/ui/SimpleProgressStyle.java` | 142 / 112 | 1 / 0 | 1 | RGBtoHSV 用 HSV V 等价实现。 |
 | `impl/ui/SlimProgressStyle.java` | 44 / 43 | 0 / 0 | 0 | 对应基本一致 |
 | `impl/ui/SpacerElement.java` | 23 / 22 | 0 / 0 | 0 | 对应基本一致 |
@@ -141,12 +144,12 @@
 | `impl/ui/TextElement.java` | 57 / 50 | 0 / 0 | 0 | 对应基本一致 |
 | `mixin/BossHealthOverlayMixin.java` | 25 / 23 | 0 / 0 | 0 | 对应基本一致 |
 | `mixin/ClientLevelMixin.java` | 21 / 23 | 0 / 0 | 0 | 对应基本一致 |
-| `overlay/DisplayHelper.java` | 439 / 296 | 2 / 0 | 7 | 物品光照/数量、sprite UV 裁剪已修；缺 fluid/tiled/text shadow。 |
-| `overlay/OverlayRenderer.java` | 215 / 207 | 10 / 10 | 1 | frame delta 修正；HOLD_KEY 用 isPressed；theme 空值处理与 license 注释。 |
+| `overlay/DisplayHelper.java` | 439 / 297 | 2 / 0 | 7 | 物品光照/数量、sprite UV 裁剪、drawText 颜色保留已修；缺 fluid/tiled/text shadow。 |
+| `overlay/OverlayRenderer.java` | 215 / 208 | 10 / 10 | 1 | frame delta、HOLD_KEY、theme 空值、license 注释；lwjgl FQN 已清理。 |
 | `overlay/ProgressTracker.java` | 96 / 95 | 0 / 0 | 0 | spd 除数 max(1) 防 0。 |
 | `overlay/RayTracing.java` | 201 / 191 | 1 / 5 | 1 | AABB clip、实体命中点、流体模式、距离比较已重写。 |
-| `overlay/WailaTickHandler.java` | 200 / 166 | 6 / 0 | 0 | theme null 校验已补；narration/TTS 为空实现。 |
-| `util/ClientProxy.java` | 319 / 199 | 3 / 3 | 16 | 缺 fluid/recipe viewer/storage；新增 getDeltaFrameTime。 |
+| `overlay/WailaTickHandler.java` | 200 / 167 | 6 / 0 | 0 | theme null 校验已补；narration/TTS 为空实现。 |
+| `util/ClientProxy.java` | 319 / 188 | 3 / 0 | 16 | 缺 fluid/recipe viewer/storage；新增 getDeltaFrameTime；补 ModIdentification 重载。 |
 | `util/CommonProxy.java` | 460 / 296 | 0 / 0 | 10 | 缺 fluid/storage/command/username 下载；附魔书模组名已修。 |
 | `util/JsonConfig.java` | 137 / 132 | 2 / 0 | 0 | 原注释未保留 |
 | `util/ModIdentification.java` | 81 / 77 | 0 / 0 | 0 | FallingBlock 方块模组名已补；Painting motive 无法映射模组。 |
@@ -264,6 +267,38 @@ MessageFormat.format(I18n.get(s), objects)
 - 问题：静态 `progressAlpha` / `savedProgress` 不随世界切换重置，进新存档可能短暂显示上一个世界的破坏进度。
 - 修复：记录 `breakingWorld`，`mc.world` 变化时清零。
 
+### P1-5 主题颜色映射完全错误（第三轮发现）
+
+- 文件：`impl/theme/ThemeHelper.java`
+- 1.12 `Formatting.getId()` 返回的是 0-15 的颜色**索引**，不是 RGB。移植版却把索引当作 RGB 做距离计算：
+  ```java
+  int c = formatting.getId();          // 0..15
+  int cr = (c >> 16) & 0xFF;           // 永远是 0
+  int cg = (c >> 8) & 0xFF;            // 永远是 0
+  int cb = c & 0xFF;                   // 等于索引
+  ```
+  结果颜色距离只与蓝色通道有关，主题里的 info/success/warning/danger/title/坐标颜色会被映射到错误的 16 色之一。
+- 修复：加入 16 个原版颜色的真实 RGB 表 `VANILLA_COLORS`，按 RGB 距离选择最近的 `Formatting`。
+- 影响：所有主题文字颜色、坐标三色、状态效果颜色、繁殖/成长倒计时颜色。
+
+### P1-6 `drawText` 在关闭阴影时把颜色也剥掉了（第三轮发现）
+
+- 文件：`overlay/DisplayHelper.java`
+- 移植版：
+  ```java
+  String s = shadow ? text.getFormattedString() : Formatting.strip(text.getFormattedString());
+  ```
+  主题 `text.shadow = false` 时（部分主题如此），所有带颜色的文本会变成纯白。
+- 原版 `drawString(font, sequence, x, y, color, shadow)` 只切换阴影，保留每段颜色。
+- 修复：始终传 `getFormattedString()`，只用 `shadow` 控制阴影。
+
+### P1-7 `hide-entities.json` 从未生效（第三轮发现）
+
+- 文件：`addon/core/CorePlugin.java`
+- 原版 `registerClient` 里同时遍历 `createEntityBlocklist()` 和 `createBlockBlocklist()` 并调用 `hideTarget`。
+- 移植版只遍历了方块黑名单，**实体黑名单完全没有应用**，`hide-entities.json` 形同虚设；默认值也是空的。
+- 修复：补上实体遍历（`Entities.REGISTRY.get(id)` → `hideTarget(Class)`），默认值设为 1.12 的 `minecraft:area_effect_cloud`、`minecraft:fireworks_rocket`。
+
 ### P2-1 debug 元素边框没有渲染
 
 - 原版：`BoxElement` 和 `Tooltip.Line` 都调用 `Tooltip.drawDebugBorder`。
@@ -344,6 +379,40 @@ MessageFormat.format(I18n.get(s), objects)
 - 原版会显示任何带 `POWER` 属性方块的信号强度（红石线、红石块等）；移植版只处理拉杆、中继器、比较器、漏斗。
 - 已补：遍历 `BlockState.properties()`，对名为 `power` 的整数属性显示 `tooltip.jade.power`。
 - 红石线等方块现在能显示信号强度。
+
+### P2-13 坐标显示的分隔符与浅色主题配色（第三轮发现）
+
+- 文件：`addon/core/DistanceProvider.java`
+- 移植版用 `", "` 拼接坐标，语言文件 `jade.blockpos` 实际是 `"%s %s %s"`（空格分隔），显示效果与原版不一致。
+- `display(int, int)` 丢掉了浅色主题 `colorIndex += 3` 的偏移（新增的 `colorIndex()` 辅助方法也没有被调用）。
+- 修复：改为空格分隔；`display` 内恢复浅色主题偏移。
+
+### P2-14 输入框 `setText` 不触发 responder（第三轮发现）
+
+- 文件：`gui/config/widget/JadeTextField.java`
+- 1.12 `TextFieldWidget.setText()` 不调用 `onTextChanged`，而 1.20 `EditBox.setValue()` 会触发 responder。
+- 因此 `InputOptionValue.setValue(T)` 只改了显示文本，`value` 字段和配置都没有更新。
+- 修复：`JadeTextField.setText` 覆盖后主动通知 responder。
+
+### P2-15 主题 `modNameStyle` 未解析（第三轮发现）
+
+- 文件：`impl/theme/ThemeHelper.java`
+- 原版会读取主题 `text.modNameStyle` 并叠加到全局物品模组名样式上；移植版解析时直接传 `null`。
+- 修复：用 1.12 `Style.Serializer` 解析，`themeStyle.copy().setParent(itemStyle)` 合并（主题未设置的属性回退到全局样式）。
+
+### P2-16 tooltip 矩形计算顺序（第三轮发现）
+
+- 文件：`impl/ui/BoxElement.java`
+- 原版先取整宽高，再用**取整后的宽高**乘锚点计算 x/y；移植版用未取整的浮点值乘锚点，个别缩放下会差 1px。
+- 修复：按原版顺序 `setWidth/setHeight` 后再 `setX/setY`，并给 `Rect2i` 补上对应的 setter。
+
+### P2-17 其他对齐修正（第三轮）
+
+- `gui/config/OptionsList`、`OverlayRenderer`、`SliderOptionValue` 中残留的 `org.lwjgl.input.*` 全限定名改为 import。
+- `ClientProxy.isShowDetailsPressed` 改用 `KeyBinding.isPressed()`（原来直接读键盘，忽略按键绑定冲突）。
+- `ClientProxy` 资源重载补上 `ModIdentification` 缓存失效（原版注册了 reload listener）。
+- `HealthElement` 文本偏移改为 `x + 8`、补回 `narration.jade.health` 消息（与原版一致）。
+- `ThemeHelper.defaultTheme()` 补上 `Theme.DEFAULT_THEME_ID`，避免早期 `activeTheme` 变成 null。
 
 ## 6.5 网络层审查
 
