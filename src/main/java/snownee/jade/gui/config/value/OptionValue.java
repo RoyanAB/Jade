@@ -37,7 +37,7 @@ public abstract class OptionValue<T> extends OptionsList.Entry {
 		boolean active = widget == null || widget.isActive();
 		int left = rowLeft + indent + 10;
 		int top = rowTop + (height / 2) - (client.textRenderer.fontHeight / 2);
-		String titleText = title.getString();
+		String titleText = title.getFormattedString();
 		if (!active) {
 			titleText = Formatting.STRIKETHROUGH.toString() + Formatting.GRAY + titleText;
 		}

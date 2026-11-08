@@ -8,7 +8,7 @@
 
 - 原版未排除包共 **145** 个 Java 文件，移植版对应 **119** 个，另有 **44** 个 1.12 专用/移植新增文件。
 - 已配对文件中，原版注释行 **579**，移植版 **549**，保留率约 **95%**；API 接口的主要 Javadoc 已补回。
-- 发现并修复 **32 类实际逻辑/效果问题**，其中影响最明显的几类：
+- 发现并修复 **37 类实际逻辑/效果问题**，其中影响最明显的几类：
   1. 物品 tooltip 不显示堆叠数量；
   2. tooltip/overlay/进度条动画速度不正确；
   3. 语言文件 `{0}` 占位符不生效（繁殖/成长/下蛋倒计时全部显示成字面量）；
@@ -480,6 +480,39 @@ MessageFormat.format(I18n.get(s), objects)
   `Integer.valueOf` 抛 `NumberFormatException`，异常会从 `onTextChanged` 一路冒到游戏主循环导致崩溃（上游同样存在）。
 - 已加 try/catch 返回 `false`，其余行为不变。
 
+### 修复：雪花粒子变成了不透明（`HomeConfigScreen`）
+
+- 原版用 `Mth.color(r, g, b)`，返回值**没有 alpha 位**（0x00RRGGBB），随后 `color |= (40..120) << 24` 加上半透明 alpha；
+  而 1.20 `drawString` 在 alpha 为 0 时会强制补成 0xFF，所以 credit 粒子仍是实心。
+- 移植版的 `color()` 辅助方法直接返回 `0xFF000000 | rgb`，于是雪花的 `|= alpha` 被 0xFF 吞掉，雪花变成**完全不透明**。
+- 已改为与原版一致：`color()` 不带 alpha 位，雪花恢复半透明，credit 粒子仍由渲染器补成不透明。
+
+### 修复：选项标题丢失自身样式（`OptionValue`）
+
+- 原版用 `title`（Component）绘制，标题自身的颜色/粗体等样式会保留；移植版用 `title.getString()` 丢掉了样式。
+- 已改为 `title.getFormattedString()`；禁用态的删除线+灰色仍按原版覆盖。
+
+### 修复：行起点与导航滚动条偏移（`OptionsList` / `OptionsNav`）
+
+- 1.20 `getRowLeft()` = `getX() + width/2 - getRowWidth()/2`；移植版多加了 `+2`，导致所有行（文字与控件）整体右移 2px，
+  悬停条却仍从列表左边界开始，行不再居中。
+- 导航滚动条原版在 `getRowLeft() + getRowWidth() - 8` = 112，移植版写死 `2 + ...` = 114。
+- 两处都已按原版公式修正；导航锚点仍保持 `getRowLeft() + 2`（与原版一致）。
+
+### 修复：`setScrollAmount` 未按原版钳制目标值（`OptionsList`）
+
+- 1.20 `setScrollAmount(d)` → `super.setScrollAmount(d)`（内部钳制）→ `targetScroll = getScrollAmount()`（钳制后的值）。
+- 移植版先写 `targetScroll = 原值` 再 `capScrolling()`，`targetScroll` 仍是未钳制值。
+  切换界面（如重置后列表变短）时目标滚动量会越界，需要靠下一帧的 `render` 再纠正一次，期间会产生一次可见的“回弹”。
+- 已改为先钳制再赋值，与原版一致。
+
+### 修复：`☰` 编辑名单按钮的提示框不显示（`KeybindOptionButton.JadeButtonWrapper`）
+
+- 原版 `☰` 按钮是带 `Tooltip.create(...)` 的 `Button`，1.20 的 `getChildAt` 会把它算作子控件并显示提示。
+- 移植版把按钮包在 `JadeButtonWrapper` 里，`BaseOptionsScreen.renderHoverTooltips` 拿到的是 **wrapper**，
+  而 wrapper 没有实现 `getTooltip()`（`JadeWidget` 的默认实现返回 `null`），所以提示框永远不显示。
+- 已在 wrapper 里把 `getTooltip()` 委托给内部按钮；`display_mode` / `item_mod_name` 的提示因为直接用 `CycleButtonWidget`，本来就是好的。
+
 ### 其他对齐
 
 - 所有 GUI 文字（选项标题、`Title`、左侧导航标题、滑条文字、输入框文字/提示/“×”、`OptionButton`）补上阴影，与 1.20 `drawString` 一致。
@@ -490,8 +523,6 @@ MessageFormat.format(I18n.get(s), objects)
 
 | 项目 | 原版 1.20 | 移植版 |
 |---|---|---|
-| 行起点 | `getRowLeft()` | `getRowLeft() + 2`（整体右移 2px） |
-| 导航滚动条 | `getRowLeft() + getRowWidth() - 8` = 112 | `2 + getRowWidth() - 8` = 114 |
 | 未绑定按键名 | “Not Bound”（`key.keyboard.unknown`） | “NONE”（1.12 `GameOptions.getKeyName(0)`） |
 | 服务器功能 `*` 提示 | 列表位置器（条目下方/上方） | 跟随鼠标 |
 | 叙述/narration | 完整实现 | 无（1.12 无 NarratableEntry） |

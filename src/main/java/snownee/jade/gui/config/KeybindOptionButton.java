@@ -6,6 +6,8 @@ import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.gui.config.widget.JadeButton;
 import snownee.jade.gui.config.widget.JadeWidget;
 
@@ -119,6 +121,12 @@ public class KeybindOptionButton extends OptionButton {
 		@Override
 		public boolean isVisible() {
 			return button.isVisible();
+		}
+
+		@Override
+		@Nullable
+		public Text getTooltip() {
+			return button.getTooltip();
 		}
 	}
 }

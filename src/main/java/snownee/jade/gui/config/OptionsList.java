@@ -82,8 +82,9 @@ public class OptionsList extends ListWidget {
 
 	public void setScrollAmount(double amount) {
 		this.scrollAmount = (float) amount;
-		this.targetScroll = (float) amount;
 		capScrolling();
+		// 1.20: targetScroll = getScrollAmount(), i.e. the clamped value
+		this.targetScroll = this.scrollAmount;
 	}
 
 	public float getScrollAmountF() {
@@ -126,7 +127,7 @@ public class OptionsList extends ListWidget {
 	}
 
 	public int getRowLeft() {
-		return minX + width / 2 - getRowWidth() / 2 + 2;
+		return minX + width / 2 - getRowWidth() / 2;
 	}
 
 	public boolean isMouseOver(int mouseX, int mouseY) {

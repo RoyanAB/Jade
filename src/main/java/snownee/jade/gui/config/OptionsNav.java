@@ -61,7 +61,7 @@ public class OptionsNav extends ListWidget {
 
 	@Override
 	protected int getScrollbarPosition() {
-		return 2 + getRowWidth() - 8;
+		return minX + width / 2 - getRowWidth() / 2 + getRowWidth() - 8;
 	}
 
 	@Override
@@ -110,7 +110,7 @@ public class OptionsNav extends ListWidget {
 		buffer.vertex(minX, minY, 0.0).texture(u, v).nextVertex();
 		tesselator.end();
 		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		int rowLeft = minX + width / 2 - getRowWidth() / 2 + 2;
+		int rowLeft = minX + width / 2 - getRowWidth() / 2;
 		int rowTop = minY + 4 - (int) scrollAmount;
 		DisplayHelper.pushScissor(minX, minY, maxX - minX, maxY - minY);
 		renderList(rowLeft, rowTop, mouseX, mouseY, tickDelta);
