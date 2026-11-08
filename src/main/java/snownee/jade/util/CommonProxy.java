@@ -7,15 +7,22 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.entity.Entities;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.living.mob.monster.boss.EnderDragonEntity;
+import net.minecraft.entity.living.mob.monster.boss.EnderDragonPart;
+import net.minecraft.entity.living.mob.monster.boss.WitherEntity;
+import net.minecraft.entity.living.player.PlayerEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ShearsItem;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
-import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.HitResult;
 import net.minecraft.world.World;
 import net.ornithemc.osl.entrypoints.api.ModInitializer;
@@ -23,7 +30,6 @@ import net.ornithemc.osl.lifecycle.api.server.MinecraftServerEvents;
 import net.ornithemc.osl.networking.api.ChannelRegistry;
 import net.ornithemc.osl.networking.api.PacketBuffer;
 import net.ornithemc.osl.networking.api.server.ServerConnectionEvents;
-import net.ornithemc.osl.networking.api.server.ServerPacketListener;
 import net.ornithemc.osl.networking.api.server.ServerPlayNetworking;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
@@ -57,14 +63,14 @@ public final class CommonProxy implements ModInitializer {
 	}
 
 	public static boolean isShearable(BlockState state) {
-		net.minecraft.block.Block block = state.getBlock();
-		return block == net.minecraft.block.Blocks.LEAVES || block == net.minecraft.block.Blocks.LEAVES2 ||
-			block == net.minecraft.block.Blocks.WEB || block == net.minecraft.block.Blocks.VINE ||
-			block == net.minecraft.block.Blocks.TALLGRASS || block == net.minecraft.block.Blocks.DEADBUSH ||
-			block == net.minecraft.block.Blocks.TRIPWIRE || block == net.minecraft.block.Blocks.WOOL;
+		Block block = state.getBlock();
+		return block == Blocks.LEAVES || block == Blocks.LEAVES2 ||
+			block == Blocks.WEB || block == Blocks.VINE ||
+			block == Blocks.TALLGRASS || block == Blocks.DEADBUSH ||
+			block == Blocks.TRIPWIRE || block == Blocks.WOOL;
 	}
 
-	public static boolean isCorrectToolForDrops(BlockState state, net.minecraft.entity.living.player.PlayerEntity player) {
+	public static boolean isCorrectToolForDrops(BlockState state, PlayerEntity player) {
 		return state.getBlock().getMaterial(state).isToolNotRequired() || player.canMineBlock(state);
 	}
 
@@ -76,7 +82,7 @@ public final class CommonProxy implements ModInitializer {
 				return new Identifier(s).getNamespace();
 			}
 		}
-		Identifier id = net.minecraft.item.Item.REGISTRY.getKey(stack.getItem());
+		Identifier id = Item.REGISTRY.getKey(stack.getItem());
 		return id == null ? "minecraft" : id.getNamespace();
 	}
 
@@ -88,11 +94,11 @@ public final class CommonProxy implements ModInitializer {
 		return FabricLoader.getInstance().isDevelopmentEnvironment();
 	}
 
-	public static float getEnchantPowerBonus(BlockState state, World world, net.minecraft.util.math.BlockPos pos) {
+	public static float getEnchantPowerBonus(BlockState state, World world, BlockPos pos) {
 		if (WailaClientRegistration.instance().customEnchantPowers.containsKey(state.getBlock())) {
 			return WailaClientRegistration.instance().customEnchantPowers.get(state.getBlock()).getEnchantPowerBonus(state, world, pos);
 		}
-		return state.getBlock() == net.minecraft.block.Blocks.BOOKSHELF ? 1 : 0;
+		return state.getBlock() == Blocks.BOOKSHELF ? 1 : 0;
 	}
 
 	public static Identifier getId(Block block) {
@@ -114,10 +120,10 @@ public final class CommonProxy implements ModInitializer {
 	}
 
 	public static boolean isBoss(Entity entity) {
-		return entity instanceof net.minecraft.entity.living.mob.monster.boss.WitherEntity || entity instanceof net.minecraft.entity.living.mob.monster.boss.EnderDragonEntity;
+		return entity instanceof WitherEntity || entity instanceof EnderDragonEntity;
 	}
 
-	public static ItemStack getBlockPickedResult(BlockState state, net.minecraft.entity.living.player.PlayerEntity player, HitResult hitResult) {
+	public static ItemStack getBlockPickedResult(BlockState state, PlayerEntity player, HitResult hitResult) {
 		try {
 			return state.getBlock().getPickItem(player.world, hitResult.getPos(), state);
 		} catch (Throwable e) {
@@ -125,7 +131,7 @@ public final class CommonProxy implements ModInitializer {
 		}
 	}
 
-	public static ItemStack getEntityPickedResult(Entity entity, net.minecraft.entity.living.player.PlayerEntity player, HitResult hitResult) {
+	public static ItemStack getEntityPickedResult(Entity entity, PlayerEntity player, HitResult hitResult) {
 		return ItemStack.EMPTY;
 	}
 
@@ -168,25 +174,25 @@ public final class CommonProxy implements ModInitializer {
 	}
 
 	public static boolean isMultipartEntity(Entity target) {
-		return target instanceof net.minecraft.entity.living.mob.monster.boss.EnderDragonPart;
+		return target instanceof EnderDragonPart;
 	}
 
 	public static Entity wrapPartEntityParent(Entity target) {
-		if (target instanceof net.minecraft.entity.living.mob.monster.boss.EnderDragonPart) {
-			return ((net.minecraft.entity.living.mob.monster.boss.EnderDragonPart) target).dragon instanceof net.minecraft.entity.Entity ? (net.minecraft.entity.Entity) ((net.minecraft.entity.living.mob.monster.boss.EnderDragonPart) target).dragon : target;
+		if (target instanceof EnderDragonPart) {
+			return ((EnderDragonPart) target).dragon instanceof Entity ? (Entity) ((EnderDragonPart) target).dragon : target;
 		}
 		return target;
 	}
 
 	public static int getPartEntityIndex(Entity entity) {
-		if (!(entity instanceof net.minecraft.entity.living.mob.monster.boss.EnderDragonPart)) {
+		if (!(entity instanceof EnderDragonPart)) {
 			return -1;
 		}
-		net.minecraft.entity.living.mob.monster.boss.EnderDragonPart part = (net.minecraft.entity.living.mob.monster.boss.EnderDragonPart) entity;
-		if (!(part.dragon instanceof net.minecraft.entity.living.mob.monster.boss.EnderDragonEntity)) {
+		EnderDragonPart part = (EnderDragonPart) entity;
+		if (!(part.dragon instanceof EnderDragonEntity)) {
 			return -1;
 		}
-		net.minecraft.entity.living.mob.monster.boss.EnderDragonEntity dragon = (net.minecraft.entity.living.mob.monster.boss.EnderDragonEntity) part.dragon;
+		EnderDragonEntity dragon = (EnderDragonEntity) part.dragon;
 		for (int i = 0; i < dragon.parts.length; i++) {
 			if (dragon.parts[i] == part) {
 				return i;
@@ -202,8 +208,8 @@ public final class CommonProxy implements ModInitializer {
 		if (index < 0) {
 			return parent;
 		}
-		if (parent instanceof net.minecraft.entity.living.mob.monster.boss.EnderDragonEntity) {
-			net.minecraft.entity.living.mob.monster.boss.EnderDragonEntity dragon = (net.minecraft.entity.living.mob.monster.boss.EnderDragonEntity) parent;
+		if (parent instanceof EnderDragonEntity) {
+			EnderDragonEntity dragon = (EnderDragonEntity) parent;
 			if (index < dragon.parts.length) {
 				return dragon.parts[index];
 			}
@@ -245,7 +251,7 @@ public final class CommonProxy implements ModInitializer {
 			});
 		});
 		ServerConnectionEvents.PLAY_READY.register(context -> {
-			net.minecraft.server.entity.living.player.ServerPlayerEntity player = context.player();
+			ServerPlayerEntity player = context.player();
 			String configs = PluginConfig.INSTANCE.getServerConfigs();
 			if (!configs.isEmpty()) {
 				Jade.LOGGER.debug("Syncing config to {} ({})", player.getGameProfile().getName(), player.getGameProfile().getId());
@@ -266,8 +272,8 @@ public final class CommonProxy implements ModInitializer {
 		});
 	}
 
-	public static int showOrHideFromServer(Collection<net.minecraft.server.entity.living.player.ServerPlayerEntity> players, boolean show) {
-		for (net.minecraft.server.entity.living.player.ServerPlayerEntity player : players) {
+	public static int showOrHideFromServer(Collection<ServerPlayerEntity> players, boolean show) {
+		for (ServerPlayerEntity player : players) {
 			PacketBuffer buf = Networking.buffer();
 			buf.writeBoolean(show);
 			ServerPlayNetworking.send(player, Networking.channel(Identifiers.PACKET_SHOW_OVERLAY), buf);

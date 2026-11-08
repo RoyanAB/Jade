@@ -2,6 +2,8 @@ package snownee.jade.addon.core;
 
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -24,7 +26,7 @@ public enum DistanceProvider implements IBlockComponentProvider, IEntityComponen
 	private static final int[] colors = {0xef9a9a, 0xa5d6a7, 0x90caf9, 0xb02a37, 0x198754, 0x0a58ca};
 
 	public static String distance(Accessor<?> accessor) {
-		net.minecraft.entity.living.player.PlayerEntity player = accessor.getPlayer();
+		PlayerEntity player = accessor.getPlayer();
 		Vec3d eye = new Vec3d(player.x, player.y + player.getEyeHeight(), player.z);
 		return fmt.format(eye.distanceTo(accessor.getHitResult().facePos));
 	}
@@ -54,7 +56,7 @@ public enum DistanceProvider implements IBlockComponentProvider, IEntityComponen
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, EntityAccessor accessor, IPluginConfig config) {
-		net.minecraft.entity.Entity entity = accessor.getEntity();
+		Entity entity = accessor.getEntity();
 		append(tooltip, accessor, new BlockPos(entity.x, entity.y, entity.z), config);
 	}
 
@@ -64,7 +66,7 @@ public enum DistanceProvider implements IBlockComponentProvider, IEntityComponen
 		String distanceMsg = distance ? I18n.translate("narration.jade.distance", distanceVal) : null;
 		if (config.get(Identifiers.CORE_COORDINATES)) {
 			if (config.get(Identifiers.CORE_REL_COORDINATES) && Screen.isControlDown()) {
-				net.minecraft.entity.living.player.PlayerEntity player = accessor.getPlayer();
+				PlayerEntity player = accessor.getPlayer();
 				xyz(tooltip, pos.subtract(new BlockPos(player.x, player.y + player.getEyeHeight(), player.z)));
 			} else {
 				xyz(tooltip, pos);

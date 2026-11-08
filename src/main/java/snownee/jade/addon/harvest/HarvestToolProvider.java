@@ -5,7 +5,10 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.state.BlockState;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.resource.Identifier;
@@ -47,7 +50,7 @@ public class HarvestToolProvider implements IBlockComponentProvider {
 			registerHandler(SimpleToolHandler.create(Identifiers.JADE("hoe"), true, java.util.Arrays.asList(
 				Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.DIAMOND_HOE)));
 			registerHandler(SimpleToolHandler.create(Identifiers.JADE("sword"), false, java.util.Collections.singletonList(Items.WOODEN_SWORD))
-				.addBlock(net.minecraft.block.Blocks.WEB));
+				.addBlock(Blocks.WEB));
 			registerHandler(new ShearsToolHandler());
 		}
 	}
@@ -73,7 +76,7 @@ public class HarvestToolProvider implements IBlockComponentProvider {
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-		net.minecraft.entity.living.player.PlayerEntity player = accessor.getPlayer();
+		PlayerEntity player = accessor.getPlayer();
 		if (!config.get(Identifiers.MC_HARVEST_TOOL_CREATIVE) && (player.isCreative() || player.isSpectator())) {
 			return;
 		}
@@ -86,7 +89,7 @@ public class HarvestToolProvider implements IBlockComponentProvider {
 		float destroyProgress = state.getMiningSpeed(player, accessor.getLevel(), accessor.getPosition());
 		if (destroySpeed < 0 || destroyProgress <= 0) {
 			if (config.get(Identifiers.MC_SHOW_UNBREAKABLE)) {
-				Text text = IThemeHelper.get().failure(net.minecraft.client.resource.language.I18n.translate("jade.harvest_tool.unbreakable"));
+				Text text = IThemeHelper.get().failure(I18n.translate("jade.harvest_tool.unbreakable"));
 				tooltip.add(IElementHelper.get().text(text).message(null));
 			}
 			return;

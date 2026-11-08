@@ -1,6 +1,7 @@
 package snownee.jade.addon.debug;
 
 import net.minecraft.block.Block;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
@@ -25,7 +26,7 @@ public class DebugPlugin implements IWailaPlugin {
 		registration.markAsClientFeature(Identifiers.DEBUG_REGISTRY_NAME);
 		registration.markAsClientFeature(Identifiers.DEBUG_SPECIAL_REGISTRY_NAME);
 
-		Text debug = new LiteralText(net.minecraft.client.resource.language.I18n.translate("config.jade.plugin_jade.debug"));
+		Text debug = new LiteralText(I18n.translate("config.jade.plugin_jade.debug"));
 		registration.setConfigCategoryOverride(Identifiers.DEBUG_BLOCK_STATES, debug);
 		registration.setConfigCategoryOverride(Identifiers.DEBUG_REGISTRY_NAME, debug);
 	}

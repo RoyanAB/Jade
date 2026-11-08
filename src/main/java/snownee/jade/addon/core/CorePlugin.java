@@ -11,7 +11,6 @@ import snownee.jade.impl.BlockAccessorClientHandler;
 import snownee.jade.impl.EntityAccessorClientHandler;
 import snownee.jade.util.JsonConfig;
 
-import java.util.Arrays;
 import java.util.Collections;
 
 @WailaPlugin

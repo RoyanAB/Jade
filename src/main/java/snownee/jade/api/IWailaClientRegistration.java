@@ -8,6 +8,8 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.callback.*;
 import snownee.jade.api.platform.PlatformWailaClientRegistration;
@@ -116,7 +118,7 @@ public interface IWailaClientRegistration extends PlatformWailaClientRegistratio
 
 	void setServerData(NbtCompound tag);
 
-	ItemStack getBlockCamouflage(net.minecraft.world.World level, net.minecraft.util.math.BlockPos pos);
+	ItemStack getBlockCamouflage(World level, BlockPos pos);
 
 	void markAsClientFeature(Identifier uid);
 

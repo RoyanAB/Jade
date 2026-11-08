@@ -1,5 +1,6 @@
 package snownee.jade.addon.vanilla;
 
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.living.mob.passive.PassiveEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
@@ -19,7 +20,7 @@ public enum MobGrowthProvider implements IEntityComponentProvider, IServerDataPr
 		}
 		int time = accessor.getServerData().getInt("GrowingTime");
 		if (time > 0) {
-			tooltip.add(new LiteralText(net.minecraft.client.resource.language.I18n.translate("jade.mobgrowth.time",
+			tooltip.add(new LiteralText(I18n.translate("jade.mobgrowth.time",
 				IThemeHelper.get().seconds(time).getFormattedString())));
 		}
 	}

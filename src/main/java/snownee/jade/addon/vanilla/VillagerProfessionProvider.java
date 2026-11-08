@@ -1,5 +1,6 @@
 package snownee.jade.addon.vanilla;
 
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.living.mob.passive.VillagerEntity;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
@@ -22,8 +23,8 @@ public enum VillagerProfessionProvider implements IEntityComponentProvider {
 		int profession = villager.getProfession();
 		String name = profession >= 0 && profession < PROFESSIONS.length ? PROFESSIONS[profession] : "farmer";
 		String key = "entity.Villager." + name;
-		Text text = new LiteralText(net.minecraft.client.resource.language.I18n.hasTranslation(key)
-			? net.minecraft.client.resource.language.I18n.translate(key) : name);
+		Text text = new LiteralText(I18n.hasTranslation(key)
+			? I18n.translate(key) : name);
 		tooltip.add(text);
 	}
 

@@ -8,6 +8,8 @@ import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import net.minecraft.client.render.vertex.Tesselator;
+import net.minecraft.util.math.MathHelper;
+import org.lwjgl.opengl.GL11;
 import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.util.SmoothChasingValue;
 
@@ -96,7 +98,7 @@ public class OptionsNav extends ListWidget {
 		GlStateManager.color4f(0.125F, 0.125F, 0.125F, 1.0F);
 		Tesselator tesselator = Tesselator.getInstance();
 		BufferBuilder buffer = tesselator.getBuffer();
-		buffer.begin(7, DefaultVertexFormat.POSITION_TEX);
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
 		float f = 32.0F;
 		float u = maxX / f;
 		float v = (maxY + (int) scrollAmount) / f;
@@ -107,7 +109,7 @@ public class OptionsNav extends ListWidget {
 		buffer.vertex(maxX, minY, 0.0).texture(u2, v).nextVertex();
 		buffer.vertex(minX, minY, 0.0).texture(u, v).nextVertex();
 		tesselator.end();
-		net.minecraft.client.render.platform.GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		int rowLeft = minX + width / 2 - getRowWidth() / 2 + 2;
 		int rowTop = minY + 4 - (int) scrollAmount;
 		DisplayHelper.pushScissor(minX, minY, maxX - minX, maxY - minY);
@@ -123,7 +125,7 @@ public class OptionsNav extends ListWidget {
 		if (maxScroll > 0) {
 			int scrollbarX = getScrollbarPosition();
 			int thumbHeight = (maxY - minY) * (maxY - minY) / Math.max(1, getHeight());
-			thumbHeight = net.minecraft.util.math.MathHelper.clamp(thumbHeight, 32, maxY - minY - 8);
+			thumbHeight = MathHelper.clamp(thumbHeight, 32, maxY - minY - 8);
 			int thumbY = (int) scrollAmount * (maxY - minY - thumbHeight) / maxScroll + minY;
 			GuiElement.fill(scrollbarX, minY, scrollbarX + 6, maxY, 0xFF000000);
 			GuiElement.fill(scrollbarX, thumbY, scrollbarX + 6, thumbY + thumbHeight, 0xFF808080);

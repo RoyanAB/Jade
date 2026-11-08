@@ -1,5 +1,6 @@
 package snownee.jade.addon.vanilla;
 
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.living.mob.passive.animal.AnimalEntity;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
@@ -19,7 +20,7 @@ public enum MobBreedingProvider implements IEntityComponentProvider, IServerData
 		}
 		int time = accessor.getServerData().getInt("BreedingCD");
 		if (time > 0) {
-			tooltip.add(new LiteralText(net.minecraft.client.resource.language.I18n.translate("jade.mobbreeding.time",
+			tooltip.add(new LiteralText(I18n.translate("jade.mobbreeding.time",
 				IThemeHelper.get().seconds(time).getFormattedString())));
 		}
 	}

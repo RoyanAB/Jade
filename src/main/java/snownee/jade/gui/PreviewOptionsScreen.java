@@ -5,6 +5,8 @@ import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.sound.instance.SimpleSoundInstance;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import snownee.jade.Jade;
@@ -125,7 +127,7 @@ public abstract class PreviewOptionsScreen extends BaseOptionsScreen {
 			} else {
 				adjustingPosition = false;
 				adjustDragging = false;
-				minecraft.getSoundManager().play(net.minecraft.client.sound.instance.SimpleSoundInstance.of(net.minecraft.sound.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+				minecraft.getSoundManager().play(SimpleSoundInstance.of(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			}
 			return;
 		}
@@ -147,7 +149,7 @@ public abstract class PreviewOptionsScreen extends BaseOptionsScreen {
 			if (keyCode == 1) {
 				adjustingPosition = false;
 				adjustDragging = false;
-				minecraft.getSoundManager().play(net.minecraft.client.sound.instance.SimpleSoundInstance.of(net.minecraft.sound.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+				minecraft.getSoundManager().play(SimpleSoundInstance.of(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			}
 			return;
 		}

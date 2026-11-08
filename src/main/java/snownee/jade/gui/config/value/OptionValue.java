@@ -3,6 +3,7 @@ package snownee.jade.gui.config.value;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.gui.config.widget.JadeWidget;
@@ -11,7 +12,7 @@ import java.util.function.Consumer;
 
 public abstract class OptionValue<T> extends OptionsList.Entry {
 
-	private static final Text SERVER_FEATURE = new LiteralText("*").setStyle(new net.minecraft.text.Style().setColor(Formatting.GRAY));
+	private static final Text SERVER_FEATURE = new LiteralText("*").setStyle(new Style().setColor(Formatting.GRAY));
 	protected final Consumer<T> setter;
 	private final Text title;
 	public boolean serverFeature;

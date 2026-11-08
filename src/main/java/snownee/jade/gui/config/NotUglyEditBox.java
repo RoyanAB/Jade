@@ -4,6 +4,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.TextRenderer;
+import net.minecraft.client.sound.instance.SimpleSoundInstance;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
@@ -197,7 +199,7 @@ public class NotUglyEditBox extends TextFieldWidget implements JadeWidget {
 		if (mouseOverCross) {
 			setText("");
 			setFocused(true);
-			Minecraft.getInstance().getSoundManager().play(net.minecraft.client.sound.instance.SimpleSoundInstance.of(net.minecraft.sound.SoundEvents.UI_BUTTON_CLICK, 1.0F));
+			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.of(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			return true;
 		}
 		setFocused(true);

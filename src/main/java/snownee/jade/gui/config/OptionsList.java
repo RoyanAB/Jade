@@ -10,6 +10,8 @@ import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ListWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.options.GameOptions;
+import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
@@ -21,6 +23,7 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL11;
 import snownee.jade.gui.BaseOptionsScreen;
 import snownee.jade.gui.PreviewOptionsScreen;
 import snownee.jade.gui.config.value.CycleOptionValue;
@@ -48,7 +51,7 @@ public class OptionsList extends ListWidget {
 	private final List<Entry> visibleEntries = Lists.newArrayList();
 	private final Runnable diskWriter;
 	public Title currentTitle;
-	public net.minecraft.client.options.KeyBinding selectedKey;
+	public KeyBinding selectedKey;
 	private BaseOptionsScreen owner;
 	private float targetScroll;
 	private Entry defaultParent;
@@ -238,7 +241,7 @@ public class OptionsList extends ListWidget {
 			GlStateManager.color4f(0.35F, 0.35F, 0.35F, 1.0F);
 			Tesselator tesselator = Tesselator.getInstance();
 			BufferBuilder buffer = tesselator.getBuffer();
-			buffer.begin(7, DefaultVertexFormat.POSITION_TEX);
+			buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
 			float f = 32.0F;
 			float u = owner.width / f;
 			float v = 1.0F;
@@ -248,7 +251,7 @@ public class OptionsList extends ListWidget {
 			buffer.vertex(owner.width, top, 0.0).texture(u2, v).nextVertex();
 			buffer.vertex(0.0, top, 0.0).texture(u, v).nextVertex();
 			tesselator.end();
-			net.minecraft.client.render.platform.GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			drawFooterGradient(0, top - 4, owner.width, 4, 0x00000000, 0xEE000000);
 		}
 	}
@@ -268,16 +271,16 @@ public class OptionsList extends ListWidget {
 		GlStateManager.disableTexture();
 		GlStateManager.enableBlend();
 		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-		GlStateManager.shadeModel(7425);
+		GlStateManager.shadeModel(GL11.GL_SMOOTH);
 		Tesselator tesselator = Tesselator.getInstance();
 		BufferBuilder buffer = tesselator.getBuffer();
-		buffer.begin(7, DefaultVertexFormat.POSITION_COLOR);
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_COLOR);
 		buffer.vertex(left + width, top, 0.0).color(r1, g1, b1, a1).nextVertex();
 		buffer.vertex(left, top, 0.0).color(r1, g1, b1, a1).nextVertex();
 		buffer.vertex(left, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
 		buffer.vertex(left + width, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
 		tesselator.end();
-		GlStateManager.shadeModel(7424);
+		GlStateManager.shadeModel(GL11.GL_FLAT);
 		GlStateManager.disableBlend();
 		GlStateManager.enableTexture();
 	}
@@ -395,7 +398,7 @@ public class OptionsList extends ListWidget {
 		return add(new CycleOptionValue<>(optionName, builder, value, setter));
 	}
 
-	public void keybind(net.minecraft.client.options.KeyBinding keybind) {
+	public void keybind(KeyBinding keybind) {
 		add(new KeybindOptionButton(this, keybind));
 	}
 
@@ -533,7 +536,7 @@ public class OptionsList extends ListWidget {
 
 	public boolean keyPressed(char chr, int keyCode) {
 		if (selectedKey != null) {
-			net.minecraft.client.options.GameOptions options = Minecraft.getInstance().options;
+			GameOptions options = Minecraft.getInstance().options;
 			options.setKeyCode(selectedKey, keyCode == 1 ? org.lwjgl.input.Keyboard.KEY_NONE : keyCode);
 			selectedKey = null;
 			resetMappingAndUpdateButtons();

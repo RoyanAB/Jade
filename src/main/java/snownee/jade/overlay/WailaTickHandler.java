@@ -7,6 +7,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.HitResult;
 import net.minecraft.world.World;
 import snownee.jade.Jade;
@@ -96,7 +97,7 @@ public class WailaTickHandler {
 			BlockPos pos = new BlockPos(entity.x, entity.y, entity.z);
 			accessor = WailaClientRegistration.instance().blockAccessor()
 				.blockState(Blocks.GRASS.defaultState())
-				.hit(new HitResult(new net.minecraft.util.math.Vec3d(entity.x, entity.y + entity.getEyeHeight(), entity.z), Direction.UP, pos))
+				.hit(new HitResult(new Vec3d(entity.x, entity.y + entity.getEyeHeight(), entity.z), Direction.UP, pos))
 				.build();
 		}
 

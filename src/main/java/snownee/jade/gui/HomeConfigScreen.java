@@ -2,12 +2,12 @@ package snownee.jade.gui;
 
 import com.google.common.collect.Lists;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.render.Window;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.text.Formatting;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Text;
+import net.minecraft.text.*;
+import net.minecraft.util.math.MathHelper;
 import snownee.jade.Jade;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.gui.config.widget.JadeButton;
@@ -50,8 +50,8 @@ public class HomeConfigScreen extends Screen {
 			festival = 99;
 		}
 		LiteralText heart = new LiteralText("❤");
-		heart.setStyle(new net.minecraft.text.Style().setColor(Formatting.RED));
-		credit = new net.minecraft.text.TranslatableText("gui.jade.by", heart);
+		heart.setStyle(new Style().setColor(Formatting.RED));
+		credit = new TranslatableText("gui.jade.by", heart);
 	}
 
 	private static boolean isLunarNewYear(LocalDate now) {
@@ -163,7 +163,7 @@ public class HomeConfigScreen extends Screen {
 	}
 
 	@Override
-	protected void buttonClicked(net.minecraft.client.gui.widget.ButtonWidget button) {
+	protected void buttonClicked(ButtonWidget button) {
 		int index = buttons.indexOf(button);
 		if (index == 0) {
 			minecraft.openScreen(new WailaConfigScreen(this));
@@ -361,7 +361,7 @@ public class HomeConfigScreen extends Screen {
 		JadeFont jadeFont = textRenderer instanceof JadeFont ? (JadeFont) textRenderer : null;
 		if (jadeFont != null) {
 			jadeFont.jade$setGlint((ticks - y / 5F) % 90 / 45 * width, mouseX);
-			jadeFont.jade$setGlintStrength(1, 1 - net.minecraft.util.math.MathHelper.clamp(Math.abs(mouseY - y) / 20F, 0, 1));
+			jadeFont.jade$setGlintStrength(1, 1 - MathHelper.clamp(Math.abs(mouseY - y) / 20F, 0, 1));
 		}
 		GlStateManager.pushMatrix();
 		GlStateManager.translatef(0, y, 0);

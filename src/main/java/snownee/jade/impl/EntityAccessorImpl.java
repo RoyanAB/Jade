@@ -5,6 +5,7 @@ import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.HitResult;
 import net.minecraft.world.World;
@@ -38,7 +39,7 @@ public class EntityAccessorImpl extends AccessorImpl<HitResult> implements Entit
 			if (target == null)
 				return;
 			Entity entity = CommonProxy.wrapPartEntityParent(target);
-			if (player.getSquaredDistanceTo(new net.minecraft.util.math.BlockPos(entity.x, entity.y, entity.z)) > Jade.MAX_DISTANCE_SQR)
+			if (player.getSquaredDistanceTo(new BlockPos(entity.x, entity.y, entity.z)) > Jade.MAX_DISTANCE_SQR)
 				return;
 			List<IServerDataProvider<EntityAccessor>> providers = WailaCommonRegistration.instance().getEntityNBTProviders(entity);
 			if (providers.isEmpty())

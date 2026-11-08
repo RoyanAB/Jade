@@ -1,5 +1,6 @@
 package snownee.jade.gui.config;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.resource.language.I18n;
@@ -83,7 +84,7 @@ public class KeybindOptionButton extends OptionButton {
 		@Override
 		public boolean mouseClicked(int mouseX, int mouseY, int button) {
 			if (button == 0 && this.button.isActive() && this.button.isVisible()) {
-				this.button.playClickSound(net.minecraft.client.Minecraft.getInstance().getSoundManager());
+				this.button.playClickSound(Minecraft.getInstance().getSoundManager());
 				onClick.run();
 				return true;
 			}

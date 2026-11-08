@@ -1,5 +1,6 @@
 package snownee.jade.gui.config.widget;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,13 +57,13 @@ public class CycleButtonWidget<T> extends JadeButton {
 	}
 
 	@Override
-	public void render(net.minecraft.client.Minecraft mc, int mouseX, int mouseY, float tickDelta) {
+	public void render(Minecraft mc, int mouseX, int mouseY, float tickDelta) {
 		this.message = currentMessage();
 		super.render(mc, mouseX, mouseY, tickDelta);
 	}
 
 	@Override
-	public boolean mouseClicked(net.minecraft.client.Minecraft mc, int mouseX, int mouseY) {
+	public boolean mouseClicked(Minecraft mc, int mouseX, int mouseY) {
 		boolean clicked = super.mouseClicked(mc, mouseX, mouseY);
 		if (clicked && active && visible) {
 			cycle();
@@ -81,7 +82,7 @@ public class CycleButtonWidget<T> extends JadeButton {
 	}
 
 	@Override
-	protected void drawMessage(net.minecraft.client.Minecraft mc) {
+	protected void drawMessage(Minecraft mc) {
 		int valueColor = !active ? 10526880 : getValueColor();
 		int labelColor = !active ? 10526880 : 16777215;
 		int textY = y + (height - 8) / 2;
@@ -116,7 +117,7 @@ public class CycleButtonWidget<T> extends JadeButton {
 			return false;
 		}
 		cycle();
-		playClickSound(net.minecraft.client.Minecraft.getInstance().getSoundManager());
+		playClickSound(Minecraft.getInstance().getSoundManager());
 		return true;
 	}
 

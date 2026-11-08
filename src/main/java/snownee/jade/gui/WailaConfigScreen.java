@@ -7,8 +7,10 @@ import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.resource.Identifier;
 import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import snownee.jade.Jade;
@@ -116,7 +118,7 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 
 		ConfigOverlay overlay = Jade.CONFIG.get().getOverlay();
 		options.title("overlay");
-		List<net.minecraft.resource.Identifier> themes = IThemeHelper.get().getThemes().stream().filter($ -> !$.hidden).map($ -> $.id).collect(Collectors.toList());
+		List<Identifier> themes = IThemeHelper.get().getThemes().stream().filter($ -> !$.hidden).map($ -> $.id).collect(Collectors.toList());
 		options.choices("overlay_theme", overlay.getTheme().id, themes, id -> {
 			if (Objects.equals(id, overlay.getTheme().id))
 				return;
@@ -151,11 +153,11 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 		options.choices("flip_main_hand", overlay.getFlipMainHand(), overlay::setFlipMainHand);
 		options.choices("tts_mode", general.getTTSMode(), general::setTTSMode);
 
-		options.title("danger_zone").setStyle(new net.minecraft.text.Style().setColor(Formatting.RED));
+		options.title("danger_zone").setStyle(new Style().setColor(Formatting.RED));
 		JadeButton resetButton = new JadeButton(0, 0, 100, 20, I18n.translate("controls.reset")).textColor(0xFF5555);
 		resetButton.setActive(true);
 		Text title = OptionsList.Entry.makeTitle("reset_settings");
-		title.setStyle(new net.minecraft.text.Style().setColor(Formatting.RED));
+		title.setStyle(new Style().setColor(Formatting.RED));
 		options.add(new OptionButton(title, new ButtonWrapper(resetButton, () -> minecraft.openScreen(new ConfirmScreen((bl, confirmId) -> {
 			if (bl) {
 				for (KeyBinding keyBinding : minecraft.options.keyBindings) {

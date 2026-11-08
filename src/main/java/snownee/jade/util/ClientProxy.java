@@ -15,9 +15,9 @@ import net.ornithemc.osl.entrypoints.api.client.ClientModInitializer;
 import net.ornithemc.osl.keybinds.api.KeyBindingEvents;
 import net.ornithemc.osl.lifecycle.api.client.MinecraftClientEvents;
 import net.ornithemc.osl.networking.api.PacketBuffer;
-import net.ornithemc.osl.networking.api.client.ClientPacketListener;
 import net.ornithemc.osl.networking.api.client.ClientConnectionEvents;
 import net.ornithemc.osl.networking.api.client.ClientPlayNetworking;
+import net.ornithemc.osl.resource.loader.api.client.ClientResourceLoaderEvents;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
@@ -173,7 +173,7 @@ public final class ClientProxy implements ClientModInitializer {
 			Jade.CONFIG.save();
 		});
 
-		net.ornithemc.osl.resource.loader.api.client.ClientResourceLoaderEvents.END_RESOURCE_RELOAD.register((manager, context) -> {
+		ClientResourceLoaderEvents.END_RESOURCE_RELOAD.register((manager, context) -> {
 			ThemeHelper.INSTANCE.reload();
 			snownee.jade.addon.harvest.HarvestToolProvider.clearCache();
 		});

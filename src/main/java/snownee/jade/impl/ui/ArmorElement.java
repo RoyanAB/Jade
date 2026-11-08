@@ -9,6 +9,7 @@ import net.minecraft.client.render.vertex.Tesselator;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL11;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.ui.Element;
@@ -79,7 +80,7 @@ public class ArmorElement extends Element {
 		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		Tesselator tesselator = Tesselator.getInstance();
 		BufferBuilder buffer = tesselator.getBuffer();
-		buffer.begin(7, DefaultVertexFormat.POSITION_TEX);
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
 		float f = 1 / 256F;
 		buffer.vertex(x, y + ICON_SIZE, 0).texture(u * f, (v + ICON_SIZE) * f).nextVertex();
 		buffer.vertex(x + ICON_SIZE, y + ICON_SIZE, 0).texture((u + ICON_SIZE) * f, (v + ICON_SIZE) * f).nextVertex();

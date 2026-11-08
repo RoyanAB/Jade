@@ -2,7 +2,9 @@ package snownee.jade.util;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
+import net.minecraft.block.Block;
 import net.minecraft.client.resource.language.I18n;
+import net.minecraft.entity.Entities;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
@@ -41,7 +43,7 @@ public class ModIdentification {
 		return getModName(id.getNamespace()).orElse(id.getNamespace());
 	}
 
-	public static String getModName(net.minecraft.block.Block block) {
+	public static String getModName(Block block) {
 		return getModName(CommonProxy.getId(block));
 	}
 
@@ -60,7 +62,7 @@ public class ModIdentification {
 		if (entity instanceof ItemEntity) {
 			return getModName(((ItemEntity) entity).getItem());
 		}
-		Identifier id = net.minecraft.entity.Entities.REGISTRY.getKey(entity.getClass());
+		Identifier id = Entities.REGISTRY.getKey(entity.getClass());
 		return id == null ? "minecraft" : getModName(id.getNamespace()).orElse(id.getNamespace());
 	}
 

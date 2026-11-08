@@ -1,5 +1,6 @@
 package snownee.jade.addon.vanilla;
 
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.decoration.PaintingEntity;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
@@ -19,8 +20,8 @@ public enum PaintingProvider implements IEntityComponentProvider {
 	@Override
 	public void appendTooltip(ITooltip tooltip, EntityAccessor accessor, IPluginConfig config) {
 		String name = ((PaintingEntity) accessor.getEntity()).motive.name.toLowerCase(Locale.ENGLISH);
-		tooltip.add(IThemeHelper.get().warning(new LiteralText(net.minecraft.client.resource.language.I18n.translate("painting." + name + ".title"))));
-		tooltip.add(new LiteralText(net.minecraft.client.resource.language.I18n.translate("painting." + name + ".author")));
+		tooltip.add(IThemeHelper.get().warning(new LiteralText(I18n.translate("painting." + name + ".title"))));
+		tooltip.add(new LiteralText(I18n.translate("painting." + name + ".author")));
 	}
 
 	@Override

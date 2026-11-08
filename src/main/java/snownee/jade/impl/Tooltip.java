@@ -3,6 +3,7 @@ package snownee.jade.impl;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec2f;
@@ -26,7 +27,7 @@ public class Tooltip implements ITooltip {
 	public boolean sneakyDetails;
 
 	public static void drawDebugBorder(float x, float y, IElement element) {
-		if (Jade.CONFIG.get().getGeneral().isDebug() && net.minecraft.client.gui.screen.Screen.isControlDown() && element.getCachedSize() != null) {
+		if (Jade.CONFIG.get().getGeneral().isDebug() && Screen.isControlDown() && element.getCachedSize() != null) {
 			Vec2f translate = element.getTranslation();
 			Vec2f size = element.getCachedSize();
 			DisplayHelper.INSTANCE.drawBorder(x, y, x + size.x, y + size.y, 1, 0x88FF0000, true);

@@ -3,12 +3,14 @@ package snownee.jade;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.client.ClientPlayerInteractionManager;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.toast.SystemToast;
 import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.TooltipFlag;
+import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -21,11 +23,7 @@ import snownee.jade.api.config.IWailaConfig.IConfigOverlay;
 import snownee.jade.api.config.IWailaConfig.TTSMode;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.theme.Theme;
-import snownee.jade.api.ui.BoxStyle;
-import snownee.jade.api.ui.ColorPalette;
-import snownee.jade.api.ui.Direction2D;
-import snownee.jade.api.ui.IBoxElement;
-import snownee.jade.api.ui.TooltipRect;
+import snownee.jade.api.ui.*;
 import snownee.jade.gui.HomeConfigScreen;
 import snownee.jade.impl.config.PluginConfig;
 import snownee.jade.impl.config.WailaConfig.ConfigGeneral;
@@ -93,7 +91,7 @@ public final class JadeClient {
 		}
 	}
 
-	public static void onGui(net.minecraft.client.gui.screen.Screen screen) {
+	public static void onGui(Screen screen) {
 	}
 
 	public static void onTooltip(java.util.List<String> tooltip, ItemStack stack, TooltipFlag context) {
@@ -113,7 +111,7 @@ public final class JadeClient {
 				break;
 			}
 		}
-		tooltip.add(i, net.minecraft.text.Formatting.BLUE.toString() + net.minecraft.text.Formatting.ITALIC + name);
+		tooltip.add(i, Formatting.BLUE.toString() + Formatting.ITALIC + name);
 	}
 
 	@Nullable

@@ -1,6 +1,7 @@
 package snownee.jade.overlay;
 
 import com.google.common.base.Predicate;
+import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.client.Minecraft;
@@ -127,7 +128,7 @@ public class RayTracing {
 		}
 		HitResult blockResult = world.rayTrace(eyePosition, traceEnd, allowLiquids);
 		if (blockResult != null && blockResult.type == HitResult.Type.BLOCK && fluidMode == FluidMode.SOURCE_ONLY) {
-			net.minecraft.block.Block block = world.getBlockState(blockResult.getPos()).getBlock();
+			Block block = world.getBlockState(blockResult.getPos()).getBlock();
 			if (block == Blocks.FLOWING_WATER || block == Blocks.FLOWING_LAVA) {
 				blockResult = world.rayTrace(eyePosition, traceEnd, false);
 			}

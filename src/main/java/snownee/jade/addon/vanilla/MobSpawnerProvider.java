@@ -1,6 +1,7 @@
 package snownee.jade.addon.vanilla;
 
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
@@ -21,7 +22,7 @@ public enum MobSpawnerProvider implements IBlockComponentProvider {
 		if (displayEntity == null) {
 			return;
 		}
-		Text text = new LiteralText(net.minecraft.client.resource.language.I18n.translate("jade.spawner",
+		Text text = new LiteralText(I18n.translate("jade.spawner",
 			name.getFormattedString(), displayEntity.getDisplayName().getFormattedString()));
 		tooltip.replace(Identifiers.CORE_OBJECT_NAME, IThemeHelper.get().title(text));
 	}

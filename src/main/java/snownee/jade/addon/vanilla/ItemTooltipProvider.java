@@ -5,6 +5,7 @@ import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.TooltipFlag;
 import net.minecraft.resource.Identifier;
+import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
 import snownee.jade.JadeClient;
 import snownee.jade.api.EntityAccessor;
@@ -33,7 +34,7 @@ public enum ItemTooltipProvider implements IEntityComponentProvider {
 		String modName = ModIdentification.getModName(stack);
 		for (int i = 1; i < lines.size(); i++) {
 			String line = lines.get(i);
-			if (Objects.equals(net.minecraft.text.Formatting.strip(line), modName)) {
+			if (Objects.equals(Formatting.strip(line), modName)) {
 				continue;
 			}
 			if (Minecraft.getInstance().textRenderer.getWidth(line) > 250) {

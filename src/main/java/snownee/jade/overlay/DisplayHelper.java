@@ -1,7 +1,9 @@
 package snownee.jade.overlay;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.Window;
 import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.platform.Lighting;
 import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import net.minecraft.client.render.vertex.Tesselator;
@@ -11,6 +13,7 @@ import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL11;
 import snownee.jade.Jade;
 import snownee.jade.api.config.IWailaConfig.IConfigOverlay;
 import snownee.jade.api.ui.Color;
@@ -26,22 +29,22 @@ public class DisplayHelper implements IDisplayHelper {
 	public static final DisplayHelper INSTANCE = new DisplayHelper();
 
 	public static int guiWidth() {
-		return new net.minecraft.client.render.Window(net.minecraft.client.Minecraft.getInstance()).getWidth();
+		return new Window(Minecraft.getInstance()).getWidth();
 	}
 
 	public static void pushScissor(int x, int y, int width, int height) {
-		net.minecraft.client.Minecraft mc = net.minecraft.client.Minecraft.getInstance();
-		int scale = new net.minecraft.client.render.Window(mc).getScale();
-		org.lwjgl.opengl.GL11.glEnable(org.lwjgl.opengl.GL11.GL_SCISSOR_TEST);
-		org.lwjgl.opengl.GL11.glScissor(x * scale, mc.height - (y + height) * scale, width * scale, height * scale);
+		Minecraft mc = Minecraft.getInstance();
+		int scale = new Window(mc).getScale();
+		GL11.glEnable(GL11.GL_SCISSOR_TEST);
+		GL11.glScissor(x * scale, mc.height - (y + height) * scale, width * scale, height * scale);
 	}
 
 	public static void popScissor() {
-		org.lwjgl.opengl.GL11.glDisable(org.lwjgl.opengl.GL11.GL_SCISSOR_TEST);
+		GL11.glDisable(GL11.GL_SCISSOR_TEST);
 	}
 
 	public static int guiHeight() {
-		return new net.minecraft.client.render.Window(net.minecraft.client.Minecraft.getInstance()).getHeight();
+		return new Window(Minecraft.getInstance()).getHeight();
 	}
 
 	public static DecimalFormat dfCommas = new DecimalFormat("0.##");
@@ -74,7 +77,7 @@ public class DisplayHelper implements IDisplayHelper {
 		GlStateManager.enableBlend();
 		GlStateManager.disableTexture();
 		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-		buffer.begin(7, DefaultVertexFormat.POSITION_COLOR);
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_COLOR);
 		buffer.vertex(minX, maxY, 0.0).color(r, g, b, a).nextVertex();
 		buffer.vertex(maxX, maxY, 0.0).color(r, g, b, a).nextVertex();
 		buffer.vertex(maxX, minY, 0.0).color(r, g, b, a).nextVertex();
@@ -95,12 +98,12 @@ public class DisplayHelper implements IDisplayHelper {
 		GlStateManager.scalef(scale, scale, scale);
 		GlStateManager.enableBlend();
 		GlStateManager.enableTexture();
-		net.minecraft.client.render.platform.Lighting.turnOnGui();
+		Lighting.turnOnGui();
 		mc.getItemRenderer().renderGuiItem(stack, 0, 0);
 		ItemStack overlayRender = stack.copy();
 		overlayRender.setSize(1);
 		mc.getItemRenderer().renderGuiItemDecorations(mc.textRenderer, overlayRender, 0, 0, text);
-		net.minecraft.client.render.platform.Lighting.turnOff();
+		Lighting.turnOff();
 		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.disableBlend();
 		GlStateManager.popMatrix();
@@ -128,10 +131,10 @@ public class DisplayHelper implements IDisplayHelper {
 		GlStateManager.enableBlend();
 		GlStateManager.disableTexture();
 		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-		GlStateManager.shadeModel(7425);
+		GlStateManager.shadeModel(GL11.GL_SMOOTH);
 		Tesselator tesselator = Tesselator.getInstance();
 		BufferBuilder buffer = tesselator.getBuffer();
-		buffer.begin(7, DefaultVertexFormat.POSITION_COLOR);
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_COLOR);
 		if (horizontal) {
 			buffer.vertex(left + width, top, 0.0).color(r2, g2, b2, a2).nextVertex();
 			buffer.vertex(left, top, 0.0).color(r1, g1, b1, a1).nextVertex();
@@ -144,7 +147,7 @@ public class DisplayHelper implements IDisplayHelper {
 			buffer.vertex(left + width, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
 		}
 		tesselator.end();
-		GlStateManager.shadeModel(7424);
+		GlStateManager.shadeModel(GL11.GL_FLAT);
 		GlStateManager.enableTexture();
 		GlStateManager.disableBlend();
 	}
@@ -263,7 +266,7 @@ public class DisplayHelper implements IDisplayHelper {
 		GlStateManager.color4f(1, 1, 1, alpha);
 		Tesselator tesselator = Tesselator.getInstance();
 		BufferBuilder buffer = tesselator.getBuffer();
-		buffer.begin(7, DefaultVertexFormat.POSITION_TEX);
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
 		buffer.vertex(x, y + height, 0.0).texture(u1, v2).nextVertex();
 		buffer.vertex(x + width, y + height, 0.0).texture(u2, v2).nextVertex();
 		buffer.vertex(x + width, y, 0.0).texture(u2, v1).nextVertex();

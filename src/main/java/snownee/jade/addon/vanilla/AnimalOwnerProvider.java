@@ -1,5 +1,6 @@
 package snownee.jade.addon.vanilla;
 
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.mob.passive.animal.tameable.TameableEntity;
 import net.minecraft.nbt.NbtCompound;
@@ -32,7 +33,7 @@ public enum AnimalOwnerProvider implements IEntityComponentProvider, IServerData
 				name = "???";
 			}
 		}
-		tooltip.add(new LiteralText(net.minecraft.client.resource.language.I18n.translate("jade.owner", name)));
+		tooltip.add(new LiteralText(I18n.translate("jade.owner", name)));
 	}
 
 	@Override

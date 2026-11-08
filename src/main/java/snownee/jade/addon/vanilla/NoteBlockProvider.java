@@ -4,6 +4,8 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.NoteBlockBlockEntity;
 import net.minecraft.block.material.Material;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
@@ -34,8 +36,8 @@ public enum NoteBlockProvider implements IBlockComponentProvider {
 		BlockPos pos = accessor.getPosition();
 		int instrument = getInstrument(world, pos);
 		String key = "jade.instrument." + INSTRUMENTS[instrument];
-		String name = net.minecraft.client.resource.language.I18n.hasTranslation(key)
-			? net.minecraft.client.resource.language.I18n.translate(key) : INSTRUMENTS[instrument];
+		String name = I18n.hasTranslation(key)
+			? I18n.translate(key) : INSTRUMENTS[instrument];
 		String pitch = PITCH[note % PITCH.length];
 		Formatting octave = (snownee.jade.api.theme.IThemeHelper.get().isLightColorScheme() ? OCTAVE_LIGHT : OCTAVE)[note / PITCH.length];
 		tooltip.add(new LiteralText(name + " " + octave + pitch));
@@ -45,7 +47,7 @@ public enum NoteBlockProvider implements IBlockComponentProvider {
 		if (world.getBlockState(pos.up()).getMaterial() != Material.AIR) {
 			return 0;
 		}
-		net.minecraft.block.state.BlockState state = world.getBlockState(pos.down());
+		BlockState state = world.getBlockState(pos.down());
 		Block block = state.getBlock();
 		Material material = state.getMaterial();
 		if (material == Material.STONE) return 1;

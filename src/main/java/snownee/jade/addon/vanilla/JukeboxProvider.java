@@ -2,6 +2,7 @@ package snownee.jade.addon.vanilla;
 
 import net.minecraft.block.JukeboxBlock;
 import net.minecraft.block.state.BlockState;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
@@ -21,13 +22,13 @@ public enum JukeboxProvider implements IBlockComponentProvider, IServerDataProvi
 		if (state.get(JukeboxBlock.HAS_RECORD) && accessor.getServerData().contains("Record")) {
 			try {
 				ItemStack stack = new ItemStack(accessor.getServerData().getCompound("Record"));
-				tooltip.add(new LiteralText(net.minecraft.client.resource.language.I18n.translate("record.nowPlaying",
+				tooltip.add(new LiteralText(I18n.translate("record.nowPlaying",
 					IDisplayHelper.get().stripColor(new LiteralText(stack.getHoverName())).getFormattedString())));
 			} catch (Exception e) {
 				Jade.LOGGER.error("", e);
 			}
 		} else {
-			tooltip.add(new LiteralText(net.minecraft.client.resource.language.I18n.translate("tooltip.jade.empty")));
+			tooltip.add(new LiteralText(I18n.translate("tooltip.jade.empty")));
 		}
 	}
 
