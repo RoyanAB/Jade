@@ -1,5 +1,6 @@
 package snownee.jade.overlay;
 
+import com.google.common.base.Preconditions;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.state.BlockState;
@@ -137,6 +138,7 @@ public class WailaTickHandler {
 			callback.beforeCollecting(OverlayRenderer.theme, accessor0);
 		});
 		Theme theme = OverlayRenderer.theme.getValue();
+		Preconditions.checkNotNull(theme, "Theme cannot be null");
 
 		if (config.getDisplayMode() == DisplayMode.LITE && !ClientProxy.isShowDetailsPressed()) {
 			Tooltip dummyTooltip = new Tooltip();

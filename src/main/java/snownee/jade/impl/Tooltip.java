@@ -303,6 +303,7 @@ public class Tooltip implements ITooltip {
 			for (IElement element : alignedElements) {
 				Vec2f translate = element.getTranslation();
 				Vec2f size = element.getCachedSize();
+				drawDebugBorder(ox, y, element);
 				element.render(ox + translate.x, y + translate.y, (extendable && element == lastElement ? maxX : (ox + size.x)) + translate.x, maxY + translate.y);
 				ox += size.x;
 			}

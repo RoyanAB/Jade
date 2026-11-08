@@ -10,16 +10,19 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.state.BlockState;
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.Entities;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.mob.monster.boss.EnderDragonEntity;
 import net.minecraft.entity.living.mob.monster.boss.EnderDragonPart;
 import net.minecraft.entity.living.mob.monster.boss.WitherEntity;
 import net.minecraft.entity.living.player.PlayerEntity;
+import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.ShearsItem;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.resource.Identifier;
 import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
@@ -80,6 +83,16 @@ public final class CommonProxy implements ModInitializer {
 			String s = tag.getString("id");
 			if (s.contains(":")) {
 				return new Identifier(s).getNamespace();
+			}
+		}
+		NbtList storedEnchantments = EnchantedBookItem.getStoredEnchantments(stack);
+		if (!storedEnchantments.isEmpty()) {
+			Enchantment enchantment = Enchantment.REGISTRY.get(storedEnchantments.getCompound(0).getShort("id"));
+			if (enchantment != null) {
+				Identifier enchantmentId = Enchantment.REGISTRY.getKey(enchantment);
+				if (enchantmentId != null) {
+					return enchantmentId.getNamespace();
+				}
 			}
 		}
 		Identifier id = Item.REGISTRY.getKey(stack.getItem());

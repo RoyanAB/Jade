@@ -33,8 +33,8 @@ public enum ItemTooltipProvider implements IEntityComponentProvider {
 		}
 		String modName = ModIdentification.getModName(stack);
 		for (int i = 1; i < lines.size(); i++) {
-			String line = lines.get(i);
-			if (Objects.equals(Formatting.strip(line), modName)) {
+			String line = Formatting.strip(lines.get(i));
+			if (Objects.equals(line, modName)) {
 				continue;
 			}
 			if (Minecraft.getInstance().textRenderer.getWidth(line) > 250) {

@@ -39,6 +39,9 @@ import java.util.Optional;
 
 public final class ClientProxy implements ClientModInitializer {
 
+	private static long lastFrameSampleNanos;
+	private static float cachedFrameDelta;
+
 	public static boolean hasJEI = false;
 	public static boolean hasREI = false;
 	public static boolean hasFastScroll = CommonProxy.isModLoaded("fastscroll");
@@ -57,7 +60,7 @@ public final class ClientProxy implements ClientModInitializer {
 
 	public static void onRenderTick() {
 		try {
-			OverlayRenderer.renderOverlay();
+			OverlayRenderer.renderOverlay478757();
 		} catch (Throwable e) {
 			WailaExceptionHandler.handleErr(e, null, null);
 		}

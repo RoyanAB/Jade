@@ -6,7 +6,6 @@ import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.lwjgl.input.Keyboard;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
 import snownee.jade.api.Identifiers;
@@ -38,7 +37,7 @@ public class OverlayRenderer {
 	private static float disappearTicks;
 
 	public static Theme theme() {
-		return theme.getValue() == null ? IThemeHelper.get().getTheme(Theme.DEFAULT_THEME_ID) : theme.getValue();
+		return theme.getValue();
 	}
 
 	public static boolean shouldShow() {
@@ -50,7 +49,7 @@ public class OverlayRenderer {
 		if (!general.shouldDisplayTooltip())
 			return false;
 
-		if (general.getDisplayMode() == IWailaConfig.DisplayMode.HOLD_KEY && (JadeClient.showOverlay == null || !Keyboard.isKeyDown(JadeClient.showOverlay.getKeyCode())))
+		if (general.getDisplayMode() == IWailaConfig.DisplayMode.HOLD_KEY && (JadeClient.showOverlay == null || !JadeClient.showOverlay.isPressed()))
 			return false;
 
 		BossBarOverlapMode mode = Jade.CONFIG.get().getGeneral().getBossBarOverlapMode();
@@ -93,7 +92,17 @@ public class OverlayRenderer {
 		return !(mc.gui.getPlayerTabOverlay() instanceof snownee.jade.mixin.PlayerTabOverlayAccess) || !((snownee.jade.mixin.PlayerTabOverlayAccess) mc.gui.getPlayerTabOverlay()).isVisible() || !general.shouldHideFromTabList();
 	}
 
-	public static void renderOverlay() {
+	/**
+	 * NOTE!!!
+	 * <p>
+	 * Please do NOT replace the whole codes with Mixin.
+	 * It will make me unable to locate bugs.
+	 * A regular plugin can also realize the same features.
+	 * <p>
+	 * Secondly, please notice the license that Jade is using.
+	 * I don't think it is compatible with some open-source licenses.
+	 */
+	public static void renderOverlay478757() {
 		float delta = Minecraft.getInstance().getTickDelta();
 		ticks += delta;
 		shown = false;
@@ -144,11 +153,11 @@ public class OverlayRenderer {
 		}
 
 		Minecraft.getInstance().profiler.push("Jade Overlay");
-		renderOverlay(root);
+		renderOverlay478757(root);
 		Minecraft.getInstance().profiler.pop();
 	}
 
-	public static void renderOverlay(BoxElement root) {
+	public static void renderOverlay478757(BoxElement root) {
 		root.updateRect(rect);
 
 		for (JadeBeforeRenderCallback callback : WailaClientRegistration.instance().beforeRenderCallback.callbacks()) {

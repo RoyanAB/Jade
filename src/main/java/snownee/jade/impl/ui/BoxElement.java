@@ -103,7 +103,7 @@ public class BoxElement extends Element implements IBoxElement {
 				track = WailaTickHandler.instance().progressTracker.createInfo(getTag(), progress, false, 0);
 			}
 			if (track != null) {
-				progress = track.tick(1);
+				progress = track.tick(Minecraft.getInstance().getTickDelta());
 			}
 			IDisplayHelper.get().drawGradientProgress(x + left, y + top, width, height, progress, style.boxProgressColors.get(boxProgressType), style.boxProgressColors.get(boxProgressType));
 		}
@@ -122,6 +122,7 @@ public class BoxElement extends Element implements IBoxElement {
 				offsetY += (getCachedSize().y - iconSize.y) / 2;
 			}
 			float offsetX = contentLeft + offset.x;
+			Tooltip.drawDebugBorder(offsetX, offsetY, icon);
 			icon.render(offsetX, offsetY, offsetX + iconSize.x, offsetY + iconSize.y);
 			contentLeft += iconSize.x + 3;
 		}
@@ -153,6 +154,8 @@ public class BoxElement extends Element implements IBoxElement {
 				}
 			}
 		}
+
+		Tooltip.drawDebugBorder(0, 0, this);
 	}
 
 	@Override

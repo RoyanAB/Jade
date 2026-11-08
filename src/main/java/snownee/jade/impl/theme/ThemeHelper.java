@@ -256,7 +256,12 @@ public class ThemeHelper implements IThemeHelper {
 
 	protected Text color(Object componentOrString, int color) {
 		if (componentOrString instanceof Text) {
-			return ((Text) componentOrString).setStyle(colorStyle(color));
+			Text text = (Text) componentOrString;
+			Style style = text.getStyle();
+			if (style.isEmpty()) {
+				return text.setStyle(colorStyle(color));
+			}
+			return text.setStyle(style.copy().setColor(colorStyle(color).getColor()));
 		} else {
 			return new LiteralText(Objects.toString(componentOrString)).setStyle(colorStyle(color));
 		}

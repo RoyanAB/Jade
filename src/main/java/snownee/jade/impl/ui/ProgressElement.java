@@ -54,7 +54,7 @@ public class ProgressElement extends Element implements StyledElement {
 			track = WailaTickHandler.instance().progressTracker.createInfo(getTag(), progress, canDecrease, width);
 		}
 		if (track != null) {
-			progress = track.tick(1);
+			progress = track.tick(Minecraft.getInstance().getTickDelta());
 		}
 		float b = boxStyle.borderWidth();
 		style.render(x + b, y + b, width - b * 2, height - b * 2, progress, text);

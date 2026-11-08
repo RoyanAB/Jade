@@ -42,10 +42,16 @@ public interface ITooltip {
 		add(size(), text, tag);
 	}
 
+	/**
+	 * Add a text to a new line
+	 */
 	default void add(int index, Text text) {
 		add(index, text, null);
 	}
 
+	/**
+	 * Add a text to a new line
+	 */
 	default void add(int index, Text text, Identifier tag) {
 		add(index, IElementHelper.get().text(text).tag(tag));
 	}
@@ -61,6 +67,9 @@ public interface ITooltip {
 		add(size(), element);
 	}
 
+	/**
+	 * Add a text to a new line
+	 */
 	default void add(int index, List<IElement> elements) {
 		boolean first = true;
 		for (IElement element : elements) {
@@ -73,10 +82,16 @@ public interface ITooltip {
 		}
 	}
 
+	/**
+	 * Add a text to a new line
+	 */
 	default void add(List<IElement> elements) {
 		add(size(), elements);
 	}
 
+	/**
+	 * Add a text to a new line
+	 */
 	void add(int index, IElement element);
 
 	/**
@@ -113,6 +128,11 @@ public interface ITooltip {
 		}
 	}
 
+	/**
+	 * Append a text to the last line
+	 * <p>
+	 * IMPORTANT: DO NOT use this to concat texts
+	 */
 	void append(int index, IElement element);
 
 	/**
@@ -129,6 +149,11 @@ public interface ITooltip {
 	 */
 	boolean replace(Identifier tag, UnaryOperator<List<List<IElement>>> elements);
 
+	/**
+	 * Replace all elements that are tagged with this tag at the position of the first found element
+	 *
+	 * @return true if any element is replaced
+	 */
 	boolean replace(Identifier tag, Text text);
 
 	@Deprecated
@@ -139,6 +164,9 @@ public interface ITooltip {
 	 */
 	List<IElement> get(Identifier tag);
 
+	/**
+	 * Get all elements that are tagged with this tag
+	 */
 	List<IElement> get(int index, Align align);
 
 	String getMessage();

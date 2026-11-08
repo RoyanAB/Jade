@@ -368,6 +368,13 @@ public class Color {
 		return parseDouble(value, 360);
 	}
 
+	/**
+	 * @param red   0 to 255.
+	 * @param green 0 to 255.
+	 * @param blue  0 to 255.
+	 * @return a <code>Color</code> object that contains color information such as red, green, blue, cyan, magenta, yellow, black, hue, saturation, lightness, opacity, and hexadecimal numbers
+	 * @see #valueOf(String)
+	 */
 	public static Color rgb(int color) {
 		double a = (color >> 24 & 255) / 255D;
 		if (a == 0)

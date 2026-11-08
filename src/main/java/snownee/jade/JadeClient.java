@@ -12,6 +12,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.TooltipFlag;
 import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.Style;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +33,7 @@ import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.util.CommonProxy;
 import snownee.jade.util.ModIdentification;
 
+import java.text.MessageFormat;
 import java.util.Objects;
 
 public final class JadeClient {
@@ -107,11 +109,19 @@ public final class JadeClient {
 		int i = 1;
 		String name = ModIdentification.getModName(stack);
 		for (; i < tooltip.size(); i++) {
-			if (Objects.equals(tooltip.get(i), name)) {
+			if (Objects.equals(Formatting.strip(tooltip.get(i)), name)) {
 				break;
 			}
 		}
-		tooltip.add(i, Formatting.BLUE.toString() + Formatting.ITALIC + name);
+		Style style = Jade.CONFIG.get().getFormatting().getItemModNameStyle();
+		StringBuilder formatted = new StringBuilder();
+		if (style.getColor() != null) {
+			formatted.append(style.getColor());
+		}
+		if (style.isItalic()) {
+			formatted.append(Formatting.ITALIC);
+		}
+		tooltip.add(i, formatted.append(name).toString());
 	}
 
 	@Nullable
@@ -154,9 +164,7 @@ public final class JadeClient {
 		if (roundCorner && theme.tooltipStyle instanceof BoxStyle.GradientBorder) {
 			top += 1;
 		}
-		//port: 1.12 has no Minecraft#getDeltaFrameTime(); approximate the per-frame delta from the FPS counter.
-		float delta = Math.min(1.0F, 20.0F / Math.max(1, Minecraft.getCurrentFps()));
-		progressAlpha += delta * (destroying ? 0.1F : -0.1F);
+		progressAlpha += Minecraft.getInstance().getTickDelta() * (destroying ? 0.1F : -0.1F);
 		if (destroying) {
 			progressAlpha = Math.min(progressAlpha, 0.6F);
 			float perTick = state.getMiningSpeed(mc.player, mc.world, pos);
@@ -188,9 +196,9 @@ public final class JadeClient {
 
 	public static String format(String s, Object... objects) {
 		try {
-			return String.format(I18n.translate(s), objects);
+			return MessageFormat.format(I18n.translate(s), objects);
 		} catch (Exception e) {
-			return s;
+			return I18n.translate(s);
 		}
 	}
 }

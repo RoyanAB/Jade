@@ -38,6 +38,9 @@ public enum FurnaceProvider implements IBlockComponentProvider, IServerDataProvi
 	@Override
 	public void appendServerData(NbtCompound data, BlockAccessor accessor) {
 		FurnaceBlockEntity furnace = (FurnaceBlockEntity) accessor.getBlockEntity();
+		if (furnace.isEmpty()) {
+			return;
+		}
 		NbtList items = new NbtList();
 		for (int i = 0; i < 3; i++) {
 			items.addElement(furnace.getItem(i).writeNbt(new NbtCompound()));

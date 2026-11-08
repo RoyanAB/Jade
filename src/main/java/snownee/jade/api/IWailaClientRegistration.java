@@ -25,12 +25,36 @@ public interface IWailaClientRegistration extends PlatformWailaClientRegistratio
 	 */
 	void addConfig(Identifier key, boolean defaultValue);
 
+	/**
+	 * Register a namespaced config key to be accessed within data providers.
+	 *
+	 * @param key          the namespaced key
+	 * @param defaultValue the default value
+	 */
 	void addConfig(Identifier key, Enum<?> defaultValue);
 
+	/**
+	 * Register a namespaced config key to be accessed within data providers.
+	 *
+	 * @param key          the namespaced key
+	 * @param defaultValue the default value
+	 */
 	void addConfig(Identifier key, String defaultValue, Predicate<String> validator);
 
+	/**
+	 * Register a namespaced config key to be accessed within data providers.
+	 *
+	 * @param key          the namespaced key
+	 * @param defaultValue the default value
+	 */
 	void addConfig(Identifier key, int defaultValue, int min, int max, boolean slider);
 
+	/**
+	 * Register a namespaced config key to be accessed within data providers.
+	 *
+	 * @param key          the namespaced key
+	 * @param defaultValue the default value
+	 */
 	void addConfig(Identifier key, float defaultValue, float min, float max, boolean slider);
 
 	void addConfigListener(Identifier key, Consumer<Identifier> listener);
@@ -39,20 +63,60 @@ public interface IWailaClientRegistration extends PlatformWailaClientRegistratio
 
 	void setConfigCategoryOverride(Identifier key, List<Text> override);
 
+	/**
+	 * Register an {@link IJadeProvider} instance to allow overriding the icon for a block via the
+	 * {@link IBlockComponentProvider#getIcon(BlockAccessor, IPluginConfig, IElement)} method.
+	 *
+	 * @param provider The data provider instance
+	 * @param block    The highest level class to apply to
+	 */
 	void registerBlockIcon(IBlockComponentProvider provider, Class<? extends Block> block);
 
+	/**
+	 * Register an {@link IJadeProvider} instance for appending informations to
+	 * the tooltip.
+	 *
+	 * @param provider The data provider instance
+	 * @param block    The highest level class to apply to
+	 */
 	void registerBlockComponent(IBlockComponentProvider provider, Class<? extends Block> block);
 
+	/**
+	 * Register an {@link IEntityComponentProvider} instance to allow overriding the icon for a entity via the
+	 * {@link IEntityComponentProvider#getIcon(EntityAccessor, IPluginConfig, IElement)} method.
+	 *
+	 * @param provider The data provider instance
+	 * @param entity   The highest level class to apply to
+	 */
 	void registerEntityIcon(IEntityComponentProvider provider, Class<? extends Entity> entity);
 
+	/**
+	 * Register an {@link IEntityComponentProvider} instance for appending {@link net.minecraft.network.chat.Component}
+	 * to the tooltip.
+	 *
+	 * @param provider The data provider instance
+	 * @param entity   The highest level class to apply to
+	 */
 	void registerEntityComponent(IEntityComponentProvider provider, Class<? extends Entity> entity);
 
+	/**
+	 * Mark a block as hidden in tooltip.
+	 */
 	void hideTarget(Block block);
 
+	/**
+	 * Mark a block as hidden in tooltip.
+	 */
 	void hideTarget(Class<? extends Entity> entityType);
 
+	/**
+	 * Mark a block to show name of the picked result, rather than block name.
+	 */
 	void usePickedResult(Block block);
 
+	/**
+	 * Mark a block to show name of the picked result, rather than block name.
+	 */
 	void usePickedResult(Class<? extends Entity> entityType);
 
 	BlockAccessor.Builder blockAccessor();

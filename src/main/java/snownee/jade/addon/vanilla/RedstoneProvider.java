@@ -4,6 +4,7 @@ import net.minecraft.block.*;
 import net.minecraft.block.entity.ComparatorBlockEntity;
 import net.minecraft.block.entity.HopperBlockEntity;
 import net.minecraft.block.state.BlockState;
+import net.minecraft.block.state.property.Property;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
@@ -41,6 +42,13 @@ public enum RedstoneProvider implements IBlockComponentProvider, IServerDataProv
 				tooltip.add(new LiteralText(I18n.translate("tooltip.jade.power", t.info(accessor.getServerData().getInt("Signal")).getFormattedString())));
 			}
 			return;
+		}
+		for (Property<?> property : state.properties()) {
+			if ("power".equals(property.getName()) && property.getType() == Integer.class) {
+				@SuppressWarnings("unchecked")
+				Property<Integer> power = (Property<Integer>) property;
+				tooltip.add(new LiteralText(I18n.translate("tooltip.jade.power", t.info(state.get(power)).getFormattedString())));
+			}
 		}
 		if (block instanceof HopperBlock && accessor.getServerData().contains("HopperLocked")) {
 			tooltip.add(t.danger(I18n.translate("jade.hopper.locked")));

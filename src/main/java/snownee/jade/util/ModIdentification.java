@@ -6,6 +6,7 @@ import net.minecraft.block.Block;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entities;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Identifier;
@@ -61,6 +62,9 @@ public class ModIdentification {
 	public static String getModName(Entity entity) {
 		if (entity instanceof ItemEntity) {
 			return getModName(((ItemEntity) entity).getItem());
+		}
+		if (entity instanceof FallingBlockEntity) {
+			return getModName(((FallingBlockEntity) entity).getBlock().getBlock());
 		}
 		Identifier id = Entities.REGISTRY.getKey(entity.getClass());
 		return id == null ? "minecraft" : getModName(id.getNamespace()).orElse(id.getNamespace());
