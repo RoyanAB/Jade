@@ -6,6 +6,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
@@ -38,12 +39,7 @@ public enum DistanceProvider implements IBlockComponentProvider, IEntityComponen
 	}
 
 	public static void xyz(ITooltip tooltip, Vec3i pos) {
-		Text display = new LiteralText("")
-			.append(display(pos.getX(), 0))
-			.append(new LiteralText(" "))
-			.append(display(pos.getY(), 1))
-			.append(new LiteralText(" "))
-			.append(display(pos.getZ(), 2));
+		Text display = new TranslatableText("jade.blockpos", display(pos.getX(), 0), display(pos.getY(), 1), display(pos.getZ(), 2));
 		String narrate = I18n.translate("narration.jade.blockpos", narrate(pos.getX()), narrate(pos.getY()), narrate(pos.getZ()));
 		tooltip.add(IElementHelper.get().text(display).message(narrate));
 	}

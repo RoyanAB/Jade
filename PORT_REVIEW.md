@@ -7,12 +7,12 @@
 ## 1. 总体结论
 
 - 原版未排除包共 **145** 个 Java 文件，移植版对应 **119** 个，另有 **44** 个 1.12 专用/移植新增文件。
-- 已配对文件中，原版注释行 **579**，移植版 **545**，保留率约 **94%**；API 接口的主要 Javadoc 已补回。
-- 发现并修复 **23 类实际逻辑/效果问题**，其中影响最明显的几类：
+- 已配对文件中，原版注释行 **579**，移植版 **549**，保留率约 **95%**；API 接口的主要 Javadoc 已补回。
+- 发现并修复 **25 类实际逻辑/效果问题**，其中影响最明显的几类：
   1. 物品 tooltip 不显示堆叠数量；
   2. tooltip/overlay/进度条动画速度不正确；
   3. 语言文件 `{0}` 占位符不生效（繁殖/成长/下蛋倒计时全部显示成字面量）；
-  4. 主题颜色映射错误，info/success/warning/danger/title/坐标颜色全部偏色；
+  4. 主题颜色映射错误（先按索引、后按 RGB 距离都不对），info/success/warning/danger/title/坐标颜色全部偏色；
   5. 主题关闭文字阴影时颜色被一起剥离，彩色文字变纯白；
   6. `hide-entities.json` 实体黑名单从未生效。
 - 仍有若干**功能性缺口**（流体视图、TTS、数据包伪装、1.12 不存在的内容等），见第 5 节。
@@ -42,7 +42,7 @@
 | `JadeClient.java` | 298 / 204 | 0 / 0 | 1 | format 改 MessageFormat；模组名样式/去重、breaking 世界重置已修；mob effect fog 仍 no-op。 |
 | `addon/core/BlockFaceProvider.java` | 44 / 45 | 0 / 0 | 0 | 对应基本一致 |
 | `addon/core/CorePlugin.java` | 83 / 79 | 0 / 0 | 0 | hide-entities 之前未生效，已接上；默认隐藏 area_effect_cloud/fireworks_rocket。 |
-| `addon/core/DistanceProvider.java` | 93 / 101 | 0 / 0 | 0 | 坐标浅色主题配色、空格分隔已修。 |
+| `addon/core/DistanceProvider.java` | 93 / 96 | 0 / 0 | 0 | 坐标改为 TranslatableText + 三色样式，与原版同构；浅色主题配色已修。 |
 | `addon/core/ModNameProvider.java` | 58 / 51 | 0 / 0 | 0 | 对应基本一致 |
 | `addon/core/ObjectNameProvider.java` | 130 / 102 | 0 / 1 | 0 | 对应基本一致 |
 | `addon/debug/BlockStatesProvider.java` | 57 / 62 | 0 / 0 | 0 | 对应基本一致 |
@@ -126,9 +126,9 @@
 | `impl/config/entry/FloatConfigEntry.java` | 43 / 43 | 0 / 0 | 0 | 对应基本一致 |
 | `impl/config/entry/IntConfigEntry.java` | 42 / 42 | 0 / 0 | 0 | 对应基本一致 |
 | `impl/config/entry/StringConfigEntry.java` | 29 / 29 | 0 / 0 | 0 | 对应基本一致 |
-| `impl/theme/ThemeHelper.java` | 209 / 294 | 0 / 4 | 1 | 颜色映射改用 16 色 RGB 表；支持 modNameStyle；fallback 防递归；ThemeCodecs 缺失。 |
+| `impl/theme/ThemeHelper.java` | 209 / 333 | 0 / 8 | 1 | 颜色改为色相分带映射（幂等）；支持 modNameStyle；fallback 防递归；ThemeCodecs 缺失。 |
 | `impl/ui/ArmorElement.java` | 86 / 96 | 0 / 0 | 0 | 对应基本一致 |
-| `impl/ui/BoxElement.java` | 373 / 323 | 7 / 0 | 0 | 动画 delta 修正；rect 计算顺序对齐原版；debug border 恢复；无 fluid sprite/九宫格。 |
+| `impl/ui/BoxElement.java` | 373 / 320 | 7 / 0 | 0 | 动画 delta 修正；rect 计算顺序对齐原版；debug border 恢复；无 fluid sprite/九宫格。 |
 | `impl/ui/CompoundElement.java` | 34 / 30 | 0 / 0 | 0 | 对应基本一致 |
 | `impl/ui/ElementHelper.java` | 119 / 97 | 5 / 0 | 2 | 缺 fluid/sub 元素。 |
 | `impl/ui/HealthElement.java` | 94 / 102 | 0 / 0 | 0 | 心形/文本偏移与 narration 已对齐原版；1.12 用 icons.png。 |
@@ -144,7 +144,7 @@
 | `impl/ui/TextElement.java` | 57 / 50 | 0 / 0 | 0 | 对应基本一致 |
 | `mixin/BossHealthOverlayMixin.java` | 25 / 23 | 0 / 0 | 0 | 对应基本一致 |
 | `mixin/ClientLevelMixin.java` | 21 / 23 | 0 / 0 | 0 | 对应基本一致 |
-| `overlay/DisplayHelper.java` | 439 / 297 | 2 / 0 | 7 | 物品光照/数量、sprite UV 裁剪、drawText 颜色保留已修；缺 fluid/tiled/text shadow。 |
+| `overlay/DisplayHelper.java` | 439 / 298 | 2 / 0 | 7 | 物品光照/数量、sprite UV 裁剪、drawText 颜色保留已修；缺 fluid/tiled/text shadow。 |
 | `overlay/OverlayRenderer.java` | 215 / 208 | 10 / 10 | 1 | frame delta、HOLD_KEY、theme 空值、license 注释；lwjgl FQN 已清理。 |
 | `overlay/ProgressTracker.java` | 96 / 95 | 0 / 0 | 0 | spd 除数 max(1) 防 0。 |
 | `overlay/RayTracing.java` | 201 / 191 | 1 / 5 | 1 | AABB clip、实体命中点、流体模式、距离比较已重写。 |
@@ -299,6 +299,18 @@ MessageFormat.format(I18n.get(s), objects)
 - 移植版只遍历了方块黑名单，**实体黑名单完全没有应用**，`hide-entities.json` 形同虚设；默认值也是空的。
 - 修复：补上实体遍历（`Entities.REGISTRY.get(id)` → `hideTarget(Class)`），默认值设为 1.12 的 `minecraft:area_effect_cloud`、`minecraft:fireworks_rocket`。
 
+### P1-8 主题颜色映射到错误的原版颜色（第四轮发现）
+
+- 文件：`impl/theme/ThemeHelper.java`
+- 上一轮把 `Formatting.getId()` 换成了真实 RGB 表 + RGB 距离，但 RGB 距离对**柔和色**无效：
+  - `0xef9a9a`（浅红）到 GRAY 的距离比到 RED 更近 → 变成灰色
+  - `0xa5d6a7`（浅绿）到 GRAY 更近 → 变成灰色
+  - `0x90caf9`（浅蓝）到 AQUA 最近 → 只有它看起来有颜色
+  这正是“坐标只有 Z 是蓝色，X/Y 像白色”的原因。
+- 修复：改为**按色相分带**映射（红/橙/黄/绿/青/蓝/紫），再按亮度选亮色或暗色变体；灰度色单独按亮度选 BLACK/DARK_GRAY/GRAY/WHITE。
+- 校验：对 16 个原版颜色自身做映射是幂等的（不会漂移）；坐标 6 色映射为 RED/GREEN/BLUE 与 DARK_RED/DARK_GREEN/DARK_BLUE。
+- 影响：所有主题色（info/success/warning/danger/title/坐标/状态效果/繁殖倒计时）。
+
 ### P2-1 debug 元素边框没有渲染
 
 - 原版：`BoxElement` 和 `Tooltip.Line` 都调用 `Tooltip.drawDebugBorder`。
@@ -414,6 +426,12 @@ MessageFormat.format(I18n.get(s), objects)
 - `HealthElement` 文本偏移改为 `x + 8`、补回 `narration.jade.health` 消息（与原版一致）。
 - `ThemeHelper.defaultTheme()` 补上 `Theme.DEFAULT_THEME_ID`，避免早期 `activeTheme` 变成 null。
 
+### P2-18 坐标文本结构未对齐原版（第四轮发现）
+
+- 文件：`addon/core/DistanceProvider.java`
+- 原版是 `Component.translatable("jade.blockpos", display(x), display(y), display(z))`；移植版手工拼 `LiteralText("")` + `", "` 分隔。
+- 1.12 的 `TranslatableText` 同样支持 `Text` 参数并保留各自样式，已改为与原版同构的写法，同时正确使用语言文件里的 `"%s %s %s"` 格式。
+
 ## 6.5 网络层审查
 
 已对照原版 Fabric Networking，逐项检查移植版 OSL 通道：
@@ -498,7 +516,7 @@ MessageFormat.format(I18n.get(s), objects)
 ## 8. 注释缺失审查
 
 - 原版配对文件注释行：**579**
-- 移植版：**544**（约 94%）
+- 移植版：**549**（约 95%）
 - 已补回 API 接口的主要 Javadoc（8 个文件、约 42 个注释块），并清理了自动插入时产生的重复/错位注释。
 - 仍有 12 个文件完全没有原注释：
 

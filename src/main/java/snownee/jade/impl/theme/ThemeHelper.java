@@ -41,36 +41,75 @@ public class ThemeHelper implements IThemeHelper {
 		return new Style().setColor(formatting);
 	}
 
-	/**
-	 * 1.12 {@link Formatting} only supports the 16 vanilla colors, so any RGB color is mapped to the closest one.
-	 */
-	private static final int[] VANILLA_COLORS = {
-		0x000000, 0x0000AA, 0x00AA00, 0x00AAAA, 0xAA0000, 0xAA00AA, 0xFFAA00, 0xAAAAAA,
-		0x555555, 0x5555FF, 0x55FF55, 0x55FFFF, 0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF
-	};
-
-	private static Formatting nearestFormatting(int color) {
-		Formatting best = Formatting.GRAY;
-		double bestDist = Double.MAX_VALUE;
-		int r = (color >> 16) & 0xFF;
-		int g = (color >> 8) & 0xFF;
-		int b = color & 0xFF;
-		for (Formatting formatting : Formatting.values()) {
-			int id = formatting.getId();
-			if (!formatting.isColor() || id < 0 || id >= VANILLA_COLORS.length) {
-				continue;
-			}
-			int c = VANILLA_COLORS[id];
-			int cr = (c >> 16) & 0xFF;
-			int cg = (c >> 8) & 0xFF;
-			int cb = c & 0xFF;
-			double dist = (r - cr) * (r - cr) + (g - cg) * (g - cg) + (b - cb) * (b - cb);
-			if (dist < bestDist) {
-				bestDist = dist;
-				best = formatting;
+	private static float[] toHsl(int color) {
+		float r = ((color >> 16) & 0xFF) / 255.0F;
+		float g = ((color >> 8) & 0xFF) / 255.0F;
+		float b = (color & 0xFF) / 255.0F;
+		float max = Math.max(r, Math.max(g, b));
+		float min = Math.min(r, Math.min(g, b));
+		float delta = max - min;
+		float lightness = (max + min) / 2.0F;
+		float saturation = delta == 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
+		float hue = 0;
+		if (delta != 0) {
+			if (max == r) {
+				hue = 60 * (((g - b) / delta) % 6);
+			} else if (max == g) {
+				hue = 60 * (((b - r) / delta) + 2);
+			} else {
+				hue = 60 * (((r - g) / delta) + 4);
 			}
 		}
-		return best;
+		if (hue < 0) {
+			hue += 360;
+		}
+		return new float[]{hue, saturation, lightness};
+	}
+
+	/**
+	 * Picks the vanilla color with the closest hue, then the closest lightness.
+	 * <p>
+	 * A plain RGB distance is useless here: the pastel colors used by themes (e.g. 0xef9a9a) are closer to
+	 * {@link Formatting#GRAY} than to {@link Formatting#RED} in RGB space, which made red/green text look white.
+	 * Mapping by hue band keeps the intended color family, and is idempotent for the 16 vanilla colors.
+	 */
+	private static Formatting nearestFormatting(int color) {
+		float[] hsl = toHsl(color);
+		float hue = hsl[0];
+		float saturation = hsl[1];
+		float lightness = hsl[2];
+		if (saturation < 0.12F) {
+			if (lightness < 0.15F) {
+				return Formatting.BLACK;
+			}
+			if (lightness < 0.45F) {
+				return Formatting.DARK_GRAY;
+			}
+			if (lightness < 0.80F) {
+				return Formatting.GRAY;
+			}
+			return Formatting.WHITE;
+		}
+		boolean bright = lightness > 0.5F;
+		if (hue >= 345 || hue < 20) {
+			return bright ? Formatting.RED : Formatting.DARK_RED;
+		}
+		if (hue < 40) {
+			return Formatting.GOLD;
+		}
+		if (hue < 70) {
+			return bright ? Formatting.YELLOW : Formatting.GOLD;
+		}
+		if (hue < 160) {
+			return bright ? Formatting.GREEN : Formatting.DARK_GREEN;
+		}
+		if (hue < 200) {
+			return bright ? Formatting.AQUA : Formatting.DARK_AQUA;
+		}
+		if (hue < 255) {
+			return bright ? Formatting.BLUE : Formatting.DARK_BLUE;
+		}
+		return bright ? Formatting.LIGHT_PURPLE : Formatting.DARK_PURPLE;
 	}
 
 	public void reload() {
