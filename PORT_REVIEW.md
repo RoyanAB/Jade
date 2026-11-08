@@ -8,13 +8,16 @@
 
 - 原版未排除包共 **145** 个 Java 文件，移植版对应 **119** 个，另有 **44** 个 1.12 专用/移植新增文件。
 - 已配对文件中，原版注释行 **579**，移植版 **549**，保留率约 **95%**；API 接口的主要 Javadoc 已补回。
-- 发现并修复 **25 类实际逻辑/效果问题**，其中影响最明显的几类：
+- 发现并修复 **32 类实际逻辑/效果问题**，其中影响最明显的几类：
   1. 物品 tooltip 不显示堆叠数量；
   2. tooltip/overlay/进度条动画速度不正确；
   3. 语言文件 `{0}` 占位符不生效（繁殖/成长/下蛋倒计时全部显示成字面量）；
   4. 主题颜色映射错误（先按索引、后按 RGB 距离都不对），info/success/warning/danger/title/坐标颜色全部偏色；
   5. 主题关闭文字阴影时颜色被一起剥离，彩色文字变纯白；
-  6. `hide-entities.json` 实体黑名单从未生效。
+  6. `hide-entities.json` 实体黑名单从未生效；
+  7. 配置列表行高错位 2px（悬停条比文字高）；
+  8. 搜索框“×”清空后列表不刷新；
+  9. 首页与配置界面文字缺少阴影、按钮无悬停高亮。
 - 仍有若干**功能性缺口**（流体视图、TTS、数据包伪装、1.12 不存在的内容等），见第 5 节。
 - 当前 clean build 成功。
 
@@ -431,6 +434,87 @@ MessageFormat.format(I18n.get(s), objects)
 - 文件：`addon/core/DistanceProvider.java`
 - 原版是 `Component.translatable("jade.blockpos", display(x), display(y), display(z))`；移植版手工拼 `LiteralText("")` + `", "` 分隔。
 - 1.12 的 `TranslatableText` 同样支持 `Text` 参数并保留各自样式，已改为与原版同构的写法，同时正确使用语言文件里的 `"%s %s %s"` 格式。
+
+## 6.4 GUI 专项审查（逐文件）
+
+对照 `Jade-1.20.3-fabric/.../gui/**` 的 16 个文件与移植版 19 个文件，逐方法核对后修复了以下问题。
+
+### 修复：行高与悬停条错位（`OptionsList`）
+
+- 1.20 `ContainerObjectSelectionList.renderItem` 传给条目的 `height` 是 **`itemHeight - 4`**（本配置界面为 22），
+  悬停条也按 `rowTop - 2 ~ rowTop + height + 2` 绘制。
+- 移植版把 `entryHeight`（26）当成条目高度传给 `Entry.render`，但悬停条仍用 `height`（22），
+  于是文字/控件的中心在 `rowTop + 13`、白条中心在 `rowTop + 11` —— 这就是“文字看起来偏下”的根因。
+  之前的修法是把白条拉长到 `entryHeight`，虽然对齐了，但白条比原版高 4px。
+- 现在两者都用 `height`（22）：白条 `rowTop-2 ~ rowTop+24`（正好等于行距 26），文字/按钮中心 `rowTop+11`，与原版完全一致。
+
+### 修复：搜索框“×”清空后列表不刷新（`NotUglyEditBox`）
+
+- 1.20 `EditBox.setValue` 会触发 responder；1.12 `TextFieldWidget.setText` **不会**。
+- 移植版点击“×”只调用了 `setText("")`，`updateSearch` 没有被调用，输入框清空了但列表仍是过滤结果。
+- 已在 `NotUglyEditBox.setText` 中补上 responder 通知。
+
+### 修复：首页所有文字缺少阴影（`HomeConfigScreen`）
+
+- 原版用 `guiGraphics.drawString(...)`（默认 `shadow = true`）绘制 “Jade” 标题、两行副标题、credit 和所有粒子。
+- 移植版用 1.12 `textRenderer.draw(String,int,int,int)`，该重载 `shadow = false`，文字是平的。
+- 已全部改为 `draw(..., true)`。
+
+### 修复：按钮文字颜色与悬停高亮（`JadeButton` / `CycleButtonWidget`）
+
+- 1.20 `Button#getMessageColor`：`!active → 0xA0A0A0`、`hovered → 0xFFFFA0`、否则 `0xE0E0E0`。
+  移植版是恒定白色、无悬停变化。
+- 现在：显式 `textColor(...)`（Save 的绿色、Reset 的红色）保持恒定（等价于带样式的 Component）；
+  其余按钮恢复 1.20 的灰/黄高亮。
+- `CycleButtonWidget`：标签与分隔符用 `0xFFFFFF`（1.20 `CycleButton` 用 16777215，不随悬停变色），
+  ON/OFF 仍为 `0xFFB9F6CA` / `0xFFFF8A80`，并补上阴影。
+
+### 修复：重置确认框的按钮文字（`WailaConfigScreen`）
+
+- 原版把 `reset`（红色 “Reset”）作为确认按钮的文本传入 `ConfirmScreen`；移植版用了 `gui.yes`。
+- 已改为红色 “Reset”。
+
+### 修复：整数配置输入溢出崩溃（`IntConfigEntry`）
+
+- `InputOptionValue.INTEGER.and($ -> isValidValue(Integer.valueOf($)))`：输入超过 `Integer.MAX_VALUE` 的数字时
+  `Integer.valueOf` 抛 `NumberFormatException`，异常会从 `onTextChanged` 一路冒到游戏主循环导致崩溃（上游同样存在）。
+- 已加 try/catch 返回 `false`，其余行为不变。
+
+### 其他对齐
+
+- 所有 GUI 文字（选项标题、`Title`、左侧导航标题、滑条文字、输入框文字/提示/“×”、`OptionButton`）补上阴影，与 1.20 `drawString` 一致。
+- `OptionsNav.renderBackground` 是永远不会被调用的死代码（`render()` 已整体重写），已清空并加注释。
+- `WailaConfigScreen` 中残留的 `snownee.jade.gui.config.widget.CycleButtonWidget`、`com.google.common.base.Preconditions` 全限定名改为 import。
+
+### 仍然存在但属于 1.12 平台差异（未改）
+
+| 项目 | 原版 1.20 | 移植版 |
+|---|---|---|
+| 行起点 | `getRowLeft()` | `getRowLeft() + 2`（整体右移 2px） |
+| 导航滚动条 | `getRowLeft() + getRowWidth() - 8` = 112 | `2 + getRowWidth() - 8` = 114 |
+| 未绑定按键名 | “Not Bound”（`key.keyboard.unknown`） | “NONE”（1.12 `GameOptions.getKeyName(0)`） |
+| 服务器功能 `*` 提示 | 列表位置器（条目下方/上方） | 跟随鼠标 |
+| 叙述/narration | 完整实现 | 无（1.12 无 NarratableEntry） |
+| 列表滚动条 | 原版 sprite | 手工绘制（外观一致） |
+| 提示框 | 1.20 tooltip 管线 | 手工复刻 1.12 tooltip 外观 |
+| 彩蛋音效 | festival 99 播放烟花音 | 未播放（按之前要求省略音效） |
+| `Title.mouseClicked` | 返回 `false` | 返回 `true`（仅影响 `widgetInteracting`，无可见差异） |
+
+### 逐文件结论
+
+| 文件 | 结论 |
+|---|---|
+| `BaseOptionsScreen` | 保存/取消流程、`render` 顺序、滚轮分发均与原版一致；搜索框与列表的手工焦点管理是 1.12 必需 |
+| `HomeConfigScreen` | 节日判定、粒子、credit 悬停、glint 均一致；已补阴影 |
+| `PreviewOptionsScreen` | 位置调整拖拽、吸附、引导线、`forcePreview` 一致（`isDragging` → `isWidgetInteracting` 适配） |
+| `WailaConfigScreen` | 选项顺序与内容、主题切换、重置流程一致；确认框按钮文字已修 |
+| `PluginsConfigScreen` | 分类排序、`jumpTo`、同步项禁用、服务器特性标记一致 |
+| `OptionsList` | 搜索、保存态、选中、滚动平滑一致；行高已修 |
+| `OptionsNav` | 锚点动画、`ensureVisible` 等价实现、滚动条一致 |
+| `OptionValue` / `OptionButton` | 文本位置、缩进、删除线禁用态一致 |
+| `CycleOptionValue` / `InputOptionValue` / `SliderOptionValue` | 取值、保存、校验一致；滑条纹理按 1.12 原生 |
+| `NotUglyEditBox` | 内边距、选区、光标、清除按钮一致；已修清空不刷新 |
+| `JadeButton` / `CycleButtonWidget` / `JadeTextField` / `JadeWidget` | 1.12 等价实现；颜色与 responder 已修 |
 
 ## 6.5 网络层审查
 

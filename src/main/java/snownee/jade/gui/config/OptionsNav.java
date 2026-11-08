@@ -51,7 +51,7 @@ public class OptionsNav extends ListWidget {
 
 	@Override
 	protected void renderBackground() {
-		GuiElement.fill(0, minY, maxX, maxY, 0xAA0A0A0A);
+
 	}
 
 	@Override
@@ -80,7 +80,7 @@ public class OptionsNav extends ListWidget {
 				}
 			}
 		}
-		Minecraft.getInstance().textRenderer.draw(title.getTitle().getString(), x + 10, y + (height / 2) - (Minecraft.getInstance().textRenderer.fontHeight / 2), 0xFFFFFF);
+		Minecraft.getInstance().textRenderer.draw(title.getTitle().getString(), x + 10, y + (height / 2) - (Minecraft.getInstance().textRenderer.fontHeight / 2), 0xFFFFFF, true);
 	}
 
 	@Override

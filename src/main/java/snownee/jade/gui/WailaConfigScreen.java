@@ -1,5 +1,6 @@
 package snownee.jade.gui;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import it.unimi.dsi.fastutil.floats.FloatUnaryOperator;
 import net.minecraft.client.Minecraft;
@@ -22,6 +23,7 @@ import snownee.jade.api.theme.Theme;
 import snownee.jade.gui.config.OptionButton;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.gui.config.value.OptionValue;
+import snownee.jade.gui.config.widget.CycleButtonWidget;
 import snownee.jade.gui.config.widget.JadeButton;
 import snownee.jade.impl.config.PluginConfig;
 import snownee.jade.impl.config.WailaConfig.ConfigGeneral;
@@ -106,8 +108,8 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 			ConfigGeneral.itemModNameTooltipDisabledByMods.forEach(value::appendDescription);
 			if (value.getFirstWidget() != null && value.getDescription() != null) {
 				String description = value.getDescription();
-				if (value.getFirstWidget() instanceof snownee.jade.gui.config.widget.CycleButtonWidget) {
-					((snownee.jade.gui.config.widget.CycleButtonWidget<?>) value.getFirstWidget()).tooltipProvider = v -> new LiteralText(description);
+				if (value.getFirstWidget() instanceof CycleButtonWidget) {
+					((CycleButtonWidget<?>) value.getFirstWidget()).tooltipProvider = v -> new LiteralText(description);
 				}
 			}
 		}
@@ -168,8 +170,8 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 				minecraft.options.save();
 				try {
 					int themesHash = Jade.CONFIG.get().getOverlay().themesHash;
-					com.google.common.base.Preconditions.checkState(Jade.CONFIG.getFile().delete());
-					com.google.common.base.Preconditions.checkState(PluginConfig.INSTANCE.getFile().delete());
+					Preconditions.checkState(Jade.CONFIG.getFile().delete());
+					Preconditions.checkState(PluginConfig.INSTANCE.getFile().delete());
 					Jade.CONFIG.invalidate();
 					Jade.CONFIG.get().getOverlay().themesHash = themesHash;
 					Jade.CONFIG.save();
@@ -180,7 +182,7 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 			}
 			minecraft.openScreen(WailaConfigScreen.this);
 			WailaConfigScreen.this.options.setScrollAmount(WailaConfigScreen.this.options.getMaxScroll());
-		}, Formatting.RED + title.getString(), I18n.translate(OptionsList.Entry.makeKey("reset_settings.confirm")), I18n.translate("gui.yes"), I18n.translate("gui.cancel"), 0)))));
+		}, Formatting.RED + title.getString(), I18n.translate(OptionsList.Entry.makeKey("reset_settings.confirm")), Formatting.RED + I18n.translate("controls.reset"), I18n.translate("gui.cancel"), 0)))));
 
 		return options;
 	}

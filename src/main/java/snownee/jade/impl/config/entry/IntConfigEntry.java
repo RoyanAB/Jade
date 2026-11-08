@@ -35,7 +35,13 @@ public class IntConfigEntry extends ConfigEntry<Integer> {
 		if (slider) {
 			return options.slider(optionName, getValue(), f -> PluginConfig.INSTANCE.set(id, (int) (float) f), min, max, f -> (float) Math.round(f));
 		} else {
-			return options.input(optionName, getValue(), i -> PluginConfig.INSTANCE.set(id, MathHelper.clamp(i, min, max)), InputOptionValue.INTEGER.and($ -> isValidValue(Integer.valueOf($))));
+			return options.input(optionName, getValue(), i -> PluginConfig.INSTANCE.set(id, MathHelper.clamp(i, min, max)), InputOptionValue.INTEGER.and($ -> {
+				try {
+					return isValidValue(Integer.valueOf($));
+				} catch (NumberFormatException e) {
+					return false;
+				}
+			}));
 		}
 	}
 

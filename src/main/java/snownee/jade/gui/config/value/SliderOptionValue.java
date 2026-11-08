@@ -106,7 +106,7 @@ public class SliderOptionValue extends OptionValue<Float> {
 			drawTexture(handle, y, 0, 66, 4, height);
 			drawTexture(handle + 4, y, 196, 66, 4, height);
 			int color = !active ? 10526880 : 16777215;
-			mc.textRenderer.draw(message, x + width / 2 - mc.textRenderer.getWidth(message) / 2, y + (height - 8) / 2, color);
+			mc.textRenderer.draw(message, x + width / 2 - mc.textRenderer.getWidth(message) / 2, y + (height - 8) / 2, color, true);
 		}
 
 		@Override

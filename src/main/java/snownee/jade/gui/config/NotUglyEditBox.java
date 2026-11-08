@@ -48,6 +48,14 @@ public class NotUglyEditBox extends TextFieldWidget implements JadeWidget {
 	}
 
 	@Override
+	public void setText(String text) {
+		super.setText(text);
+		if (responder != null) {
+			responder.accept(getText());
+		}
+	}
+
+	@Override
 	public void onTextChanged(int id, String text) {
 		super.onTextChanged(id, text);
 		if (responder != null) {
@@ -161,7 +169,7 @@ public class NotUglyEditBox extends TextFieldWidget implements JadeWidget {
 		int textX = x + paddingLeft;
 		int textY = y + paddingTop;
 		if (!shown.isEmpty()) {
-			textRenderer.draw(shown, textX, textY, color);
+			textRenderer.draw(shown, textX, textY, color, true);
 		}
 		boolean focused = isFocused();
 		int cursorIndex = MathHelper.clamp(cursor, displayPos, shownEnd);
@@ -179,12 +187,12 @@ public class NotUglyEditBox extends TextFieldWidget implements JadeWidget {
 			GuiElement.fill(cursorX, textY - 1, cursorX + 1, textY + textRenderer.fontHeight, 0xFFD0D0D0);
 		}
 		if (hint != null && text.isEmpty() && !focused) {
-			textRenderer.draw(hint.getString(), textX, textY, 0x808080);
+			textRenderer.draw(hint.getString(), textX, textY, 0x808080, true);
 		}
 		if (editable && !text.isEmpty()) {
 			mouseOverCross = mouseX >= x + width - 14 && mouseX < x + width - 2 && mouseY >= y + paddingTop && mouseY < y + paddingTop + 10;
 			int crossColor = mouseOverCross ? textColor : textColorUneditable;
-			textRenderer.draw("×", x + width - 10, y + paddingTop + 1, crossColor);
+			textRenderer.draw("×", x + width - 10, y + paddingTop + 1, crossColor, true);
 		}
 	}
 

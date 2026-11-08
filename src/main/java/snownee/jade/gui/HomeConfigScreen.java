@@ -206,7 +206,7 @@ public class HomeConfigScreen extends Screen {
 
 		float scale = smallUI ? 2F : 1.5F;
 		GlStateManager.scalef(scale, scale, scale);
-		textRenderer.draw(ModIdentification.getModName(Jade.MODID).orElse("Jade"), 0, 0, 0xFFFFFF);
+		textRenderer.draw(ModIdentification.getModName(Jade.MODID).orElse("Jade"), 0, 0, 0xFFFFFF, true);
 
 		GlStateManager.scalef(0.5F, 0.5F, 0.5F);
 		titleY.tick(partialTicks);
@@ -273,7 +273,7 @@ public class HomeConfigScreen extends Screen {
 		GlStateManager.scalef(scale, scale, scale);
 		GlStateManager.translatef(creditWidth * -0.5F, 0, 0);
 		int creditColor = festival != 0 && festival != 1 ? 0x55F1E3A4 : 0x55FFFFFF;
-		textRenderer.draw(credit.getFormattedString(), 0, 0, creditColor);
+		textRenderer.draw(credit.getFormattedString(), 0, 0, creditColor, true);
 		GlStateManager.popMatrix();
 		hovered = hover;
 
@@ -365,7 +365,7 @@ public class HomeConfigScreen extends Screen {
 		}
 		GlStateManager.pushMatrix();
 		GlStateManager.translatef(0, y, 0);
-		textRenderer.draw(text, 0, 0, color);
+		textRenderer.draw(text, 0, 0, color, true);
 		GlStateManager.popMatrix();
 		if (jadeFont != null) {
 			jadeFont.jade$setGlint(Float.NaN, Float.NaN);
@@ -419,7 +419,7 @@ public class HomeConfigScreen extends Screen {
 			if (festival == 1) {
 				GlStateManager.rotatef(age, 0, 0, 1);
 			}
-			textRenderer.draw(text, 0, 0, color);
+			textRenderer.draw(text, 0, 0, color, true);
 			GlStateManager.popMatrix();
 		}
 	}

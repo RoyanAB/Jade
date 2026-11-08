@@ -27,7 +27,7 @@ public class OptionButton extends OptionsList.Entry {
 
 	@Override
 	public void render(int index, int rowTop, int rowLeft, int width, int height, int mouseX, int mouseY, float deltaTime) {
-		client.textRenderer.draw(title.getFormattedString(), rowLeft + 10, rowTop + (height / 2) - (client.textRenderer.fontHeight / 2), 16777215);
+		client.textRenderer.draw(title.getFormattedString(), rowLeft + 10, rowTop + (height / 2) - (client.textRenderer.fontHeight / 2), 16777215, true);
 		super.render(index, rowTop, rowLeft, width, height, mouseX, mouseY, deltaTime);
 	}
 

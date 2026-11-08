@@ -88,7 +88,7 @@ public class CycleButtonWidget<T> extends JadeButton {
 		int textY = y + (height - 8) / 2;
 		String valueText = nameProvider.apply(value).getString();
 		if (displayOnlyValue || label == null) {
-			drawCenteredString(mc.textRenderer, valueText, x + width / 2, textY, valueColor);
+			mc.textRenderer.draw(valueText, x + width / 2 - mc.textRenderer.getWidth(valueText) / 2, textY, valueColor, true);
 			return;
 		}
 		String labelText = label.getString();
@@ -97,18 +97,18 @@ public class CycleButtonWidget<T> extends JadeButton {
 		int separatorWidth = mc.textRenderer.getWidth(separator);
 		int valueWidth = mc.textRenderer.getWidth(valueText);
 		int textX = x + width / 2 - (labelWidth + separatorWidth + valueWidth) / 2;
-		mc.textRenderer.draw(labelText, textX, textY, labelColor);
+		mc.textRenderer.draw(labelText, textX, textY, labelColor, true);
 		textX += labelWidth;
-		mc.textRenderer.draw(separator, textX, textY, labelColor);
+		mc.textRenderer.draw(separator, textX, textY, labelColor, true);
 		textX += separatorWidth;
-		mc.textRenderer.draw(valueText, textX, textY, valueColor);
+		mc.textRenderer.draw(valueText, textX, textY, valueColor, true);
 	}
 
 	private int getValueColor() {
 		if (value instanceof Boolean) {
 			return (Boolean) value ? 0xFFB9F6CA : 0xFFFF8A80;
 		}
-		return 16777215;
+		return active ? 16777215 : 10526880;
 	}
 
 	@Override

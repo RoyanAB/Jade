@@ -41,9 +41,9 @@ public abstract class OptionValue<T> extends OptionsList.Entry {
 		if (!active) {
 			titleText = Formatting.STRIKETHROUGH.toString() + Formatting.GRAY + titleText;
 		}
-		client.textRenderer.draw(titleText, left, top, 16777215);
+		client.textRenderer.draw(titleText, left, top, 16777215, true);
 		if (serverFeature) {
-			client.textRenderer.draw(SERVER_FEATURE.getFormattedString(), left + getTextWidth() + 1, top, 16777215);
+			client.textRenderer.draw(SERVER_FEATURE.getFormattedString(), left + getTextWidth() + 1, top, 16777215, true);
 		}
 		super.render(index, rowTop, rowLeft, width, height, mouseX, mouseY, deltaTime);
 		this.x = rowLeft;

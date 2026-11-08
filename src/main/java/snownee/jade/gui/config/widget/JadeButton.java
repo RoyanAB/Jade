@@ -10,14 +10,14 @@ public class JadeButton extends ButtonWidget implements JadeWidget {
 
 	@Nullable
 	private Text tooltip;
-	private int textColor = 16777215;
+	private Integer customTextColor;
 
 	public JadeButton(int x, int y, int width, int height, String message) {
 		super(0, x, y, width, height, message);
 	}
 
 	public JadeButton textColor(int color) {
-		this.textColor = color;
+		this.customTextColor = color;
 		return this;
 	}
 
@@ -74,8 +74,23 @@ public class JadeButton extends ButtonWidget implements JadeWidget {
 	}
 
 	protected void drawMessage(Minecraft mc) {
-		int color = !active ? 10526880 : textColor;
-		drawCenteredString(mc.textRenderer, message, x + width / 2, y + (height - 8) / 2, color);
+		int color = getMessageColor();
+		String text = message == null ? "" : message;
+		mc.textRenderer.draw(text, x + width / 2 - mc.textRenderer.getWidth(text) / 2, y + (height - 8) / 2, color, true);
+	}
+
+	/**
+	 * Mirrors 1.20's {@code Button#getMessageColor}: grayed out when inactive, highlighted on hover.
+	 * A custom text color (e.g. the green save button) is constant, just like a styled component.
+	 */
+	protected int getMessageColor() {
+		if (!active) {
+			return 10526880;
+		}
+		if (customTextColor != null) {
+			return customTextColor;
+		}
+		return hovered ? 16777120 : 14737632;
 	}
 
 	@Override
