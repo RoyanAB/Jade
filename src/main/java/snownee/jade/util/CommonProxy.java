@@ -65,7 +65,7 @@ public final class CommonProxy implements ModInitializer {
 	}
 
 	public static boolean isCorrectToolForDrops(BlockState state, net.minecraft.entity.living.player.PlayerEntity player) {
-		return state.getBlock().getMaterial(state).isToolNotRequired();
+		return state.getBlock().getMaterial(state).isToolNotRequired() || player.canMineBlock(state);
 	}
 
 	public static String getModIdFromItem(ItemStack stack) {

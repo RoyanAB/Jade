@@ -12,7 +12,8 @@
 		"PlayerTabOverlayAccess",
 		"ChatScreenMixin",
 		"TextRendererMixin",
-		"ReloadableIdSearchTreeMixin"
+		"ReloadableIdSearchTreeMixin",
+		"ClientPlayerInteractionManagerAccess"
 	],
 	"injectors": {
 		"defaultRequire": 1

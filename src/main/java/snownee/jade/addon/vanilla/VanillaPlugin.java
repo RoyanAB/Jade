@@ -16,6 +16,7 @@ import net.minecraft.entity.living.mob.passive.animal.ChickenEntity;
 import net.minecraft.entity.living.mob.passive.animal.HorseBaseEntity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import snownee.jade.JadeClient;
 import snownee.jade.addon.harvest.HarvestToolProvider;
 import snownee.jade.api.*;
 
@@ -48,6 +49,7 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.addConfig(Identifiers.MC_SHOW_UNBREAKABLE, false);
 		registration.addConfig(Identifiers.MC_HARVEST_TOOL_CREATIVE, false);
 		registration.addConfig(Identifiers.MC_ANIMAL_OWNER_FETCH_NAMES, true);
+		registration.addConfig(Identifiers.MC_BREAKING_PROGRESS, true);
 
 		registration.addConfig(Identifiers.MC_ENTITY_ARMOR_MAX_FOR_RENDER, 20, 0, 100, false);
 		registration.addConfig(Identifiers.MC_ENTITY_HEALTH_MAX_FOR_RENDER, 40, 0, 100, false);
@@ -82,10 +84,12 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.registerBlockComponent(NoteBlockProvider.INSTANCE, NoteBlock.class);
 		registration.registerEntityComponent(VillagerProfessionProvider.INSTANCE, VillagerEntity.class);
 
+		registration.addAfterRenderCallback(100, JadeClient::drawBreakingProgress);
 		registration.markAsClientFeature(Identifiers.MC_EFFECTIVE_TOOL);
 		registration.markAsClientFeature(Identifiers.MC_HARVEST_TOOL_NEW_LINE);
 		registration.markAsClientFeature(Identifiers.MC_SHOW_UNBREAKABLE);
 		registration.markAsClientFeature(Identifiers.MC_HARVEST_TOOL_CREATIVE);
+		registration.markAsClientFeature(Identifiers.MC_BREAKING_PROGRESS);
 		registration.markAsClientFeature(Identifiers.MC_ENTITY_ARMOR_MAX_FOR_RENDER);
 		registration.markAsClientFeature(Identifiers.MC_ENTITY_HEALTH_MAX_FOR_RENDER);
 		registration.markAsClientFeature(Identifiers.MC_ENTITY_HEALTH_ICONS_PER_LINE);
@@ -120,6 +124,7 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.setConfigCategoryOverride(Identifiers.MC_ENTITY_ARMOR, entity);
 		registration.setConfigCategoryOverride(Identifiers.MC_ENTITY_HEALTH, entity);
 		registration.setConfigCategoryOverride(Identifiers.MC_FURNACE, block);
+		registration.setConfigCategoryOverride(Identifiers.MC_BREAKING_PROGRESS, block);
 		registration.setConfigCategoryOverride(Identifiers.MC_HARVEST_TOOL, block);
 		registration.setConfigCategoryOverride(Identifiers.MC_HORSE_STATS, entity);
 		registration.setConfigCategoryOverride(Identifiers.MC_ITEM_FRAME, both);

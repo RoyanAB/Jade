@@ -97,7 +97,9 @@ public class DisplayHelper implements IDisplayHelper {
 		GlStateManager.enableTexture();
 		net.minecraft.client.render.platform.Lighting.turnOnGui();
 		mc.getItemRenderer().renderGuiItem(stack, 0, 0);
-		mc.getItemRenderer().renderGuiItemDecorations(mc.textRenderer, stack, 0, 0, text);
+		ItemStack overlayRender = stack.copy();
+		overlayRender.setSize(1);
+		mc.getItemRenderer().renderGuiItemDecorations(mc.textRenderer, overlayRender, 0, 0, text);
 		net.minecraft.client.render.platform.Lighting.turnOff();
 		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.disableBlend();
