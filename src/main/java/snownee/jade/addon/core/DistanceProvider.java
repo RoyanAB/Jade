@@ -35,7 +35,7 @@ public enum DistanceProvider implements IBlockComponentProvider, IEntityComponen
 	public static Text display(int i, int colorIndex) {
 		if (IThemeHelper.get().isLightColorScheme())
 			colorIndex += 3;
-		return new LiteralText(Integer.toString(i)).setStyle(ThemeHelper.colorStyle(colors[colorIndex]));
+		return ThemeHelper.color(new LiteralText(Integer.toString(i)), colors[colorIndex]);
 	}
 
 	public static void xyz(ITooltip tooltip, Vec3i pos) {

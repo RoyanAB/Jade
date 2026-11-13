@@ -1401,6 +1401,144 @@ private static final double MAX_MOVEMENT_SPEED = 0.225 * 42.16;
 addon 包里用到的 38 个键（含 `jade.instrument.*`、`tooltip.jade.mode_*`、`jade.potion`、
 `tooltip.jade.crop_*`、`jade.horseStat.*`、`jade.llamaStrength` 等）全部存在于 `en_us.json` ✓。
 
+## 6.18 任意 RGB 文字渲染（替代 16 色近似）
+
+### 之前为什么只能近似
+
+原版 1.20 的 `ThemeHelper#colorStyle(int)` 是 `Style.EMPTY.withColor(int)` —— `TextColor` 能存任意 RGB。
+1.12 的 `Style` 只有一个 `Formatting color` 字段，所以移植版只能把主题色（`#55FF55`、`#FFF3CD`、
+坐标用的 `0xef9a9a`/`0xa5d6a7`/`0x90caf9` …）就近映射到 16 色之一。
+
+### 1.12 其实能做到
+
+关键点：**1.12 的 `TextRenderer#draw(String, x, y, int color, boolean shadow)` 本来就接受任意 ARGB**
+—— 它内部直接 `GlStateManager.color4f(r, g, b, a)`。受限的只是 `Style`，不是渲染器。
+
+所以只要把「精确颜色」带到绘制调用即可：
+
+1. **新增 `snownee.jade.util.RgbText`**（实现 `Text`，不继承 `BaseText`）
+   - 持有 `delegate` + 精确 `color`
+   - `getString()` / `getContent()` / `getFormattedString()` 全部委托给 delegate（所以复述、JSON、物品名等只认 `Style` 的路径照常工作）
+   - `iterator()` 只返回自身，作为渲染树的叶子节点
+   - `copy()` 保留颜色（`TranslatableText#iterator` 会 `copy()` 参数，颜色不会丢）
+
+2. **`ThemeHelper#colorStyle(int)` 被替换为 `ThemeHelper#color(Text, int)`**
+
+原版是 `public static Style colorStyle(int color) { return Style.EMPTY.withColor(color); }`。
+1.12 的 `Style` 装不下 RGB，所以「返回一个带颜色的 Style」这件事在这个版本**不可能成立** ——
+与其保留一个「就近 16 色」的假实现，不如把语义改成它真正能表达的东西：
+
+```java
+/**
+ * 1.20's {@code Style.EMPTY.withColor(int)} equivalent. 1.12's Style can only hold one
+ * of the 16 Formatting colors, so the exact color is carried by RgbText and
+ * DisplayHelper#drawText hands it straight to the font renderer.
+ */
+public static Text color(Text text, int color) {
+    RgbText rgbText = new RgbText(text, color);
+    Style style = text.getStyle();
+    if (!style.isEmpty()) {
+        // keep bold/italic/..., drop the old 16 color one, the wrapper overrides it anyway
+        rgbText.setStyle(style.copy().setColor((Formatting) null));
+    }
+    return rgbText;
+}
+```
+
+`nearestFormatting` / `toHsl` 这两个「拟合 16 色」的辅助方法已**整体删除**，代码里不再有任何颜色近似。
+`protected Text color(Object, int)` 简化为转调：
+
+```java
+protected Text color(Object componentOrString, int color) {
+    Text text = componentOrString instanceof Text
+        ? (Text) componentOrString
+        : new LiteralText(Objects.toString(componentOrString));
+    return color(text, color);
+}
+```
+
+3. **`DisplayHelper#drawText(Text, ...)`** 改成遍历文本树逐节点绘制：
+
+```java
+for (Text node : text) {
+    String content = node.getContent();
+    if (content.isEmpty()) continue;
+    if (node instanceof RgbText) {
+        font.draw(node.getStyle().asString() + content + Formatting.RESET, curX, y, ((RgbText) node).getColor(), shadow);
+    } else {
+        font.draw(node.getStyle().asString() + content + Formatting.RESET, curX, y, color, shadow);
+    }
+    curX += font.getWidth(content);
+}
+```
+
+- `RgbText` 节点 → 用精确 ARGB 作为基色
+- 其他节点 → 沿用原来的 `§` 格式码 + 基色
+- **嵌套也生效**：`TranslatableText("jade.blockpos", RgbText(X), RgbText(Y), RgbText(Z))` 遍历时会
+  分别命中三个 `RgbText` 节点，三个坐标各自渲染成自己的颜色（这正是之前「只有 Z 是蓝色」那类问题的根因之一）
+
+### 顺带修正的两处
+
+| 位置 | 原来 | 现在 |
+|---|---|---|
+| `drawText` 在 `text.shadow == false` 时 | `Formatting.strip(getFormattedString())` —— **把整行格式全剥掉**（颜色/粗体都没了） | 不再剥离，只把 `shadow` 参数设为 false（与原版 `drawString(..., shadow)` 一致） |
+| `colorStyle` | 就近 16 色拟合（`nearestFormatting`） | **删除**，改为 `color(Text, int)`，颜色由 `RgbText` 精确携带；`nearestFormatting`/`toHsl` 一并移除 |
+
+### 自审后修正的 5 处
+
+| # | 问题 | 修正 |
+|---|---|---|
+| 1 | `RgbText` 自己存了一份 `style`，`copy()` 时丢失（`TranslatableText#iterator` 会 `copy()` 参数，粗体等格式就没了） | 去掉独立字段，`setStyle`/`getStyle` 直接转发给 delegate —— `copy()` 自然保留，`getFormattedString()` 与 `getStyle()` 也不会不一致 |
+| 2 | 颜色没补 alpha：`DistanceProvider` 的 `0xef9a9a` 是 **0x00RRGGBB**，`applyAlpha` 算出来 alpha=0，随后被 `TextRenderer` 强制补成不透明 | 构造时归一化：`(color & 0xFF000000) == 0 ? color \| 0xFF000000 : color`（和 `TextRenderer#draw` 的处理一致） |
+| 3 | 给 RGB 文字乘了 tooltip 的淡入 alpha | 1.20 里带样式文字的颜色来自 `TextColor`（不透明），**不参与淡入**；改成 RGB 段直接用不透明颜色，与 1.20 行为一致 |
+| 4 | `ThemeHelper.color` 把去掉颜色的 style 设在**包装器**上，而 `getStyle()`/`getFormattedString()` 读的是 delegate，两者会不一致 | 改为设在 delegate 上（`style.copy().setColor(null)` —— `copy()` 会把父样式里继承来的颜色也实体化，所以能彻底去掉旧颜色） |
+| 5 | 每个节点末尾多拼了一个 `§r` | 每次 `font.draw` 都会用传入的颜色重新设置状态，`§r` 是多余的；去掉后每节点少 2 个字符 |
+
+### 关于优化（做了 2 处，其余确认无需改）
+
+| 优化 | 说明 |
+|---|---|
+| `drawText` 加单节点快路径 | 最常见的场景是「整段文字一个 `RgbText`」（`info`/`success`/`title` 等），直接一次 `font.draw` 就返回，省掉迭代器和循环 |
+| `RgbText#iterator` 用 `Iterators.singletonIterator(this)` | 原来 `Collections.singletonList(this).iterator()` 每次要分配 list + iterator 两个对象，现在只分配一个 |
+
+确认**不需要**改的：
+
+- `Style#asString()` 对空样式只是几次判空（返回 `""` 或父样式的字符串），不需要额外加 `isEmpty()` 分支 —— 加了反而会在「样式只有父级有内容」时出错（`isEmpty()` 不检查父级）。
+- 遍历 `Text` 的迭代器开销与旧的 `getFormattedString()` 完全一致（两者都会走 `BaseText.iterator`），没有额外性能损失。
+- `RgbText` 只在 `ThemeHelper.color(...)` 里创建，每次 tooltip 构建每段文字一个实例，可忽略。
+
+### 调用方改造
+
+`DistanceProvider#display` 之前直接拿 `Style`：
+
+```java
+// 修复前：坐标颜色被压成 16 色
+return new LiteralText(Integer.toString(i)).setStyle(ThemeHelper.colorStyle(colors[colorIndex]));
+// 修复后：交给 RgbText
+return ThemeHelper.color(new LiteralText(Integer.toString(i)), colors[colorIndex]);
+```
+
+这样 `new TranslatableText("jade.blockpos", display(X), display(Y), display(Z))` 的三个参数都是
+`RgbText`，遍历文本树时各自命中，X/Y/Z 分别渲染成 `#ef9a9a` / `#a5d6a7` / `#90caf9`（亮色方案换成
+`#b02a37` / `#198754` / `#0a58ca`），不再有「只有 Z 是蓝色」那类问题。
+
+`IThemeHelper` 的 `info` / `success` / `warning` / `danger` / `failure` / `title` / `seconds` 全部经过
+`color(...)`，因此以下位置现在都是精确颜色：
+
+- 主题 `text.colors`（dark/create/top/waila 及自定义主题 JSON 里的 `#RRGGBB`）
+- `DistanceProvider` 的 X/Y/Z 坐标（`0xef9a9a` / `0xa5d6a7` / `0x90caf9`，亮色方案另三种）
+- `HealthElement` / `ArmorElement` 的数值颜色
+- `HarvestToolProvider` 的 ✔/✕（`success` / `danger`）
+- `RedstoneProvider` 的开关/功率、`CropProgressProvider` 的成熟度、`HorseStatsProvider` 的数值、
+  `MobGrowthProvider` 的倒计时等所有用 `IThemeHelper` 上色的文字
+
+### 说明
+
+- 主题 JSON 里的颜色是 `#RRGGBB`，`Color.valueOf` 会补成 `0xFFRRGGBB` ✓ 现在会原样渲染。
+- 物品名（`IWailaConfig.IConfigFormatting#getItemModNameStyle`）仍然走 `Style`，因为原版那里也是 `Style`
+  （用户可配置粗体/斜体/下划线），不受影响。
+- 复述（narration）走 `getString()`，不会带上颜色 ✓。
+
 ## 7. 仍需处理的功能/效果差异
 
 ### 7.1 明确未移植

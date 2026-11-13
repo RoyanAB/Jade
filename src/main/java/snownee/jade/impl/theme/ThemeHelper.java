@@ -23,6 +23,7 @@ import snownee.jade.api.ui.ColorPalette;
 import snownee.jade.impl.config.WailaConfig;
 import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.overlay.OverlayRenderer;
+import snownee.jade.util.RgbText;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,80 +37,18 @@ public class ThemeHelper implements IThemeHelper {
 	private final Map<Identifier, Theme> themes = new TreeMap<>(Comparator.comparing(Identifier::toString));
 	private Theme fallback;
 
-	public static Style colorStyle(int color) {
-		Formatting formatting = nearestFormatting(color);
-		return new Style().setColor(formatting);
-	}
-
-	private static float[] toHsl(int color) {
-		float r = ((color >> 16) & 0xFF) / 255.0F;
-		float g = ((color >> 8) & 0xFF) / 255.0F;
-		float b = (color & 0xFF) / 255.0F;
-		float max = Math.max(r, Math.max(g, b));
-		float min = Math.min(r, Math.min(g, b));
-		float delta = max - min;
-		float lightness = (max + min) / 2.0F;
-		float saturation = delta == 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1));
-		float hue = 0;
-		if (delta != 0) {
-			if (max == r) {
-				hue = 60 * (((g - b) / delta) % 6);
-			} else if (max == g) {
-				hue = 60 * (((b - r) / delta) + 2);
-			} else {
-				hue = 60 * (((r - g) / delta) + 4);
-			}
-		}
-		if (hue < 0) {
-			hue += 360;
-		}
-		return new float[]{hue, saturation, lightness};
-	}
-
 	/**
-	 * Picks the vanilla color with the closest hue, then the closest lightness.
-	 * <p>
-	 * A plain RGB distance is useless here: the pastel colors used by themes (e.g. 0xef9a9a) are closer to
-	 * {@link Formatting#GRAY} than to {@link Formatting#RED} in RGB space, which made red/green text look white.
-	 * Mapping by hue band keeps the intended color family, and is idempotent for the 16 vanilla colors.
+	 * 1.20's {@code Style.EMPTY.withColor(int)} equivalent. 1.12's {@link Style} can only hold one
+	 * of the 16 {@link Formatting} colors, so the exact color is carried by {@link RgbText} and
+	 * {@code DisplayHelper#drawText} hands it straight to the font renderer.
 	 */
-	private static Formatting nearestFormatting(int color) {
-		float[] hsl = toHsl(color);
-		float hue = hsl[0];
-		float saturation = hsl[1];
-		float lightness = hsl[2];
-		if (saturation < 0.12F) {
-			if (lightness < 0.15F) {
-				return Formatting.BLACK;
-			}
-			if (lightness < 0.45F) {
-				return Formatting.DARK_GRAY;
-			}
-			if (lightness < 0.80F) {
-				return Formatting.GRAY;
-			}
-			return Formatting.WHITE;
+	public static Text color(Text text, int color) {
+		Style style = text.getStyle();
+		if (style.getColor() != null) {
+			// keep bold/italic/..., drop the old 16 color one, the wrapper overrides it anyway
+			text.setStyle(style.copy().setColor((Formatting) null));
 		}
-		boolean bright = lightness > 0.5F;
-		if (hue >= 345 || hue < 20) {
-			return bright ? Formatting.RED : Formatting.DARK_RED;
-		}
-		if (hue < 40) {
-			return Formatting.GOLD;
-		}
-		if (hue < 70) {
-			return bright ? Formatting.YELLOW : Formatting.GOLD;
-		}
-		if (hue < 160) {
-			return bright ? Formatting.GREEN : Formatting.DARK_GREEN;
-		}
-		if (hue < 200) {
-			return bright ? Formatting.AQUA : Formatting.DARK_AQUA;
-		}
-		if (hue < 255) {
-			return bright ? Formatting.BLUE : Formatting.DARK_BLUE;
-		}
-		return bright ? Formatting.LIGHT_PURPLE : Formatting.DARK_PURPLE;
+		return new RgbText(text, color);
 	}
 
 	public void reload() {
@@ -319,15 +258,9 @@ public class ThemeHelper implements IThemeHelper {
 	}
 
 	protected Text color(Object componentOrString, int color) {
-		if (componentOrString instanceof Text) {
-			Text text = (Text) componentOrString;
-			Style style = text.getStyle();
-			if (style.isEmpty()) {
-				return text.setStyle(colorStyle(color));
-			}
-			return text.setStyle(style.copy().setColor(colorStyle(color).getColor()));
-		} else {
-			return new LiteralText(Objects.toString(componentOrString)).setStyle(colorStyle(color));
-		}
+		Text text = componentOrString instanceof Text
+			? (Text) componentOrString
+			: new LiteralText(Objects.toString(componentOrString));
+		return color(text, color);
 	}
 }
