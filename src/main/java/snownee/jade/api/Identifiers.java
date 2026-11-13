@@ -11,8 +11,6 @@ public class Identifiers {
 	public static final Identifier PACKET_REQUEST_TILE = JADE("request_tile");
 	public static final Identifier PACKET_SHOW_OVERLAY = JADE("show_overlay");
 	public static final Identifier CORE_OBJECT_NAME = JADE("object_name");
-	@Deprecated
-	public static final Identifier CORE_REGISTRY_NAME = JADE("registry_name");
 	public static final Identifier CORE_MOD_NAME = JADE("mod_name");
 	public static final Identifier CORE_DISTANCE = JADE("distance");
 	public static final Identifier CORE_COORDINATES = JADE("coordinates");
@@ -21,26 +19,21 @@ public class Identifiers {
 	public static final Identifier DEBUG_REGISTRY_NAME = JADE("registry_name");
 	public static final Identifier DEBUG_SPECIAL_REGISTRY_NAME = JADE("registry_name.special");
 	public static final Identifier DEBUG_BLOCK_STATES = JADE("block_states");
-	public static final Identifier UNIVERSAL_ITEM_STORAGE = MC("item_storage");
-	public static final Identifier UNIVERSAL_FLUID_STORAGE = MC("fluid_storage");
-	public static final Identifier UNIVERSAL_FLUID_STORAGE_DETAILED = MC("fluid_storage.detailed");
-	public static final Identifier UNIVERSAL_ENERGY_STORAGE = MC("energy_storage");
-	public static final Identifier UNIVERSAL_ENERGY_STORAGE_DETAILED = MC("energy_storage.detailed");
-	public static final Identifier UNIVERSAL_PROGRESS = MC("progress");
-	public static final Identifier MC_ITEM_STORAGE_DETAILED_AMOUNT = MC("item_storage.detailed_amount");
-	public static final Identifier MC_ITEM_STORAGE_NORMAL_AMOUNT = MC("item_storage.normal_amount");
-	public static final Identifier MC_ITEM_STORAGE_SHOW_NAME_AMOUNT = MC("item_storage.show_name_amount");
-	public static final Identifier MC_ITEM_STORAGE_ITEMS_PER_LINE = MC("item_storage.items_per_line");
+//	public static final Identifier UNIVERSAL_ITEM_STORAGE = MC("item_storage");
+//	public static final Identifier UNIVERSAL_FLUID_STORAGE = MC("fluid_storage");
+//	public static final Identifier UNIVERSAL_FLUID_STORAGE_DETAILED = MC("fluid_storage.detailed");
+//	public static final Identifier UNIVERSAL_ENERGY_STORAGE = MC("energy_storage");
+//	public static final Identifier UNIVERSAL_ENERGY_STORAGE_DETAILED = MC("energy_storage.detailed");
+//	public static final Identifier UNIVERSAL_PROGRESS = MC("progress");
+//	public static final Identifier MC_ITEM_STORAGE_DETAILED_AMOUNT = MC("item_storage.detailed_amount");
+//	public static final Identifier MC_ITEM_STORAGE_NORMAL_AMOUNT = MC("item_storage.normal_amount");
+//	public static final Identifier MC_ITEM_STORAGE_SHOW_NAME_AMOUNT = MC("item_storage.show_name_amount");
+//	public static final Identifier MC_ITEM_STORAGE_ITEMS_PER_LINE = MC("item_storage.items_per_line");
 	public static final Identifier MC_ANIMAL_OWNER = MC("animal_owner");
 	public static final Identifier MC_ANIMAL_OWNER_FETCH_NAMES = MC("animal_owner.fetch_names");
 	public static final Identifier MC_ARMOR_STAND = MC("armor_stand");
-	public static final Identifier MC_BEEHIVE = MC("beehive");
-	@Deprecated
-	public static final Identifier MC_BLOCK_STATES = JADE("block_states");
 	public static final Identifier MC_BREWING_STAND = MC("brewing_stand");
-	public static final Identifier MC_CAMPFIRE = MC("campfire");
 	public static final Identifier MC_CHICKEN_EGG = MC("chicken_egg");
-	public static final Identifier MC_CHISELED_BOOKSHELF = MC("chiseled_bookshelf");
 	public static final Identifier MC_COMMAND_BLOCK = MC("command_block");
 	public static final Identifier MC_CROP_PROGRESS = MC("crop_progress");
 	public static final Identifier MC_ENCHANTMENT_POWER = MC("enchantment_power");
@@ -62,7 +55,6 @@ public class Identifiers {
 	public static final Identifier MC_ITEM_FRAME = MC("item_frame");
 	public static final Identifier MC_ITEM_TOOLTIP = MC("item_tooltip");
 	public static final Identifier MC_JUKEBOX = MC("jukebox");
-	public static final Identifier MC_LECTERN = MC("lectern");
 	public static final Identifier MC_MOB_BREEDING = MC("mob_breeding");
 	public static final Identifier MC_MOB_GROWTH = MC("mob_growth");
 	public static final Identifier MC_MOB_SPAWNER = MC("mob_spawner");
@@ -75,9 +67,6 @@ public class Identifiers {
 	public static final Identifier MC_TNT_STABILITY = MC("tnt_stability");
 	public static final Identifier MC_TOTAL_ENCHANTMENT_POWER = MC("total_enchantment_power");
 	public static final Identifier MC_VILLAGER_PROFESSION = MC("villager_profession");
-	public static final Identifier MC_WAXED = MC("waxed");
-	public static final Identifier MC_ITEM_DISPLAY = MC("item_display");
-	public static final Identifier MC_BLOCK_DISPLAY = MC("block_display");
 	public static final Identifier MC_BREAKING_PROGRESS = MC("breaking_progress");
 	public static final Identifier MC_ZOMBIE_VILLAGER = MC("zombie_villager");
 
