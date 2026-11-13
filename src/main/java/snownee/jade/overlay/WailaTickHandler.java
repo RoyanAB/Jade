@@ -1,12 +1,14 @@
 package snownee.jade.overlay;
 
-import snownee.jade.api.AccessorClientHandler;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Suppliers;
+import com.mojang.text2speech.Narrator;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
+import net.minecraft.text.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.Vec3d;
@@ -14,6 +16,7 @@ import net.minecraft.world.HitResult;
 import net.minecraft.world.World;
 import snownee.jade.Jade;
 import snownee.jade.api.Accessor;
+import snownee.jade.api.AccessorClientHandler;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.callback.JadeRayTraceCallback;
@@ -30,9 +33,15 @@ import snownee.jade.impl.WailaCommonRegistration;
 import snownee.jade.impl.ui.BoxElement;
 import snownee.jade.util.ClientProxy;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+
 public class WailaTickHandler {
 
+	private static final Supplier<Narrator> NARRATOR = Suppliers.memoize(Narrator::getNarrator);
 	private static WailaTickHandler INSTANCE = new WailaTickHandler();
+	private static String lastNarration = "";
+	private static long lastNarrationTime = 0;
 	public BoxElement rootElement;
 	public ProgressTracker progressTracker = new ProgressTracker();
 
@@ -43,9 +52,27 @@ public class WailaTickHandler {
 	}
 
 	public static void narrate(ITooltip tooltip, boolean dedupe) {
+		if (!NARRATOR.get().active() || tooltip.isEmpty()) {
+			return;
+		}
+		if (System.currentTimeMillis() - lastNarrationTime < 500) {
+			return;
+		}
+		String narration = tooltip.getMessage();
+		if (dedupe && narration.equals(lastNarration)) {
+			return;
+		}
+		CompletableFuture.runAsync(() -> {
+			Narrator narrator = NARRATOR.get();
+			narrator.clear();
+			narrator.say(Formatting.strip(narration));
+		});
+		lastNarration = narration;
+		lastNarrationTime = System.currentTimeMillis();
 	}
 
 	public static void clearLastNarration() {
+		lastNarration = "";
 	}
 
 	public void tickClient() {

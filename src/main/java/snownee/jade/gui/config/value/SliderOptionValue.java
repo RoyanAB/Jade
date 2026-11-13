@@ -1,10 +1,10 @@
 package snownee.jade.gui.config.value;
 
-import org.lwjgl.input.Mouse;
 import it.unimi.dsi.fastutil.floats.FloatUnaryOperator;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.util.math.MathHelper;
+import org.lwjgl.input.Mouse;
 import snownee.jade.gui.config.widget.JadeButton;
 
 import java.text.DecimalFormat;

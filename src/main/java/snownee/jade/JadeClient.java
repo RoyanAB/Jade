@@ -3,7 +3,6 @@ package snownee.jade;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.client.ClientPlayerInteractionManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.toast.SystemToast;
 import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.options.KeyBinding;
@@ -30,6 +29,7 @@ import snownee.jade.impl.config.PluginConfig;
 import snownee.jade.impl.config.WailaConfig.ConfigGeneral;
 import snownee.jade.mixin.ClientPlayerInteractionManagerAccess;
 import snownee.jade.overlay.DisplayHelper;
+import snownee.jade.overlay.WailaTickHandler;
 import snownee.jade.util.CommonProxy;
 import snownee.jade.util.ModIdentification;
 
@@ -49,9 +49,6 @@ public final class JadeClient {
 	private static float savedProgress;
 	private static float progressAlpha;
 	private static boolean canHarvest;
-
-	public static void init() {
-	}
 
 	public static void onKeyPressed(int action) {
 		while (openConfig != null && openConfig.consumeClick()) {
@@ -89,11 +86,10 @@ public final class JadeClient {
 					general.hintNarratorToggle = false;
 				}
 				Jade.CONFIG.save();
+			} else if (WailaTickHandler.instance().rootElement != null) {
+				WailaTickHandler.narrate(WailaTickHandler.instance().rootElement.getTooltip(), false);
 			}
 		}
-	}
-
-	public static void onGui(Screen screen) {
 	}
 
 	public static void onTooltip(java.util.List<String> tooltip, ItemStack stack, TooltipFlag context) {

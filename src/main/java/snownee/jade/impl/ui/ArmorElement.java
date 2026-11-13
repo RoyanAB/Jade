@@ -6,6 +6,7 @@ import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import net.minecraft.client.render.vertex.Tesselator;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import org.jetbrains.annotations.Nullable;
@@ -91,6 +92,6 @@ public class ArmorElement extends Element {
 
 	@Override
 	public @Nullable String getMessage() {
-		return null;
+		return I18n.translate("narration.jade.armor", DisplayHelper.dfCommas.format(armor));
 	}
 }

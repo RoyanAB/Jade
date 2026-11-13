@@ -1,12 +1,12 @@
 package snownee.jade.impl.ui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.gui.GuiElement;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import net.minecraft.client.render.vertex.Tesselator;
+import net.minecraft.client.resource.language.I18n;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec2f;
 import org.jetbrains.annotations.Nullable;

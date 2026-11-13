@@ -1,13 +1,12 @@
 package snownee.jade.overlay;
 
-import snownee.jade.mixin.PlayerTabOverlayAccess;
-import org.lwjgl.input.Mouse;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.mutable.MutableObject;
+import org.lwjgl.input.Mouse;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
 import snownee.jade.api.Identifiers;
@@ -25,6 +24,7 @@ import snownee.jade.impl.config.WailaConfig.ConfigGeneral;
 import snownee.jade.impl.config.WailaConfig.ConfigOverlay;
 import snownee.jade.impl.ui.BoxElement;
 import snownee.jade.impl.ui.ItemStackElement;
+import snownee.jade.mixin.PlayerTabOverlayAccess;
 import snownee.jade.util.ClientProxy;
 import snownee.jade.util.ModIdentification;
 

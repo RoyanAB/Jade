@@ -563,6 +563,120 @@ MessageFormat.format(I18n.get(s), objects)
 | 方块状态同步 | 1.12 无稳定 state id；服务端使用世界真实状态（差异见 7.2） |
 | 1.20 的 `show_overlay` 命令 | 网络收发已保留，命令模块未移植，暂无调用方 |
 
+## 6.7 无障碍复述（TTS / Narration）移植
+
+### 1.12 的复述机制
+
+- 1.12 自带 `com.mojang.text2speech` **1.10.3**（`NarratorChatListener` 用它朗读聊天栏），
+  接口只有 `say(String)` / `clear()` / `active()` / `getNarrator()`，**没有** 1.20 的 `say(String, boolean interrupt)`。
+- 1.12 的 `options.narrator`（0 关 / 1 全部 / 2 聊天 / 3 系统）只控制**原版聊天栏**朗读，
+  Ctrl+B 会把它设成 1。原版 Jade 也不检查这个开关，它用自己的按键 + `Narrator.active()` 判断，这里保持一致。
+
+### 修复：`WailaTickHandler.narrate` / `clearLastNarration` 是空方法
+
+移植版这两个方法只有空壳，导致：
+- 切换模式（`tts_mode = TOGGLE`）下打开复述后**什么都不会读**；
+- 按键模式（`PRESS`）下按复述键也没有任何反应。
+
+已按原版完整实现：
+
+```java
+private static final Supplier<Narrator> NARRATOR = Suppliers.memoize(Narrator::getNarrator);
+private static String lastNarration = "";
+private static long lastNarrationTime = 0;
+
+public static void narrate(ITooltip tooltip, boolean dedupe) {
+    if (!NARRATOR.get().active() || tooltip.isEmpty()) return;
+    if (System.currentTimeMillis() - lastNarrationTime < 500) return;   // 500ms 节流
+    String narration = tooltip.getMessage();
+    if (dedupe && narration.equals(lastNarration)) return;              // 同一段不重复朗读
+    CompletableFuture.runAsync(() -> {                                  // 朗读放到异步线程
+        Narrator narrator = NARRATOR.get();
+        narrator.clear();
+        narrator.say(Formatting.strip(narration));
+    });
+    lastNarration = narration;
+    lastNarrationTime = System.currentTimeMillis();
+}
+
+public static void clearLastNarration() { lastNarration = ""; }
+```
+
+与原版的唯一差异：1.10.3 没有 `say(text, false)`，改为先 `clear()` 再 `say(text)`，听感等价。
+
+### 修复：`PRESS` 模式按键分支缺失
+
+原版 `JadeClient` 的复述按键处理：
+
+```java
+while (narrate.consumeClick()) {
+    if (general.getTTSMode() == TTSMode.TOGGLE) { ...开关 + 提示 toast... }
+    else if (WailaTickHandler.instance().rootElement != null) {
+        WailaTickHandler.narrate(WailaTickHandler.instance().rootElement.getTooltip(), false);
+    }
+}
+```
+
+移植版只有 `TOGGLE` 分支，`else if` 整个缺失 —— 按键模式下按复述键毫无反应。已补上。
+
+### 修复：护甲值不参与复述（`ArmorElement`）
+
+- 原版 `ArmorElement.getMessage()` 返回 `I18n.get("narration.jade.armor", ...)`；
+- 移植版直接 `return null`，所以护甲值永远不会被朗读。已改为与原版一致。
+
+### 已确认完整的部分
+
+| 环节 | 状态 |
+|---|---|
+| 复述按键 `key.jade.narrate`（小键盘 5） | ✓ 已注册 |
+| `tts_mode` 配置项（PRESS / TOGGLE） | ✓ GUI 可切换 |
+| `enableTextToSpeech` + `toggleTTS()` + 500ms 节流 | ✓ |
+| `hintNarratorToggle` 提示 toast | ✓ `toast.jade.tts_hint.1/2` |
+| `OverlayRenderer` 在 TOGGLE 模式下调用 `narrate(tooltip, true)` | ✓ |
+| 悬浮框消失时 `clearLastNarration()` | ✓ 再次悬停会重新朗读 |
+| `Tooltip.getMessage()`（按行拼接、跳过模组名、元素 `getMessage()`） | ✓ 与原版一致 |
+| `HealthElement.getMessage()` / `ItemStackElement.getMessage()` / `TextElement.getMessage()` / `ProgressElement.getMessage()` / `BoxElement.getMessage()` | ✓ 全部一致 |
+| `narration.jade.*` 语言键 | ✓ 全部存在 |
+| `maybeLowVisionUser()`（装了 `minecraft_access` 或开了 TTS） | ✓ |
+| 元素级复述文案（`.message(...)`） | ✓ 与原版一致（仅未移植的 provider 除外） |
+
+### 复述代码逐行复查结果（第二轮）
+
+逐行对照原版后确认无逻辑偏差，并核对底层库行为：
+
+| 检查点 | 结果 |
+|---|---|
+| `Narrator.getNarrator()` 是否可缓存 | 1.10.3 **每次调用都新建实例**（`NarratorWindows` 构造会起一个守护线程），因此 `Suppliers.memoize` 是必需的，与原版一致 |
+| `getNarrator()` 是否会返回 null | 不会，平台不支持时返回 `NarratorDummy`（`active() == false`） |
+| `active()` 是否可能抛异常 | `NarratorWindows`/`NarratorLinux` 用静态 `libraryFound` 标记，`active()` 只读该标记，不会抛 |
+| `Formatting.strip` 与 1.20 `StringUtil.stripColor` | 1.12 的 `CODE_PATTERN = (?i)§[0-9A-FK-OR]`，**与 1.20 完全相同的正则** |
+| 500ms 节流位置 | 在 `getMessage()` 之前，与原版一致（避免每帧拼字符串） |
+| 去重时机 | 去重命中时**不更新** `lastNarrationTime`，与原版一致 |
+| `lastNarration` / `lastNarrationTime` 线程安全 | 只在渲染线程读写，异步任务只读 `narration` 局部变量 |
+| 异步朗读 | `CompletableFuture.runAsync` 走 ForkJoinPool，与原版一致；异常被吞掉不影响游戏 |
+| `tooltip.isEmpty()` | `Tooltip.size()` = 行数，与原版一致 |
+| `Element.getCachedMessage()` 哨兵 | `DEFAULT_MESSAGE` 哨兵 + `.message(null)` 显式禁读，与原版逐行相同 |
+| `Tooltip.getMessage()` | 按行 `' '` 连接、行间 `'\n'`、跳过 `CORE_MOD_NAME`，与原版相同 |
+| `IElement.message/getMessage/getCachedMessage/clearCachedMessage` | 与原版**签名完全一致** |
+| `ITooltip.getMessage()` / `isEmpty()` | 与原版完全一致 |
+| `IWailaConfig.IConfigGeneral` 全部方法 | 与原版**无差异**（`shouldEnableTextToSpeech` / `toggleTTS` / `getTTSMode` / `setTTSMode`） |
+| `IWailaConfig.TTSMode` | `TOGGLE, PRESS` 顺序一致（序列化到 JSON 时用名字，顺序不影响） |
+| `IWailaClientRegistration.maybeLowVisionUser()` | 一致 |
+| `ClientProxy.maybeLowVisionUser` | 一致（`isModLoaded("minecraft_access")`） |
+| `IElementHelper` 全部签名 | 一致（仅缺 `fluid`） |
+
+### 仍未实现（非复述，仅记录）
+
+- `JadeClient.onGui(Screen)` 仍是空方法：原版在开发环境下检查配置项是否缺少语言键并抛 `AssertionError`，
+  移植版没有 `ScreenEvents` 之类的钩子调用它。属于开发期校验，与复述无关。
+
+### 仍然无法移植的部分
+
+- 1.12 没有 `NarratableEntry` / `NarratableEntry` 那套 GUI 控件朗读体系，
+  所以配置界面里的按钮/列表项朗读（1.20 的 `updateNarration`）无从实现；
+  原版 Jade 也只在 `WailaConfigScreen` 里给 `☰` 按钮加了一个 `createNarration`。
+- 1.12 没有 `ClientTooltipPositioner`，不影响复述。
+
 ## 7. 仍需处理的功能/效果差异
 
 ### 7.1 明确未移植

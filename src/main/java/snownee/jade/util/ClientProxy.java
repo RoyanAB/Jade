@@ -1,7 +1,5 @@
 package snownee.jade.util;
 
-import snownee.jade.mixin.BossEventOverlayAccess;
-import org.lwjgl.input.Keyboard;
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
@@ -21,6 +19,7 @@ import net.ornithemc.osl.networking.api.client.ClientConnectionEvents;
 import net.ornithemc.osl.networking.api.client.ClientPlayNetworking;
 import net.ornithemc.osl.resource.loader.api.client.ClientResourceLoaderEvents;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.input.Keyboard;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
 import snownee.jade.addon.harvest.HarvestToolProvider;
@@ -34,6 +33,7 @@ import snownee.jade.impl.EntityAccessorImpl;
 import snownee.jade.impl.ObjectDataCenter;
 import snownee.jade.impl.config.PluginConfig;
 import snownee.jade.impl.theme.ThemeHelper;
+import snownee.jade.mixin.BossEventOverlayAccess;
 import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.overlay.OverlayRenderer;
 import snownee.jade.overlay.WailaTickHandler;

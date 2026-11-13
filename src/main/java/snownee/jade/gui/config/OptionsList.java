@@ -1,7 +1,5 @@
 package snownee.jade.gui.config;
 
-import org.lwjgl.input.Mouse;
-import org.lwjgl.input.Keyboard;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -25,6 +23,8 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
+import org.lwjgl.input.Keyboard;
+import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 import snownee.jade.gui.BaseOptionsScreen;
 import snownee.jade.gui.PreviewOptionsScreen;
