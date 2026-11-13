@@ -210,7 +210,7 @@ public class BoxElement extends Element implements IBoxElement {
 			ITooltip tooltip1 = theme.iconSlotSpriteCache.getTooltip();
 			tooltip1.clear();
 			tooltip1.add(icon);
-			icon = theme.iconSlotSpriteCache;
+			icon = theme.iconSlotSpriteCache.size(null);
 		}
 		setIcon(icon);
 	}

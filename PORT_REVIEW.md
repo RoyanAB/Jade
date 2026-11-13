@@ -1539,6 +1539,71 @@ return ThemeHelper.color(new LiteralText(Integer.toString(i)), colors[colorIndex
   （用户可配置粗体/斜体/下划线），不受影响。
 - 复述（narration）走 `getString()`，不会带上颜色 ✓。
 
+## 6.19 theme 部分复查：找到 1 个真 Bug + 3 处细节
+
+对照 `api/theme/*`、`impl/theme/*`、`api/ui/BoxStyle`、`api/ui/ColorPalette`、4 个主题 JSON、
+`WailaConfig.ConfigOverlay` 的主题字段、`WailaConfigScreen` 的主题选项、`BoxElement#setThemeIcon`。
+
+### Bug：`itemAmountColor` 解析了却从未使用，物品数量根本不渲染
+
+原版 `DisplayHelper` 自己实现了一套 `renderGuiItemDecorations`：
+
+```java
+if (stack.getCount() != 1 || text != null) {
+    String s = text == null ? INSTANCE.humanReadableNumber(stack.getCount(), "", false, null) : text;
+    boolean smaller = s.length() > 3;
+    float scale = smaller ? 0.5F : 0.75F;
+    int x = smaller ? 32 : 22;
+    int y = smaller ? 23 : 13;
+    ...
+    int color = IThemeHelper.get().theme().text.itemAmountColor();   // ← 主题色
+    guiGraphics.drawString(font, s, i + x - font.width(s), j + y, color, true);
+}
+```
+
+移植版为了不显示原版白色数字，把副本 `setSize(1)` 后直接交给 vanilla 的
+`renderGuiItemDecorations` —— 结果 **数量完全不画**，主题里的 `itemAmountColor` 也就成了死配置。
+
+已补上 `DisplayHelper#renderAmount`（与上面逐行对应：`humanReadableNumber`、>3 位缩到 0.5、
+`itemAmountColor`、z=200、带阴影），`drawItem` 里先让 vanilla 只画耐久条/冷却，再调 `renderAmount`：
+
+```java
+mc.getItemRenderer().renderGuiItemDecorations(mc.textRenderer, overlayRender, 0, 0, null);
+renderAmount(mc.textRenderer, stack, text);
+```
+
+### 细节 1：`changeOpacity` 没有钳制
+
+1.20 用 `Codec.floatRange(0, 1)` 解析，移植版直接 `getAsFloat()`。虽然 `ConfigOverlay#setAlpha`
+内部会 clamp，但为了与原版一致，已在解析时 `MathHelper.clamp(..., 0, 1)`。
+
+### 细节 2：`modName` 少了原版的样式缓存
+
+原版用 `Style[3]` 缓存 `itemStyle / themeStyle / 合并结果`（按引用比较），移植版每次重新
+`themeStyle.copy().setParent(itemStyle)` —— 每 tick 每个 tooltip 都分配一个 Style。已补回同款缓存。
+
+### 细节 3：`BoxElement#setThemeIcon` 少了一次尺寸失效
+
+原版最后是 `icon = theme.iconSlotSpriteCache.size(null);` —— 因为图标槽里的内容刚被
+`clear()` + `add(icon)` 换掉，必须让缓存的尺寸失效。移植版直接 `icon = theme.iconSlotSpriteCache;`
+会让图标槽一直沿用第一次算出的尺寸。
+
+（内置主题都没有 `iconSlotSprite`，所以这个分支平时不触发；但自定义主题会用到。）
+
+### 其余核对结果（无问题）
+
+| 文件 | 结论 |
+|---|---|
+| `api/theme/Theme.java` | ✓ 仅 `Optional` → `@Nullable` |
+| `api/theme/TextSetting.java` | ✓ record → 普通类 + 访问器 |
+| `api/theme/IThemeHelper.java` | ✓ 方法集合完全一致（`MutableComponent` → `Text`） |
+| `impl/theme/ThemeHelper` 的 `parse` | ✓ 各字段默认值与 codec 一致（`nestedBoxStyle`/`viewGroupStyle` 用 `clone()` 更安全；`tooltipStyle` 缺失时抛异常→主题被跳过，与原版一致） |
+| `reload()` | ✓ version 100~199 校验、`themesHash` 重算、`autoEnable`、`changeRoundCorner`/`changeOpacity` 应用 |
+| 4 个内置主题 JSON | ✓ 与原版逐字节相同 |
+| 主题切换 UI | ✓ `overlay_theme` 选项、切换后回填 square/alpha、`hidden` 过滤、名称 `jade.theme.ns.path` |
+| `BoxStyle` / `ColorPalette` | ✓（数组长度校验见 6.6） |
+| `Theme.iconSlotInflation` | ✓ 用于图标槽 padding |
+
 ## 7. 仍需处理的功能/效果差异
 
 ### 7.1 明确未移植

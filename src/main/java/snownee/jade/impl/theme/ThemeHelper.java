@@ -9,6 +9,7 @@ import net.minecraft.resource.Identifier;
 import net.minecraft.text.Formatting;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
 import snownee.jade.Jade;
@@ -36,6 +37,7 @@ public class ThemeHelper implements IThemeHelper {
 	private static final List<String> BUILT_IN_THEMES = Arrays.asList("dark", "create", "top", "waila");
 	private final Map<Identifier, Theme> themes = new TreeMap<>(Comparator.comparing(Identifier::toString));
 	private Theme fallback;
+	private final Style[] modNameStyleCache = new Style[3];
 
 	/**
 	 * 1.20's {@code Style.EMPTY.withColor(int)} equivalent. 1.12's {@link Style} can only hold one
@@ -141,7 +143,8 @@ public class ThemeHelper implements IThemeHelper {
 			text = new TextSetting(colors, shadow, modNameStyle, itemAmountColor);
 		}
 		Boolean roundCorner = o.has("changeRoundCorner") ? o.get("changeRoundCorner").getAsBoolean() : null;
-		float changeOpacity = o.has("changeOpacity") ? o.get("changeOpacity").getAsFloat() : 0;
+		// 1.20 parses this with Codec.floatRange(0, 1)
+		float changeOpacity = o.has("changeOpacity") ? MathHelper.clamp(o.get("changeOpacity").getAsFloat(), 0, 1) : 0;
 		boolean light = o.has("lightColorScheme") && o.get("lightColorScheme").getAsBoolean();
 		boolean hidden = o.has("hidden") && o.get("hidden").getAsBoolean();
 		Identifier iconSprite = o.has("iconSlotSprite") ? new Identifier(o.get("iconSlotSprite").getAsString()) : null;
@@ -235,11 +238,16 @@ public class ThemeHelper implements IThemeHelper {
 		}
 		Style itemStyle = IWailaConfig.get().getFormatting().getItemModNameStyle();
 		Style themeStyle = theme().text.modNameStyle();
-		if (themeStyle != null) {
-			// theme style wins, unset attributes fall back to the global item mod name style
-			return text.setStyle(themeStyle.copy().setParent(itemStyle));
+		if (modNameStyleCache[0] != itemStyle || modNameStyleCache[1] != themeStyle) {
+			Style style = itemStyle;
+			if (themeStyle != null) {
+				style = themeStyle.copy().setParent(itemStyle);
+			}
+			modNameStyleCache[0] = itemStyle;
+			modNameStyleCache[1] = themeStyle;
+			modNameStyleCache[2] = style;
 		}
-		return text.setStyle(itemStyle);
+		return text.setStyle(modNameStyleCache[2]);
 	}
 
 	@Override
