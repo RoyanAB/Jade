@@ -26,11 +26,11 @@ public enum ItemBERProvider implements IBlockComponentProvider {
 			if (stack.isEmpty()) {
 				return null;
 			}
-			//port: 1.12 has no Minecraft#addCustomNbtData. Only skulls need extra data here, the
-			//"skull" item model is builtin/entity and BlockEntityItemRenderer reads SkullOwner
+
 			if (accessor.getBlockEntity() instanceof SkullBlockEntity) {
 				addSkullOwner(stack, (SkullBlockEntity) accessor.getBlockEntity());
 			}
+
 			return IElementHelper.get().item(stack);
 		}
 		return null;
