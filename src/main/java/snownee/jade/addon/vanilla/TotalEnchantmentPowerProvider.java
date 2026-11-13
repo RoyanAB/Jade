@@ -1,6 +1,5 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.block.state.BlockState;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;

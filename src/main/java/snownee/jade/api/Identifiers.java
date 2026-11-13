@@ -19,7 +19,7 @@ public class Identifiers {
 	public static final Identifier DEBUG_REGISTRY_NAME = JADE("registry_name");
 	public static final Identifier DEBUG_SPECIAL_REGISTRY_NAME = JADE("registry_name.special");
 	public static final Identifier DEBUG_BLOCK_STATES = JADE("block_states");
-//	public static final Identifier UNIVERSAL_ITEM_STORAGE = MC("item_storage");
+	//	public static final Identifier UNIVERSAL_ITEM_STORAGE = MC("item_storage");
 //	public static final Identifier UNIVERSAL_FLUID_STORAGE = MC("fluid_storage");
 //	public static final Identifier UNIVERSAL_FLUID_STORAGE_DETAILED = MC("fluid_storage.detailed");
 //	public static final Identifier UNIVERSAL_ENERGY_STORAGE = MC("energy_storage");
@@ -57,7 +57,7 @@ public class Identifiers {
 	public static final Identifier MC_JUKEBOX = MC("jukebox");
 	public static final Identifier MC_MOB_BREEDING = MC("mob_breeding");
 	public static final Identifier MC_MOB_GROWTH = MC("mob_growth");
-	public static final Identifier MC_MOB_SPAWNER = MC("mob_spawner");;
+	public static final Identifier MC_MOB_SPAWNER = MC("mob_spawner");
 	public static final Identifier MC_NOTE_BLOCK = MC("note_block");
 	public static final Identifier MC_PAINTING = MC("painting");
 	public static final Identifier MC_PLAYER_HEAD = MC("player_head");

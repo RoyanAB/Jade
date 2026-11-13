@@ -46,7 +46,7 @@ public class ThemeHelper implements IThemeHelper {
 		Style style = text.getStyle();
 		if (style.getColor() != null) {
 			// keep bold/italic/..., drop the old 16 color one, the wrapper overrides it anyway
-			text.setStyle(style.copy().setColor((Formatting) null));
+			text.setStyle(style.copy().setColor(null));
 		}
 		return new RgbText(text, color);
 	}
