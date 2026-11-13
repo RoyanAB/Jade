@@ -271,6 +271,11 @@ public class OptionsList extends ListWidget {
 		float r2 = (endColor >> 16 & 255) / 255.0F;
 		float g2 = (endColor >> 8 & 255) / 255.0F;
 		float b2 = (endColor & 255) / 255.0F;
+
+		boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+		boolean texture = GL11.glIsEnabled(GL11.GL_TEXTURE_2D);
+		int shadeModel = GL11.glGetInteger(GL11.GL_SHADE_MODEL);
+
 		GlStateManager.disableTexture();
 		GlStateManager.enableBlend();
 		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
@@ -283,9 +288,16 @@ public class OptionsList extends ListWidget {
 		buffer.vertex(left, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
 		buffer.vertex(left + width, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
 		tesselator.end();
-		GlStateManager.shadeModel(GL11.GL_FLAT);
-		GlStateManager.disableBlend();
-		GlStateManager.enableTexture();
+		GlStateManager.shadeModel(shadeModel);
+
+		if (texture)
+			GlStateManager.enableTexture();
+		else
+			GlStateManager.disableTexture();
+		if (blend)
+			GlStateManager.enableBlend();
+		else
+			GlStateManager.disableBlend();
 	}
 
 	public void syncScrollTarget() {

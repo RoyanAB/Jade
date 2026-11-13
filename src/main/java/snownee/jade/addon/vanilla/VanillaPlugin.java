@@ -75,6 +75,7 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.registerBlockComponent(EnchantmentPowerProvider.INSTANCE, Block.class);
 		registration.registerBlockComponent(TotalEnchantmentPowerProvider.INSTANCE, EnchantingTableBlock.class);
 		registration.registerBlockComponent(PlayerHeadProvider.INSTANCE, SkullBlock.class);
+		registration.registerBlockIcon(ItemBERProvider.INSTANCE, SkullBlock.class);
 		registration.registerEntityComponent(ItemTooltipProvider.INSTANCE, ItemEntity.class);
 		registration.registerBlockComponent(FurnaceProvider.INSTANCE, FurnaceBlock.class);
 		registration.registerEntityComponent(AnimalOwnerProvider.INSTANCE, Entity.class);

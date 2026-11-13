@@ -830,7 +830,7 @@ Text name = new LiteralText(accessor.getBlock().getName());            // "Monst
 | `WaxedProvider` | 蜂巢打蜡 | 1.17+ |
 | `BlockDisplayProvider` | `BlockDisplay` 实体 | 1.19.4+ |
 | `ItemDisplayProvider` | `ItemDisplay` 实体 | 1.19.4+ |
-| `ItemBERProvider` | `AbstractSkullBlock` / `DecoratedPotBlock` | 1.12 有头颅，但 1.12 的 `SkullItem` **没有 TEISR**，物品图标始终是默认贴图，即使塞入 `SkullOwner` 也不会改变 GUI 图标 → 实现出来没有任何可见效果 |
+| ~~`ItemBERProvider`~~ | ~~`AbstractSkullBlock` / `DecoratedPotBlock`~~ | **已实现**（见 6.12），之前的判断有误 |
 
 ### 新增的两个访问器 mixin
 
@@ -847,6 +847,207 @@ public interface SpawnerMinecartEntityAccess {
 ```
 
 两个字段名都已在重映射后的 MC jar 中核对：`private int conversionTicks`、`private final MobSpawner spawner`。
+
+## 6.10 修复：overlay 渲染头颅等 3D 物品图标时遮挡关系错误
+
+### 现象
+
+悬停玩家头颅 / 生物头颅（以及其他 `gui3d` 物品）时，tooltip 里的图标是 3D 方块模型，
+但模型各面的前后关系是乱的：该被挡住的面画在前面，该露出的面反而被盖住。
+
+### 根因
+
+`OverlayRenderer.renderOverlay478757` 在整段 tooltip 渲染前调用了 `GlStateManager.disableDepthTest()`：
+
+```java
+GlStateManager.disableDepthTest();   // ← 整段 tooltip 都没有深度测试
+GlStateManager.pushMatrix();
+...
+root.render(0, 0, maxWidth, maxHeight);
+```
+
+2D 元素（背景、文字、进度条）都是共面/互不重叠的，关掉深度测试没问题；
+但 3D 物品模型的多个面在屏幕上**互相重叠**，没有深度测试就只能按模型里的顶点顺序覆盖，
+于是出现“遮挡关系不对”。
+
+原版 1.20 从不关闭深度测试（`renderOverlay` 只在结尾 `RenderSystem.enableDepthTest()`）。
+
+### 修复
+
+不能简单地全局打开深度测试 —— 1.12 的**快捷栏背景**是用 `drawOffset = -90` 画的，
+即 z=-90，比 tooltip 的 z=1 **更靠近镜头**（GUI 空间 z 越大越靠前）。
+全局开启深度测试会让快捷栏背景把 tooltip 抠掉一块。
+
+所以改成**只在物品图标渲染时局部开启**：
+
+```java
+Lighting.turnOnGui();
+//port: 3D item models (skulls, blocks) have overlapping faces in GUI space; without the
+//depth test they are painted in model order and occlude each other incorrectly
+GlStateManager.enableDepthTest();
+mc.getItemRenderer().renderGuiItem(stack, 0, 0);
+...
+GlStateManager.disableDepthTest();
+```
+
+物品图标位于 GUI z ≈ 101（tooltip 的 z + `setupGuiTransform` 的 100），
+比快捷栏背景（z=-90）更靠前，所以局部开启深度测试后图标依然完整显示，而它自身的面能正确排序。
+
+### 顺带修复：图标之后的状态污染（改为保存/恢复，而不是写死）
+
+`drawItem` 结尾原本是 `GlStateManager.disableBlend()`，而 tooltip 的绘制顺序是 **背景 → 图标 → 文字**，
+所以图标之后的所有文字都是在**关闭混合**的状态下画的：
+
+- 文字不参与 tooltip 的淡入淡出（`alpha` 动画只作用于背景）；
+- 1.12 字体图集是 1bit alpha，平时看不出，高清字体包里会发硬。
+
+但把结尾直接改成 `enableBlend()` 同样是错的 —— 1.12 的 `ItemRenderer.renderGuiItemModel`
+**自己会 `enableBlend()` 且从不恢复**，所以 `drawItem` 不能假设进入时的状态：
+
+| 结尾写法 | 后果 |
+|---|---|
+| `disableBlend()`（原来） | 调用方原本开着混合 → 被关掉（文字不参与淡入） |
+| `enableBlend()`（上一版） | 调用方原本关着混合 → 被打开（反向污染） |
+| **保存/恢复（现在）** | 进入什么状态就还原什么状态 ✓ |
+
+```java
+boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+...
+if (depth) GlStateManager.enableDepthTest(); else GlStateManager.disableDepthTest();
+if (blend) GlStateManager.enableBlend(); else GlStateManager.disableBlend();
+```
+
+`renderOverlay478757` 也做了同样处理（它需要临时 `disableDepthTest()` 避开快捷栏背景的 z=-90，
+结束后按进入时的状态还原，而不是写死 `enableDepthTest()`）。
+
+其余状态确认无需恢复：`enableTexture()`、`Lighting.turnOnGui()/turnOff()`、`alphaFunc(GL_GREATER, 0.1)`
+在 1.12 GUI 里都是默认值；`shadeModel` 由 `drawGradientRect` 自己设置并在结束时还原成 FLAT。
+
+## 6.11 全项目渲染状态审计（GL state leak）
+
+把所有调用 `GlStateManager` / `GL11` / `Lighting` 的文件（共 12 个）逐个方法过了一遍，
+重点看「改了状态但没恢复」的地方。
+
+### 发现并修复的泄露
+
+| 方法 | 原来改了什么 | 后果 | 现在 |
+|---|---|---|---|
+| `DisplayHelper.fill` | `enableBlend` → **`disableBlend`**；`disableTexture` → `enableTexture` | 调用方开着混合被关掉：之后的文字不参与 alpha 淡入、字形发硬 | 保存/恢复 blend、texture |
+| `DisplayHelper.drawGradientRect` | 同上 + `shadeModel(SMOOTH)` → 硬编码 `FLAT` | 同上；调用方若是 SMOOTH 会被改成 FLAT | 保存/恢复 blend、texture、shadeModel |
+| `DisplayHelper.drawTextureRegion` | `enableBlend` → **`disableBlend`**；`disableAlphaTest` → 硬编码 `enableAlphaTest` | 同上；调用方若关着 alpha test 会被打开 | 保存/恢复 blend、alphaTest |
+| `DisplayHelper.drawItem` | `enableBlend`/`enableDepthTest` → 硬编码 `disableBlend`/`disableDepthTest` | 上一轮已修：改为保存/恢复 blend、depth | ✓ |
+| `OptionsList.drawFooterGradient` | `enableBlend` → **`disableBlend`**；`shadeModel` 硬编码 `FLAT` | 配置界面底栏渐变之后，按钮文字失去混合 | 保存/恢复 blend、texture、shadeModel |
+| `OverlayRenderer.renderOverlay` | `disableDepthTest` → 硬编码 `enableDepthTest` | 上一轮已修：改为保存/恢复 blend、depth | ✓ |
+
+### 检查后确认无需修改的
+
+| 位置 | 改动 | 为什么安全 |
+|---|---|---|
+| `OptionsNav.render` / `OptionsList.render`（脏土、锚点线） | `bind(texture)`、`color4f(0.35/0.125)`、`disableLighting`、`disableFog` | 颜色在方法末尾复位为 `1,1,1,1`；纹理绑定由后续元素自行重绑；关闭光照/雾就是 GUI 默认状态 |
+| `JadeButton.render` | `enableBlend()` + `blendFunc` | 只开不关，GUI 默认就是开 |
+| `SliderOptionValue.Slider.render` | 同上 | 同上 |
+| `HealthElement` / `ArmorElement.drawIcon` | `enableBlend`、`blendFunc`、`color4f(1,1,1,1)` | 只开不关；颜色复位 |
+| `SpecialTextElement.render` | `pushMatrix` / `translate` / `scale` / `popMatrix` | 严格成对 |
+| `HomeConfigScreen.render` | 5 处 `pushMatrix`/`popMatrix` | 全部成对（其中一处是 pop 后立即 push，栈深不变） |
+| `BaseOptionsScreen.drawTooltipAt` | 关 rescaleNormal / lighting / depth，结尾重新开启 | 与 vanilla 1.12 `drawHoveringText` 完全一致的写法（结尾恢复 GUI 物品光照） |
+| `DisplayHelper.pushScissor` / `popScissor` | `glEnable/glDisable(GL_SCISSOR_TEST)` | 调用点全部成对（`OptionsList`、`OptionsNav` 各一处）；`popScissor` 无条件关闭，而 GUI 默认就是关闭 |
+| `ItemStackMixin` / `BossHealthOverlayMixin` / `GameGuiMixin` / `ChatScreenMixin` / `ClientLevelMixin` | 无任何 GL 调用 | — |
+
+### 有界但未处理的
+
+`TextRendererMixin.jade$applyGlint()` 在每个字形前调用 `color4f(r, g, b, a * factor)`，
+绘制结束后颜色会停在最后一个字形的 glint 值。但：
+
+- glint 只在 `HomeConfigScreen` 的标题上启用，画完立刻 `jade$setGlint(NaN, NaN)`；
+- 任何后续文字绘制都会在 `TextRenderer.draw` 开头重新 `color4f`；
+- 标题之后紧跟的是按钮（自己设 `color4f(1,1,1,1)`）和 credit 文字。
+
+因此实际不可观测，没有加额外注入（在 `draw` 的 RETURN 处还原需要精确匹配 `draw(Ljava/lang/String;FFIZ)I` 描述符，收益不抵风险）。
+
+## 6.12 实现 `ItemBERProvider`（头颅图标显示真实皮肤）
+
+### 之前判断错误的地方
+
+我先前认为「1.12 的 `SkullItem` 没有物品级 BER，塞 `SkullOwner` 也不会改变 GUI 图标」——**这是错的**。
+1.12 原版确实有物品级 BER：`net.minecraft.client.render.entity.BlockEntityItemRenderer`
+（MCP 名 `TileEntityItemStackRenderer`），调用链是：
+
+```java
+// ItemRenderer.renderItem
+if (model.isCustomRenderer()) {           // skull 物品模型是 builtin/entity
+    BlockEntityItemRenderer.INSTANCE.render(item);
+}
+```
+
+而 `BlockEntityItemRenderer` 对 `Items.SKULL` 的处理正是读 `SkullOwner`：
+
+```java
+if (nbtCompound.contains("SkullOwner", NbtTypes.COMPOUND)) {
+    gameProfile = NbtUtils.readProfile(nbtCompound.getCompound("SkullOwner"));
+} else if (nbtCompound.contains("SkullOwner", NbtTypes.STRING) && ...) {
+    gameProfile = SkullBlockEntity.updateProfile(new GameProfile(null, name));
+}
+...
+SkullRenderer.INSTANCE.render(..., gameProfile, ...);
+```
+
+`SkullRenderer` 的玩家头颅分支会拿 `profile` 去 `SkinManager.getTextures(profile)` 取皮肤；
+取不到时用 `DefaultSkinUtils.getDefaultSkin(uuid)`（按 UUID 生成确定性默认皮肤）。
+
+### 1.12 的实现
+
+原版 `getIcon` 里是 `Minecraft#addCustomNbtData(stack, blockEntity)`（把整个方块实体 NBT 塞进
+`BlockEntityTag`）。1.12 没有这个方法，而且头颅只需要一个字段，所以按你说的**只写特定 NBT**：
+
+```java
+@Override
+public @Nullable IElement getIcon(BlockAccessor accessor, IPluginConfig config, IElement currentIcon) {
+    if (accessor.getBlockEntity() != null) {
+        ItemStack stack = accessor.getPickedResult();
+        if (stack.isEmpty()) {
+            return null;
+        }
+        if (accessor.getBlockEntity() instanceof SkullBlockEntity) {
+            addSkullOwner(stack, (SkullBlockEntity) accessor.getBlockEntity());
+        }
+        return IElementHelper.get().item(stack);
+    }
+    return null;
+}
+
+private static void addSkullOwner(ItemStack stack, SkullBlockEntity skull) {
+    GameProfile profile = skull.getProfile();
+    if (profile == null) {
+        return;
+    }
+    NbtCompound nbt = stack.hasNbt() ? stack.getNbt().copy() : new NbtCompound();
+    nbt.put("SkullOwner", NbtUtils.writeProfile(new NbtCompound(), profile));
+    stack.setNbt(nbt);
+}
+```
+
+- `NbtUtils.writeProfile` 是 1.12 原版自己用的方法（`SkullItem` 里就有一模一样的调用），
+  写出 `{Name, Id, Properties}` 复合标签，正好是 `NbtUtils.readProfile` / `BlockEntityItemRenderer` 期望的格式。
+- `stack.getNbt().copy()` 保证不改动方块实体的数据，`accessor.getPickedResult()` 每次都是新 ItemStack。
+- 非玩家头颅（骷髅/凋灵/僵尸/苦力怕/龙）的 `profile` 为 null，直接跳过，用 metadata 走默认分支 ✓。
+- `isRequired() = true`，所以和原版一样不产生配置项。
+
+### 注册
+
+```java
+registration.registerBlockComponent(PlayerHeadProvider.INSTANCE, SkullBlock.class);
+registration.registerBlockIcon(ItemBERProvider.INSTANCE, SkullBlock.class);
+```
+
+原版是 `AbstractSkullBlock` + `DecoratedPotBlock`；1.12 只有一个 `SkullBlock`（覆盖所有头颅），
+装饰陶罐 1.20 才有，跳过。
+
+### 效果
+
+- 玩家头颅：图标显示该玩家的皮肤（皮肤未缓存时先显示按 UUID 生成的默认皮肤，解析完成后变正版皮肤）
+- 生物头颅：`profile == null`，走 metadata，图标本来就是正确的
+- 与 6.10 的深度测试修复配合，3D 头颅模型的各面遮挡正常
 
 ## 7. 仍需处理的功能/效果差异
 

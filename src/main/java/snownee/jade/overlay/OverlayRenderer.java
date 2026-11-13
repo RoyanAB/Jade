@@ -7,6 +7,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.math.MathHelper;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.GL11;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
 import snownee.jade.api.Identifiers;
@@ -168,6 +169,9 @@ public class OverlayRenderer {
 			}
 		}
 
+		boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+		boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+
 		GlStateManager.disableDepthTest();
 		GlStateManager.pushMatrix();
 		float z = Minecraft.getInstance().screen == null ? 1 : 100;
@@ -195,9 +199,16 @@ public class OverlayRenderer {
 			callback.afterRender(root, rect, ObjectDataCenter.get());
 		});
 
-		GlStateManager.disableBlend();
 		GlStateManager.popMatrix();
-		GlStateManager.enableDepthTest();
+
+		if (blend)
+			GlStateManager.enableBlend();
+		else
+			GlStateManager.disableBlend();
+		if (depth)
+			GlStateManager.enableDepthTest();
+		else
+			GlStateManager.disableDepthTest();
 
 		if (Jade.CONFIG.get().getGeneral().shouldEnableTextToSpeech()) {
 			WailaTickHandler.narrate(root.getTooltip(), true);

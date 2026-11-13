@@ -74,6 +74,10 @@ public class DisplayHelper implements IDisplayHelper {
 		float b = (color & 255) / 255.0F;
 		Tesselator tesselator = Tesselator.getInstance();
 		BufferBuilder buffer = tesselator.getBuffer();
+
+		boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+		boolean texture = GL11.glIsEnabled(GL11.GL_TEXTURE_2D);
+
 		GlStateManager.enableBlend();
 		GlStateManager.disableTexture();
 		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
@@ -83,8 +87,15 @@ public class DisplayHelper implements IDisplayHelper {
 		buffer.vertex(maxX, minY, 0.0).color(r, g, b, a).nextVertex();
 		buffer.vertex(minX, minY, 0.0).color(r, g, b, a).nextVertex();
 		tesselator.end();
-		GlStateManager.enableTexture();
-		GlStateManager.disableBlend();
+
+		if (texture)
+			GlStateManager.enableTexture();
+		else
+			GlStateManager.disableTexture();
+		if (blend)
+			GlStateManager.enableBlend();
+		else
+			GlStateManager.disableBlend();
 	}
 
 	@Override
@@ -93,20 +104,33 @@ public class DisplayHelper implements IDisplayHelper {
 			return;
 		}
 		Minecraft mc = Minecraft.getInstance();
+
+		boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+		boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+
 		GlStateManager.pushMatrix();
 		GlStateManager.translatef(x, y, 0);
 		GlStateManager.scalef(scale, scale, scale);
 		GlStateManager.enableBlend();
 		GlStateManager.enableTexture();
 		Lighting.turnOnGui();
+		GlStateManager.enableDepthTest();
 		mc.getItemRenderer().renderGuiItem(stack, 0, 0);
 		ItemStack overlayRender = stack.copy();
 		overlayRender.setSize(1);
 		mc.getItemRenderer().renderGuiItemDecorations(mc.textRenderer, overlayRender, 0, 0, text);
 		Lighting.turnOff();
 		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		GlStateManager.disableBlend();
 		GlStateManager.popMatrix();
+
+		if (depth)
+			GlStateManager.enableDepthTest();
+		else
+			GlStateManager.disableDepthTest();
+		if (blend)
+			GlStateManager.enableBlend();
+		else
+			GlStateManager.disableBlend();
 	}
 
 	@Override
@@ -128,6 +152,10 @@ public class DisplayHelper implements IDisplayHelper {
 		float g2 = (endColor >> 8 & 255) / 255.0F;
 		float b2 = (endColor & 255) / 255.0F;
 
+		boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+		boolean texture = GL11.glIsEnabled(GL11.GL_TEXTURE_2D);
+		int shadeModel = GL11.glGetInteger(GL11.GL_SHADE_MODEL);
+
 		GlStateManager.enableBlend();
 		GlStateManager.disableTexture();
 		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
@@ -147,9 +175,16 @@ public class DisplayHelper implements IDisplayHelper {
 			buffer.vertex(left + width, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
 		}
 		tesselator.end();
-		GlStateManager.shadeModel(GL11.GL_FLAT);
-		GlStateManager.enableTexture();
-		GlStateManager.disableBlend();
+
+		GlStateManager.shadeModel(shadeModel);
+		if (texture)
+			GlStateManager.enableTexture();
+		else
+			GlStateManager.disableTexture();
+		if (blend)
+			GlStateManager.enableBlend();
+		else
+			GlStateManager.disableBlend();
 	}
 
 	@Override
@@ -260,6 +295,10 @@ public class DisplayHelper implements IDisplayHelper {
 	private void drawTextureRegion(Identifier texture, float x, float y, float width, float height, float u1, float v1, float u2, float v2, float alpha) {
 		Minecraft mc = Minecraft.getInstance();
 		mc.getTextureManager().bind(texture);
+
+		boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+		boolean alphaTest = GL11.glIsEnabled(GL11.GL_ALPHA_TEST);
+
 		GlStateManager.enableBlend();
 		GlStateManager.disableAlphaTest();
 		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
@@ -273,8 +312,15 @@ public class DisplayHelper implements IDisplayHelper {
 		buffer.vertex(x, y, 0.0).texture(u1, v1).nextVertex();
 		tesselator.end();
 		GlStateManager.color4f(1, 1, 1, 1);
-		GlStateManager.enableAlphaTest();
-		GlStateManager.disableBlend();
+
+		if (alphaTest)
+			GlStateManager.enableAlphaTest();
+		else
+			GlStateManager.disableAlphaTest();
+		if (blend)
+			GlStateManager.enableBlend();
+		else
+			GlStateManager.disableBlend();
 	}
 
 	@Override
