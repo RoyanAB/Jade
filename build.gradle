@@ -22,6 +22,8 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
+	modImplementation "com.terraformersmc:modmenu:${project.mod_menu_version}"
+
 	mappings ploceus.featherMappings(project.feather_build)
 
 	ploceus.dependOsl(project.osl_version)

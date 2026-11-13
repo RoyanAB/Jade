@@ -31,8 +31,11 @@
 			"snownee.jade.addon.core.CorePlugin",
 			"snownee.jade.addon.debug.DebugPlugin",
 			"snownee.jade.addon.vanilla.VanillaPlugin"
-		]
-	},
+		],
+    "modmenu": [
+      "snownee.jade.compat.ModMenuCompat"
+    ]
+  },
 	"mixins": [
 		"jade.mixins.json"
 	],

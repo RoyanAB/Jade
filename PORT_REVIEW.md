@@ -677,6 +677,101 @@ while (narrate.consumeClick()) {
   原版 Jade 也只在 `WailaConfigScreen` 里给 `☰` 按钮加了一个 `createNarration`。
 - 1.12 没有 `ClientTooltipPositioner`，不影响复述。
 
+## 6.8 `UsernameCache` 完整移植
+
+原先的移植版只保留了最小可用部分，对照原版补齐后 **方法列表完全一致（20 个成员）**。
+
+### 补齐的内容
+
+| 成员 | 原先 | 现在 |
+|---|---|---|
+| `isValidName(String)` | 缺失（只判 `isEmpty()`，带 § 的名字也会被缓存） | ✓ `!name.isEmpty() && !name.contains("§")` |
+| `removeUsername(UUID)` | 缺失 | ✓ |
+| `containsUUID(UUID)` | 缺失 | ✓ |
+| `getMap()` | 缺失 | ✓ 返回 `ImmutableMap.copyOf(map)` |
+| `getLastKnownUsername` 的在线补全 | 缺失（永远返回 null） | ✓ 名字为空且 `MC_ANIMAL_OWNER_FETCH_NAMES` 开启时触发 `download(uuid)` |
+| `download(UUID)` + `downloadingList` | 缺失 | ✓ 每个 UUID 只尝试一次，失败后不再重试 |
+| `DownloadThread` | 缺失 | ✓ 见下方 1.12 适配 |
+| `SaveThread` | 缺失（**在调用线程同步写盘**） | ✓ 后台线程写盘，`synchronized (saveFile)` 串行化 |
+| `load()` 的失败处理 | 只打日志 | ✓ 打日志 + `WailaExceptionHandler.handleErr` + **删除损坏文件** |
+| `load()` 的 `Map<UUID, String>` | 手工按 `Map<String,String>` 解析 | ✓ 与原版相同的 `TypeToken<Map<UUID, String>>`（Gson 内置 UUID 适配器） |
+
+### 1.12 API 适配（2 处）
+
+1. **下载 GameProfile**
+
+```java
+// 原版 1.20
+ProfileResult profileResult = Minecraft.getInstance().getMinecraftSessionService().fetchProfile(uuid, true);
+if (profileResult == null) return;
+GameProfile profile = profileResult.profile();
+
+// 1.12：没有 ProfileResult，用 authlib 1.5.25 的 fillProfileProperties
+GameProfile profile = Minecraft.getInstance().getSessionService().fillProfileProperties(new GameProfile(uuid, null), true);
+if (profile == null) return;
+```
+
+`fillProfileProperties` 查询失败时**返回传入的 profile（name 为 null）而不是 null**，所以后面的
+`profile.getName() == null || "???"` 判断正好接住，逻辑与原版等价。
+
+2. **配置文件路径**
+
+```java
+// 原版：getConfigDirectory() 返回 Path
+private static final Path saveFile = CommonProxy.getConfigDirectory().toPath().resolve(...);
+// 1.12：返回 File
+private static final Path saveFile = new File(CommonProxy.getConfigDirectory(), Jade.MODID + "/usernamecache.json").toPath();
+```
+
+### 另外两处无害增强（已加 `//port:` 注释）
+
+- `Charsets.UTF_8`（Guava，已废弃）→ `StandardCharsets.UTF_8`，编码完全相同。
+- `SaveThread` 写盘前 `Files.createDirectories(parent)`：全新安装时 `config/jade/` 可能还不存在，
+  原版会打一条 “Failed to save” 错误日志，这里避免掉。
+
+### 兼容性验证
+
+用项目同版本 Gson 实测：
+
+| 场景 | 结果 |
+|---|---|
+| `Map<UUID, String>` → JSON | `{"069a79f4-...": "Notch"}` |
+| JSON → `Map<UUID, String>` | 键类型是 `java.util.UUID` ✓ |
+| 旧移植版写出的纯字符串键格式 | 仍能正确读取 ✓ |
+| 空文件 | `fromJson` 返回 `null`，`load()` 里 `if (tempMap != null)` 已处理 ✓ |
+
+### 复查：与安全/线程相关逐项验证
+
+| 检查点 | 结果 |
+|---|---|
+| `handleErr(e, null, null)` 在 mod init 阶段是否安全 | ✓ 只写日志和 `logs/JadeErrorOutput.txt`，**不碰 `Minecraft`**，`provider == null` 时 `ERRORS` 也能容纳 |
+| 专用服务器会不会误加载 `Minecraft` | ✓ `getLastKnownUsername` 里 `PluginConfig.get()` 走 serverConfigs 分支返回 `false`（该项是 client feature），`download()` 永不触发 |
+| `getConfigDirectory()` 是否客户端专属 | ✓ 用 `FabricLoader.getInstance().getConfigDir()`，双端安全 |
+| `SaveThread` 的锁对象 | ✓ 静态 `saveFile`（`Path`）唯一实例，所有线程锁同一对象 |
+| `loading` 标志 | ✓ `load()` 期间不写盘，避免逐条 `setUsername` 触发 N 次 `SaveThread` |
+| `downloadingList` 并发 | ✓ `Collections.synchronizedSet`，与原版相同的 check-then-add（原版也有该竞态） |
+| `map` 是普通 `HashMap` | ✓ 与原版一致（`gson.toJson` 与下载线程可能并发，原版同样存在） |
+| Gson 2.8.0（MC 1.12 实际版本）| ✓ 已用该版本实测 `Map<UUID, String>` 往返正确 |
+| 损坏 JSON / 非 UUID 键 | ✓ 抛 `JsonSyntaxException` → 记录 + 删除文件（与原版一致；旧移植版只记日志不删） |
+| 空文件 | ✓ `fromJson` 返回 `null`，`if (tempMap != null)` 已处理 |
+
+### 与原版仍存在的差异（全部有理由）
+
+| 差异 | 说明 |
+|---|---|
+| `fetchProfile(uuid, true)` → `fillProfileProperties(new GameProfile(uuid, null), true)` | 1.12 无 `ProfileResult`。语义差别：1.12 网络异常时**抛** `AuthenticationServiceException`（已捕获），404 时返回**入参 profile**（name 为 null）而不是 null。因此 `profile == null` 分支在 1.12 不可达（死代码但无害），真正兜住的是 `getName() == null`。失败后 UUID 留在 `downloadingList` 不再重试 —— 与原版结果相同 |
+| `Charsets.UTF_8` → `StandardCharsets.UTF_8` | Guava 已废弃类，编码完全相同 |
+| `saveFile` 用 `File.toPath()` 而非 `Path.resolve()` | 1.12 的 `getConfigDirectory()` 返回 `File`，结果路径相同 |
+| `SaveThread` 写盘前 `Files.createDirectories` | 全新安装时 `config/jade/` 可能不存在，原版会打一条 “Failed to save” 错误日志 |
+| import 顺序 | 项目风格（分组集中） |
+
+### 一个已知的小差异（未改，属 `AnimalOwnerProvider`）
+
+原版 `appendServerData` 用 `server.isSingleplayerOwner(玩家 GameProfile)` 判断“是不是本地主机的宠物”，
+1.12 的 `MinecraftServer` 没有 `getServerOwner()`，移植版退化为 `server.isSingleplayer()`。
+单人游戏里只有主机玩家，效果相同；局域网联机时其他玩家的宠物不再由服务端下发名字，
+但客户端现在会通过 `getLastKnownUsername` 自动在线补全，最终显示一致。
+
 ## 7. 仍需处理的功能/效果差异
 
 ### 7.1 明确未移植
