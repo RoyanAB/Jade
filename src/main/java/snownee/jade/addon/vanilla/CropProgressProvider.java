@@ -36,12 +36,19 @@ public enum CropProgressProvider implements IBlockComponentProvider {
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
 		BlockState state = accessor.getBlockState();
 		Block block = state.getBlock();
-		if (block instanceof BeetrootsBlock) {
-			addMaturityTooltip(tooltip, state.get(BeetrootsBlock.AGE) / 3F);
-		} else if (block instanceof WheatBlock) {
+		//port: 1.12 has no CropBlock base class, each crop exposes its own AGE property
+		if (block instanceof WheatBlock) {
 			addMaturityTooltip(tooltip, state.get(WheatBlock.AGE) / 7F);
+		} else if (block instanceof CarrotsBlock) {
+			addMaturityTooltip(tooltip, state.get(CarrotsBlock.AGE) / 7F);
+		} else if (block instanceof PotatoesBlock) {
+			addMaturityTooltip(tooltip, state.get(PotatoesBlock.AGE) / 7F);
+		} else if (block instanceof BeetrootsBlock) {
+			addMaturityTooltip(tooltip, state.get(BeetrootsBlock.AGE) / 3F);
 		} else if (block instanceof NetherWartBlock) {
 			addMaturityTooltip(tooltip, state.get(NetherWartBlock.AGE) / 3F);
+		} else if (block instanceof CocoaBlock) {
+			addMaturityTooltip(tooltip, state.get(CocoaBlock.AGE) / 2F);
 		}
 	}
 

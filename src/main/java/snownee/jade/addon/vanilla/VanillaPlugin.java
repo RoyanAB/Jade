@@ -37,6 +37,7 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.registerBlockDataProvider(RedstoneProvider.INSTANCE, ComparatorBlockEntity.class);
 		registration.registerBlockDataProvider(RedstoneProvider.INSTANCE, HopperBlockEntity.class);
 		registration.registerBlockDataProvider(FurnaceProvider.INSTANCE, FurnaceBlockEntity.class);
+		registration.registerBlockDataProvider(NoteBlockProvider.INSTANCE, NoteBlockBlockEntity.class);
 
 		registration.registerEntityDataProvider(AnimalOwnerProvider.INSTANCE, Entity.class);
 		registration.registerEntityDataProvider(StatusEffectsProvider.INSTANCE, LivingEntity.class);

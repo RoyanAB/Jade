@@ -47,16 +47,23 @@ public class CorePlugin implements IWailaPlugin {
 		registration.markAsClientFeature(Identifiers.CORE_MOD_NAME);
 		registration.markAsClientFeature(Identifiers.CORE_BLOCK_FACE);
 
+		//port: 1.12's Identifier constructor throws on malformed input, 1.20 uses tryParse
 		for (String id : createEntityBlocklist().get().values) {
-			Class<? extends Entity> entityType = Entities.REGISTRY.get(new Identifier(id));
-			if (entityType != null) {
-				registration.hideTarget(entityType);
+			try {
+				Class<? extends Entity> entityType = Entities.REGISTRY.get(new Identifier(id));
+				if (entityType != null) {
+					registration.hideTarget(entityType);
+				}
+			} catch (Exception ignored) {
 			}
 		}
 		for (String id : createBlockBlocklist().get().values) {
-			Identifier identifier = new Identifier(id);
-			if (Block.REGISTRY.containsKey(identifier)) {
-				registration.hideTarget(Block.REGISTRY.get(identifier));
+			try {
+				Identifier identifier = new Identifier(id);
+				if (Block.REGISTRY.containsKey(identifier)) {
+					registration.hideTarget(Block.REGISTRY.get(identifier));
+				}
+			} catch (Exception ignored) {
 			}
 		}
 	}

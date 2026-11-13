@@ -7,6 +7,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModMetadata;
 import net.minecraft.block.Block;
+import net.minecraft.block.DoublePlantBlock;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.state.BlockState;
@@ -67,6 +68,11 @@ public final class CommonProxy implements ModInitializer {
 
 	public static boolean isShearable(BlockState state) {
 		Block block = state.getBlock();
+		if (block == Blocks.DOUBLE_PLANT) {
+			//port: only the grass/fern variants can be sheared (DoublePlantBlock#beforeMinedByPlayer)
+			DoublePlantBlock.Variant variant = state.get(DoublePlantBlock.VARIANT);
+			return variant == DoublePlantBlock.Variant.GRASS || variant == DoublePlantBlock.Variant.FERN;
+		}
 		return block == Blocks.LEAVES || block == Blocks.LEAVES2 ||
 			block == Blocks.WEB || block == Blocks.VINE ||
 			block == Blocks.TALLGRASS || block == Blocks.DEADBUSH ||

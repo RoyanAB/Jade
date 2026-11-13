@@ -20,7 +20,8 @@ public enum HorseStatsProvider implements IEntityComponentProvider {
 	INSTANCE;
 
 	private static final double MAX_JUMP_HEIGHT = getJumpHeight(2.0);
-	private static final double MAX_MOVEMENT_SPEED = 0.225 * 42.16;
+	//port: 1.12 randomizes horse speed in 0.1125~0.3375 (HorseBaseEntity#getChildMovementSpeedBonus)
+	private static final double MAX_MOVEMENT_SPEED = 0.3375 * 42.16;
 
 	private static Text switchText(String key, boolean showMax, double value, double max) {
 		IThemeHelper t = IThemeHelper.get();

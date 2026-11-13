@@ -15,7 +15,6 @@ import net.minecraft.resource.Identifier;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
-import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
@@ -23,7 +22,6 @@ import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.IElement.Align;
 import snownee.jade.api.ui.IElementHelper;
-import snownee.jade.util.ClientProxy;
 import snownee.jade.util.CommonProxy;
 
 import java.util.List;
@@ -47,8 +45,6 @@ public class HarvestToolProvider implements IBlockComponentProvider {
 				Items.WOODEN_AXE, Items.STONE_AXE, Items.IRON_AXE, Items.DIAMOND_AXE)));
 			registerHandler(SimpleToolHandler.create(Identifiers.JADE("shovel"), true, java.util.Arrays.asList(
 				Items.WOODEN_SHOVEL, Items.STONE_SHOVEL, Items.IRON_SHOVEL, Items.DIAMOND_SHOVEL)));
-			registerHandler(SimpleToolHandler.create(Identifiers.JADE("hoe"), true, java.util.Arrays.asList(
-				Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.DIAMOND_HOE)));
 			registerHandler(SimpleToolHandler.create(Identifiers.JADE("sword"), false, java.util.Collections.singletonList(Items.WOODEN_SWORD))
 				.addBlock(Blocks.WEB));
 			registerHandler(new ShearsToolHandler());
@@ -80,11 +76,16 @@ public class HarvestToolProvider implements IBlockComponentProvider {
 		if (!config.get(Identifiers.MC_HARVEST_TOOL_CREATIVE) && (player.isCreative() || player.isSpectator())) {
 			return;
 		}
-		GameMode gameType = ClientProxy.getGameMode();
-		if (gameType == GameMode.ADVENTURE) {
-			return;
-		}
 		BlockState state = accessor.getBlockState();
+		//port: 1.20 asks player.blockActionRestricted(...); 1.12 decides this with
+		//PlayerEntity#canModifyWorld and ItemStack#hasMineBlockOverride (CanDestroy), see
+		//ClientPlayerInteractionManager#tryBreakBlock
+		if (!player.canModifyWorld()) {
+			ItemStack held = player.getItemInMainHand();
+			if (held.isEmpty() || !held.hasMineBlockOverride(state.getBlock())) {
+				return;
+			}
+		}
 		float destroySpeed = state.getMiningSpeed(accessor.getLevel(), accessor.getPosition());
 		float destroyProgress = state.getMiningSpeed(player, accessor.getLevel(), accessor.getPosition());
 		if (destroySpeed < 0 || destroyProgress <= 0) {
@@ -141,7 +142,7 @@ public class HarvestToolProvider implements IBlockComponentProvider {
 		if (!elements.isEmpty()) {
 			elements.add(0, IElementHelper.get().spacer(5, 0));
 			ItemStack held = accessor.getPlayer().getItemInMainHand();
-			boolean canHarvest = held.canMineBlock(state) && held.getMiningSpeed(state) > 1;
+			boolean canHarvest = SimpleToolHandler.isEffective(state, held);
 			if (CommonProxy.isShearable(state) && CommonProxy.isShears(held)) {
 				canHarvest = true;
 			}

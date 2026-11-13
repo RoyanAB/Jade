@@ -1049,6 +1049,358 @@ registration.registerBlockIcon(ItemBERProvider.INSTANCE, SkullBlock.class);
 - 生物头颅：`profile == null`，走 metadata，图标本来就是正确的
 - 与 6.10 的深度测试修复配合，3D 头颅模型的各面遮挡正常
 
+## 6.13 修复 harvest 采集工具：大量方块不显示
+
+### 现象
+
+泥土、草方块、沙子、沙砾、粘土、原木、木板等方块**不显示采集工具**，只有石头类正常。
+
+### 根因
+
+`SimpleToolHandler.test` 用的是：
+
+```java
+if (tool.canMineBlock(state) && tool.getMiningSpeed(state) > 1) { return tool; }
+```
+
+`ItemStack#canMineBlock` 在 1.12 里**不是**「这个工具能否采集这个方块」，而是原版给少数特例写的覆盖：
+
+| 工具 | `canMineBlock` 的实际实现 |
+|---|---|
+| `PickaxeItem` | 矿石/黑曜石的**等级判定** + `Material.STONE/IRON/ANVIL` |
+| `ShovelItem` | `return block == SNOW_LAYER ? true : block == SNOW;` ← **只有雪** |
+| `SwordItem` | `return block == WEB;` |
+| `ShearsItem` | `WEB / REDSTONE_WIRE / TRIPWIRE` |
+| `AxeItem` / 其他 | 没有覆盖 → `Item.canMineBlock` 返回 **false** |
+
+所以：斧头永远匹配不到原木/木板，铲子除了雪什么都不匹配，锄头（1.12 的锄头根本没有挖掘加速）也永远匹配不到。
+
+原版 1.20 用的是 `tool.isCorrectToolForDrops(state)`（类型对 + 等级够），1.12 的等价判定是「这个工具确实能加快挖掘」：
+
+```java
+// ToolItem#getMiningSpeed：命中 effectiveBlocks 就返回 tier 的挖掘速度，否则 1.0
+// PickaxeItem#getMiningSpeed：Material.STONE/IRON/ANVIL 直接返回 tier 速度
+```
+
+### 修复
+
+```java
+private static boolean isEffective(BlockState state, ItemStack tool) {
+    if (tool.getMiningSpeed(state) <= 1.0F) {
+        return false;                       // 工具类型不对，挖这个方块没有加成
+    }
+    // 与 PlayerInventory#canMineBlock 相同的短路：需要工具的材料才检查等级
+    return state.getMaterial().isToolNotRequired() || tool.canMineBlock(state);
+}
+```
+
+- `getMiningSpeed > 1` 负责「工具类型对不对」：斧头 vs 原木 = 2.0、铲子 vs 泥土 = 2.0、
+  镐子 vs 石头 = 2.0、镐子 vs 玻璃 = 1.0（1.12 镐子对玻璃没有加成，所以不显示，符合 1.12 机制）
+- `isToolNotRequired() || canMineBlock(...)` 负责「等级够不够」，只对**需要工具**的材料生效：
+  `STONE` / `IRON` / `ANVIL`（镐子等级）、`SNOW` / `SNOW_LAYER`（铲子的覆盖正好在这里返回 true）、
+  `COBWEB` / `BARRIER`。`WOOD`、`DIRT`、`SAND`、`GRASS`、`LEAVES`、`WOOL` 等都是 `toolNotRequired`，
+  所以斧头/铲子不会再被 `canMineBlock` 的 false 挡住。
+
+### 顺带：移除锄头 handler
+
+1.12 没有 `HoeItem`，锄头就是普通 `Item`（`getMiningSpeed` 恒为 1.0），永远不会匹配。
+原版注册锄头是因为 1.20 有 `mineable/hoe` 标签。已删除，避免留下永远不生效的死条目。
+
+### 修复后的对照表
+
+| 方块 | 材料 | 显示的工具 |
+|---|---|---|
+| 石头 / 圆石 / 矿石 | STONE | 木→石→铁→钻石镐（按等级） |
+| 黑曜石 | STONE | 仅钻石镐 |
+| 泥土 / 草 / 沙子 / 沙砾 / 粘土 / 灵魂沙 / 耕地 / 草径 / 混凝土粉末 | DIRT/GRASS/SAND… | 木→石→铁→钻石铲 |
+| 雪块 / 雪层 | SNOW（需工具） | 铲（`canMineBlock` 正好覆盖） |
+| 原木 / 木板 / 书架 / 箱子 / 南瓜 / 西瓜 / 梯子 / 木按钮 / 木压力板 | WOOD 等 | 木→石→铁→钻石斧 |
+| 树叶 / 羊毛 / 藤蔓 / 高草 / 枯木 / 蜘蛛网 / 绊线 | LEAVES/WOOL… | 剪刀 |
+| 蜘蛛网 | COBWEB | 剑 / 剪刀 |
+| 玻璃 / 冰（镐子有加成的冰除外） | GLASS | 不显示（1.12 镐子对玻璃无加成） |
+| 基岩 / 屏障 | — | 不显示（`destroySpeed < 0` 提前返回） |
+
+## 6.14 harvest 二次复查：又找到 2 个 Bug
+
+### Bug 1（重要）：`getText` 里的 `canHarvest` 用了同一个错误的 `canMineBlock`
+
+```java
+// 修复前
+boolean canHarvest = held.canMineBlock(state) && held.getMiningSpeed(state) > 1;
+```
+
+这和 6.13 是同一个根因。后果比之前更隐蔽：
+
+| 场景 | `requiresTool` | 修复前 `canHarvest` | 修复前显示 | 原版显示 |
+|---|---|---|---|---|
+| 泥土 + 手持铲子 | false | **false**（`ShovelItem.canMineBlock(泥土)` = false） | **什么都不显示** | ✔ |
+| 原木 + 手持斧子 | false | **false**（`AxeItem` 没覆盖） | **什么都不显示** | ✔ |
+| 石头 + 手持镐子 | false→true | true | ✔ | ✔ |
+| 泥土 + 空手 | false | false | 不显示 | 不显示 |
+
+因为标记的显示条件是 `if (requiresTool || canHarvest)`，泥土/原木这类 `toolNotRequired` 的方块
+在**手持正确工具**时两个条件都是 false，于是连 ✔/✕ 都不会画出来。
+
+修复：复用 6.13 的判定
+
+```java
+boolean canHarvest = SimpleToolHandler.isEffective(state, held);
+```
+
+`isEffective` 从 `private` 改为 `public static`，让 provider 和 handler 共用同一套逻辑。
+
+### Bug 2：冒险模式判定过宽
+
+```java
+// 修复前
+GameMode gameType = ClientProxy.getGameMode();
+if (gameType == GameMode.ADVENTURE) {
+    return;                     // 所有冒险模式一律不显示
+}
+```
+
+原版是：
+
+```java
+if (gameType == GameType.ADVENTURE && player.blockActionRestricted(level, pos, gameType)) return;
+```
+
+也就是说：冒险模式下如果手持的物品对该方块有 `CanDestroy` 权限，原版**仍会显示**采集工具。
+1.12 的对应逻辑在 `ClientPlayerInteractionManager#tryBreakBlock`：
+
+```java
+if (!player.canModifyWorld()) {
+    ItemStack stack = player.getMainHandItem();
+    if (stack.isEmpty() || !stack.hasMineBlockOverride(block)) return false;
+}
+```
+
+已按 1.12 自己的写法改成：
+
+```java
+if (!player.canModifyWorld()) {
+    ItemStack held = player.getItemInMainHand();
+    if (held.isEmpty() || !held.hasMineBlockOverride(state.getBlock())) {
+        return;
+    }
+}
+```
+
+顺带删掉了不再使用的 `GameMode` / `ClientProxy` 导入。
+
+### 顺带对齐原版的两处细节
+
+| 位置 | 原版 | 移植版（修复前） | 现在 |
+|---|---|---|---|
+| `SimpleToolHandler` 构造 | `Preconditions.checkArgument(!tools.isEmpty())` / `tools.size() == 1` | 无校验 | 已补回 |
+| `ToolHandler` | 只 `extends IJadeProvider`，不重复声明 `getUid()` | 多声明了一个 `@Override Identifier getUid();` | 已删除 |
+
+### 已知但未改的差异
+
+- 1.12 的 `Blocks.DOUBLE_PLANT`（大型草/蕨，对应原版的 `LARGE_FERN`）没有加入剪刀列表。
+  原因：`DOUBLE_PLANT` 一个方块涵盖向日葵/丁香/玫瑰/牡丹等花，整体加入会让花也显示剪刀；
+  而 1.12 双生植物的掉落逻辑（`onMinedByPlayer` 掉 2 个高草）与原版 `LARGE_FERN` 也不完全对应，
+  按变体细分又会让 `matchesBlock` 复杂化，收益不抵风险。矮草/蕨（`TALLGRASS` 的 grass/fern 变体）已覆盖。
+
+### 复查确认无问题的部分
+
+| 检查点 | 结果 |
+|---|---|
+| 创造/旁观模式开关 `MC_HARVEST_TOOL_CREATIVE` | ✓ |
+| 不可破坏方块分支（`destroySpeed < 0 \|\| destroyProgress <= 0`）+ `MC_SHOW_UNBREAKABLE` | ✓ |
+| `requiresTool` / `MC_EFFECTIVE_TOOL` 的提前返回 | ✓ 等价于原版 `requiresCorrectToolForDrops()` |
+| `resultCache`（5 分钟）+ 资源重载时 `clearCache()` | ✓ 等价于原版 `ResourceManagerReloadListener` |
+| 图标尺寸/偏移/缩放（`ITEM_SIZE 10x0`、`scale 0.75`、`translate(-1, offsetY)`） | ✓ |
+| `✔/✕` 的 `scale 0.75`、`zOffset 800`、`size ZERO`、`translate(-3, 6.25 + offsetY)` | ✓ |
+| `newLine` 两种布局（`tooltip.add` / `align RIGHT` + `append(0, ...)`） | ✓ |
+| 优先级 `TooltipPosition.HEAD + 2000` | ✓ |
+| 剑 = 蜘蛛网（1.12 `SwordItem.getMiningSpeed` 只对 web 有加成） | ✓ |
+| 剪刀：`isShearable` + 显式方块表（vine/tripwire/deadbush/web/tallgrass） | ✓ 对应原版 `SHORT_GRASS/TALL_GRASS/FERN/DEAD_BUSH/COBWEB/VINE/TRIPWIRE` |
+| `elements.forEach(e -> e.message(null))`（不进复述） | ✓ |
+
+## 6.15 harvest 三次复查：逻辑无新 Bug，补上最后一块拼图
+
+### 复查方式
+
+把 `addon/harvest/` 的 4 个文件逐行对照原版，并把涉及的每个 1.12 API 反查原版实现。
+
+### 核对结果
+
+| 检查点 | 依据 | 结果 |
+|---|---|---|
+| `!player.canModifyWorld()` 是否等价于原版 `blockActionRestricted` | `GameMode#setAbilities`：`canModifyWorld = !restrictsWorldModification()`，而 `restrictsWorldModification()` = `ADVENTURE \|\| SPECTATOR` | ✓ 冒险/旁观都会命中，与原版一致 |
+| 空手时 `isEffective` 会不会 NPE | `ItemStack#getItem()`：`cachedIsEmpty ? Item.byBlock(Blocks.AIR) : item`，空栈返回 AIR 而非 null | ✓ `getMiningSpeed` 返回 1.0，安全 |
+| `✔/✕` 的 `scale(0.75)` / `zOffset(800)` 是否生效 | `TextElement#scale` 委托给 `SpecialTextElement`，后者 `pushMatrix` + `translatef(x, y+scale, zOffset)` + `scalef` + `popMatrix` | ✓ 生效 |
+| `✔/✕` 的绿/红颜色 | `IThemeHelper.success/danger` 把颜色写进 `Style`，`DisplayHelper#drawText` 用 `getFormattedString()` 输出 § 颜色码 | ✓ 生效 |
+| 镐子的等级判定 | `PickaxeItem#canMineBlock`：黑曜石 tier==3、钻石/绿宝石/金 tier>=2、铁/青金石/红石 tier>=1、其余 STONE/IRON/ANVIL | ✓ 与 `isEffective` 组合后等价于 `isCorrectToolForDrops` |
+| 斧/铲的生效方块表 | `AxeItem.EFFECTIVE_BLOCKS`（木板/书架/原木/箱子/南瓜/西瓜/梯子/木按钮/木压力板）、`ShovelItem.EFFECTIVE_BLOCKS`（粘土/泥土/耕地/草/沙砾/菌丝/沙子/雪/雪层/灵魂沙/草径/混凝土粉末） | ✓ 全部由 `getMiningSpeed > 1` 自动覆盖 |
+| 剪刀 | `ShearsItem#getMiningSpeed`：WEB/LEAVES = 15、WOOL = 5，其余 1.0 | ✓ 树叶/羊毛靠 `getMiningSpeed`，藤蔓/绊线/枯木/高草/蜘蛛网靠 `isShearable` + 显式表 |
+| 剑 | `SwordItem#getMiningSpeed` 只对 WEB 返回 15 | ✓ `.addBlock(Blocks.WEB)` |
+| 资源重载清缓存 | 原版 `ResourceManagerReloadListener` → `resultCache.invalidateAll()` | ✓ 移植版挂在 `ClientResourceLoaderEvents.END_RESOURCE_RELOAD` |
+
+### 补上最后一块：大型草/蕨（`DOUBLE_PLANT`）
+
+上一轮把它列为「已知差异」，这轮反查后确认**应该补**：
+
+```java
+// DoublePlantBlock#beforeMinedByPlayer
+if (world.isClient || item.getItem() != Items.SHEARS || state.get(HALF) != Half.LOWER
+        || !this.onMinedByPlayer(world, pos, state, player)) { ... }
+```
+
+只有**手持剪刀**时才会走 `onMinedByPlayer` 掉落 2 个高草 —— 也就是说双生草/蕨确实是「可剪切」的，
+对应原版剪刀列表里的 `LARGE_FERN`。已加入 `CommonProxy#isShearable`：
+
+```java
+if (block == Blocks.DOUBLE_PLANT) {
+    //port: only the grass/fern variants can be sheared (DoublePlantBlock#beforeMinedByPlayer)
+    DoublePlantBlock.Variant variant = state.get(DoublePlantBlock.VARIANT);
+    return variant == DoublePlantBlock.Variant.GRASS || variant == DoublePlantBlock.Variant.FERN;
+}
+```
+
+按变体判断而不是整块加入，避免向日葵/丁香/玫瑰/牡丹也被当成可剪切方块。
+`isShearable` 同时被 `ShearsToolHandler#test` 和 `HarvestToolProvider` 的 ✔ 判定使用，两处一起生效。
+
+### 与原版剩余的无害差异
+
+| 位置 | 原版 | 移植版 |
+|---|---|---|
+| `CHECK` / `X` | 静态 `Component` 常量，复用时传 Component | 直接传字符串给 `IThemeHelper.success/danger`（结果相同） |
+| `appendTooltip` 里的 `//TODO: high priority handlers?` 注释 | 有 | 无（无实际逻辑） |
+
+## 6.16 harvest 四次复查：布局/资源链路逐项核对
+
+这轮换角度，不再看判定逻辑，而是把「配置 → 语言文件 → 优先级排序 → tooltip 行布局 → 元素渲染」整条链路走了一遍。
+
+### 核对结果（全部正常）
+
+| 环节 | 依据 | 结果 |
+|---|---|---|
+| 配置项语言键 | `MC_SHOW_UNBREAKABLE` = `minecraft:harvest_tool.show_unbreakable` → `config.jade.plugin_minecraft.harvest_tool.show_unbreakable` | ✓ 存在（我一开始按 `plugin_minecraft.show_unbreakable` 查，误报了一次） |
+| 其余 harvest 语言键 | `harvest_tool` / `.effective_tool` / `.new_line` / `.creative` / `.creative_desc` / `jade.harvest_tool.unbreakable` | ✓ 全部存在 |
+| 优先级排序方向 | `PriorityStore`：`list.sort(Comparator.comparingInt(store::byKey))` 升序；`TooltipPosition.HEAD = -10000` | ✓ 名字 provider(-10000) 先跑，harvest(-8000) 后跑 → `append(0, ...)` 正好把工具挂到名字那一行 |
+| `append(0, List)` 语义 | `Tooltip#append`：空 tooltip 时 `add(element)` 建第 0 行，之后都进第 0 行 | ✓ 工具不会跑到第一行、名字跑到第二行 |
+| `✔/✕` 元素路径 | `IElementHelper.text(...).scale(0.75F)` → `TextElement#scale` 委托 `SpecialTextElement`（`pushMatrix` + `translatef(x, y+scale, zOffset)` + `scalef` + `popMatrix`） | ✓ scale 与 zOffset 都生效 |
+| `✔/✕` 颜色 | `IThemeHelper.success/danger` 写进 `Style`，`drawText` 用 `getFormattedString()` 输出 § 码 | ✓ 绿/红正确 |
+| 工具图标元素 | `ItemStackElement#getSize` = `floor(18*scale)`、`render` = `drawItem(x+1, y+1, stack, scale, text)`，`size(10,0)` 覆盖布局尺寸 | ✓ 与原版逐行相同 |
+| 资源重载 | `ClientResourceLoaderEvents.END_RESOURCE_RELOAD` → `HarvestToolProvider.clearCache()` | ✓ 等价于原版 `ResourceManagerReloadListener` |
+| 配置分类覆盖 | `setConfigCategoryOverride(MC_HARVEST_TOOL, block)` | ✓ 显示在 plugins 界面的 block 分类下 |
+
+### 判定逻辑再确认（无误报/漏报）
+
+`isEffective` 的第二个条件只在**需要工具**的材料上生效，逐个核对 1.12 的 `Material.setRequiresTool()` 集合：
+
+| 材料 | 需要工具 | 对应工具 | `canMineBlock` 是否覆盖 |
+|---|---|---|---|
+| `STONE` / `IRON` / `ANVIL` | 是 | 镐 | ✓ 覆盖三种材料 + 矿石等级 |
+| `SNOW` / `SNOW_LAYER` | 是 | 铲 | ✓ `ShovelItem#canMineBlock` 正好返回 true |
+| `COBWEB` | 是 | 剑 / 剪刀 | ✓ 两者都覆盖 |
+| `BARRIER` | 是 | — | 硬度 -1，提前返回 |
+| 其余（`WOOD`/`DIRT`/`SAND`/`GRASS`/`LEAVES`/`WOOL`…） | 否 | 斧/铲/剪刀 | 短路跳过，不会被 `canMineBlock` 的 false 挡住 |
+
+反向也成立：`getMiningSpeed <= 1` 的工具一律不显示，所以不存在「工具没加成却显示」的误报。
+
+### 结论
+
+本轮**没有发现新 Bug**。harvest 的判定、布局、资源链路现在与原版一致；剩下的只有两处无实际影响的行文差异（`CHECK`/`X` 用字符串而非静态 Component、少一句 `//TODO` 注释）。
+
+## 6.17 全 addon 包复查：又找到 4 个 Bug
+
+把 `snownee.jade.addon` 下全部文件（core 5 + debug 3 + harvest 4 + vanilla 40）逐个与原版对照，
+并反查涉及的 1.12 原版实现。
+
+### Bug 1：配置文件里的非法 id 会让启动崩溃（`CorePlugin`）
+
+```java
+// 修复前
+Class<? extends Entity> entityType = Entities.REGISTRY.get(new Identifier(id));
+```
+
+原版用 `ResourceLocation.tryParse(id)` —— 非法字符串返回 `null` 直接跳过。
+1.12 的 `new Identifier(String)` **会抛 `InvalidIdentifierException`**，而这段代码在 `registerClient`
+（mod 初始化阶段）执行，`hide-entities.json` 里写错一个 id 就是启动崩溃。
+
+已给两个循环加上 try/catch，行为与原版一致。
+
+### Bug 2：音符盒的乐器判断顺序错（`NoteBlockProvider`）
+
+1.12 的 `NoteBlockBlockEntity#playNote` 是**连续 if 覆盖**，方块判定在材料判定**之后**：
+
+```java
+if (material == Material.STONE) i = 1;     // 骨块是 Material.STONE
+...
+if (block == Blocks.BONE_BLOCK) i = 9;     // 再覆盖成木琴
+```
+
+移植版用了提前 `return`，于是**骨块 → 1（贝斯鼓）**而不是 9（木琴）✗。
+已改成与原版相同的覆盖式写法。
+
+### Bug 3：音符盒的音高永远是旧值（`NoteBlockProvider`）
+
+1.12 的 note 存在**方块实体**里（`NoteBlockBlockEntity.note`），而 `NoteBlockBlockEntity`
+**没有 `createUpdatePacket`** —— 玩家右键调音后，服务端只 `markDirty()`，客户端拿不到新值，
+Jade 会一直显示旧音高，直到重新加载区块 ✗。
+
+原版 1.20 的 note 是**方块状态属性**，天然同步，所以原版不需要服务端数据。
+
+已让 `NoteBlockProvider` 实现 `IServerDataProvider<BlockAccessor>`，由服务端发送
+`Note` + `Instrument`，并在 `VanillaPlugin` 注册
+`registerBlockDataProvider(NoteBlockProvider.INSTANCE, NoteBlockBlockEntity.class)`；
+客户端优先读服务端数据，读不到再退回方块实体（单机/离线兜底）。
+
+### Bug 4：胡萝卜、马铃薯、可可豆不显示生长进度（`CropProgressProvider`）
+
+原版靠 `block instanceof CropBlock` + `AGE_7`/`AGE_2`/`AGE_3` 属性覆盖所有作物。
+1.12 没有 `CropBlock` 基类，移植版只写了小麦、甜菜根、地狱疣三种：
+
+| 1.12 作物 | AGE 范围 | 修复前 |
+|---|---|---|
+| 小麦 `WheatBlock` | 0-7 | ✓ |
+| 胡萝卜 `CarrotsBlock` | 0-7 | ✗ 不显示 |
+| 马铃薯 `PotatoesBlock` | 0-7 | ✗ 不显示 |
+| 甜菜根 `BeetrootsBlock` | 0-3 | ✓ |
+| 地狱疣 `NetherWartBlock` | 0-3 | ✓ |
+| 可可豆 `CocoaBlock` | 0-2 | ✗ 不显示 |
+
+已补上胡萝卜、马铃薯、可可豆（对应原版的 `AGE_7` 和 `AGE_2` 分支）。
+
+### Bug 5：马的最大速度常量用错（`HorseStatsProvider`）
+
+```java
+// 修复前
+private static final double MAX_MOVEMENT_SPEED = 0.225 * 42.16;
+```
+
+原版用 `AbstractHorse.MAX_MOVEMENT_SPEED`（= 0.3375）。1.12 的马速度随机范围是
+`HorseBaseEntity#getChildMovementSpeedBonus`：`(0.45 + rnd*0.3 + rnd*0.3 + rnd*0.3) * 0.25` → **0.1125~0.3375**，
+而 0.225 只是 `HorseBaseEntity` 构造函数里的**默认基础速度**。
+
+结果：按住显示详情时，速度会显示成 `x / 9.49`（0.225×42.16）而不是 `x / 14.23` ✗。已改为 0.3375。
+
+### 其余 provider 核对结果（无问题）
+
+| provider | 核对要点 |
+|---|---|
+| `RedstoneProvider` | 拉杆/中继器/比较器/红石线 power 属性/漏斗锁定；1.12 的 `POWERED_REPEATER`、`POWERED_COMPARATOR` 分开的方块已覆盖；`ComparatorBlock.Mode` ✓ |
+| `StatusEffectsProvider` | 1.12 无 `MobEffectInstance` 序列化组件，改为整包 `toNbt`/`fromNbt` + `isHarmful()`；无限时长用 `duration >= 1000000` 判定 ✓ |
+| `FurnaceProvider` | 三格布局、进度条、`total` 防 0 ✓ |
+| `MobGrowthProvider` / `MobBreedingProvider` | `-getBreedingAge()` / `getBreedingAge()` ✓ |
+| `ChickenEggProvider` | `layEggCooldown` ✓ |
+| `JukeboxProvider` | 唱片名 + `stripColor` ✓ |
+| `CommandBlockProvider` | `canUseGameMasterBlocks()` → `canUseCommand(2, "")`；`getCommandExecutor()` ✓ |
+| `BrewingStandProvider` | `brewTime`/`fuel` → `getData(0)`/`getData(1)` ✓ |
+| `TNTStabilityProvider` | `UNSTABLE` → `EXPLODE` ✓ |
+| `ItemTooltipProvider` | 跳过首行、过滤模组名、超宽截断（`trim(245)`）✓（仅丢失粗体/斜体，颜色本来就被原版剥掉） |
+| `FallingBlockProvider` / `ItemFrameProvider` / `PaintingProvider` / `EntityHealthProvider` / `EntityArmorProvider` / `ArmorStandProvider` | 字段/方法名替换正确 ✓ |
+| `MobSpawnerProvider` / `PlayerHeadProvider` / `EnchantmentPowerProvider` / `ItemBERProvider` / `TotalEnchantmentPowerProvider` / `ZombieVillagerProvider` / `VillagerProfessionProvider` / `AnimalOwnerProvider` | 见 6.9 / 6.12 / 6.13 各节 ✓ |
+| `core` 其余 + `debug` 全部 | ✓ |
+
+### 语言键检查
+
+addon 包里用到的 38 个键（含 `jade.instrument.*`、`tooltip.jade.mode_*`、`jade.potion`、
+`tooltip.jade.crop_*`、`jade.horseStat.*`、`jade.llamaStrength` 等）全部存在于 `en_us.json` ✓。
+
 ## 7. 仍需处理的功能/效果差异
 
 ### 7.1 明确未移植
