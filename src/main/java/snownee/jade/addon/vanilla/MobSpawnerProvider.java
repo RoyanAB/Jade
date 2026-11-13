@@ -3,18 +3,22 @@ package snownee.jade.addon.vanilla;
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.vehicle.SpawnerMinecartEntity;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import snownee.jade.addon.core.ObjectNameProvider;
 import snownee.jade.api.BlockAccessor;
+import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.IBlockComponentProvider;
+import snownee.jade.api.IEntityComponentProvider;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
+import snownee.jade.mixin.SpawnerMinecartEntityAccess;
 
-public enum MobSpawnerProvider implements IBlockComponentProvider {
+public enum MobSpawnerProvider implements IBlockComponentProvider, IEntityComponentProvider {
 
 	INSTANCE;
 
@@ -29,11 +33,19 @@ public enum MobSpawnerProvider implements IBlockComponentProvider {
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-		Text name = new LiteralText(accessor.getBlock().getTranslationKey());
+		Text name = new LiteralText(accessor.getBlock().getName());
 		if (accessor.getBlockEntity() instanceof MobSpawnerBlockEntity) {
 			MobSpawnerBlockEntity spawner = (MobSpawnerBlockEntity) accessor.getBlockEntity();
 			appendTooltip(tooltip, spawner.getSpawner().getDisplayEntity(), name);
 		}
+	}
+
+	@Override
+	public void appendTooltip(ITooltip tooltip, EntityAccessor accessor, IPluginConfig config) {
+		SpawnerMinecartEntity spawner = (SpawnerMinecartEntity) accessor.getEntity();
+		Text name = ObjectNameProvider.getEntityName(spawner);
+		//port: 1.12 keeps the spawner logic in a private field, exposed through an accessor mixin
+		appendTooltip(tooltip, ((SpawnerMinecartEntityAccess) spawner).jade$getSpawner().getDisplayEntity(), name);
 	}
 
 	@Override

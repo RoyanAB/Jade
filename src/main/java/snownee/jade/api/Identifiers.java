@@ -57,8 +57,7 @@ public class Identifiers {
 	public static final Identifier MC_JUKEBOX = MC("jukebox");
 	public static final Identifier MC_MOB_BREEDING = MC("mob_breeding");
 	public static final Identifier MC_MOB_GROWTH = MC("mob_growth");
-	public static final Identifier MC_MOB_SPAWNER = MC("mob_spawner");
-	public static final Identifier MC_MOB_SPAWNER_COOLDOWN = MC("mob_spawner.cooldown");
+	public static final Identifier MC_MOB_SPAWNER = MC("mob_spawner");;
 	public static final Identifier MC_NOTE_BLOCK = MC("note_block");
 	public static final Identifier MC_PAINTING = MC("painting");
 	public static final Identifier MC_PLAYER_HEAD = MC("player_head");

@@ -10,11 +10,13 @@ import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.decoration.PaintingEntity;
 import net.minecraft.entity.living.ArmorStandEntity;
 import net.minecraft.entity.living.LivingEntity;
+import net.minecraft.entity.living.mob.monster.ZombieVillagerEntity;
 import net.minecraft.entity.living.mob.passive.PassiveEntity;
 import net.minecraft.entity.living.mob.passive.VillagerEntity;
 import net.minecraft.entity.living.mob.passive.animal.AnimalEntity;
 import net.minecraft.entity.living.mob.passive.animal.ChickenEntity;
 import net.minecraft.entity.living.mob.passive.animal.HorseBaseEntity;
+import net.minecraft.entity.vehicle.SpawnerMinecartEntity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import snownee.jade.JadeClient;
@@ -41,6 +43,7 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.registerEntityDataProvider(MobGrowthProvider.INSTANCE, PassiveEntity.class);
 		registration.registerEntityDataProvider(MobBreedingProvider.INSTANCE, AnimalEntity.class);
 		registration.registerEntityDataProvider(ChickenEggProvider.INSTANCE, ChickenEntity.class);
+		registration.registerEntityDataProvider(ZombieVillagerProvider.INSTANCE, ZombieVillagerEntity.class);
 	}
 
 	@Override
@@ -70,6 +73,7 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.registerBlockComponent(HarvestToolProvider.INSTANCE, Block.class);
 		registration.registerBlockComponent(CommandBlockProvider.INSTANCE, CommandBlock.class);
 		registration.registerBlockComponent(EnchantmentPowerProvider.INSTANCE, Block.class);
+		registration.registerBlockComponent(TotalEnchantmentPowerProvider.INSTANCE, EnchantingTableBlock.class);
 		registration.registerBlockComponent(PlayerHeadProvider.INSTANCE, SkullBlock.class);
 		registration.registerEntityComponent(ItemTooltipProvider.INSTANCE, ItemEntity.class);
 		registration.registerBlockComponent(FurnaceProvider.INSTANCE, FurnaceBlock.class);
@@ -82,8 +86,11 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.registerBlockComponent(CropProgressProvider.INSTANCE, Block.class);
 		registration.registerBlockComponent(JukeboxProvider.INSTANCE, JukeboxBlock.class);
 		registration.registerBlockComponent(MobSpawnerProvider.INSTANCE, MobSpawnerBlock.class);
+		registration.registerEntityComponent(MobSpawnerProvider.INSTANCE, SpawnerMinecartEntity.class);
 		registration.registerBlockComponent(NoteBlockProvider.INSTANCE, NoteBlock.class);
 		registration.registerEntityComponent(VillagerProfessionProvider.INSTANCE, VillagerEntity.class);
+		registration.registerEntityComponent(VillagerProfessionProvider.INSTANCE, ZombieVillagerEntity.class);
+		registration.registerEntityComponent(ZombieVillagerProvider.INSTANCE, ZombieVillagerEntity.class);
 
 		registration.addAfterRenderCallback(100, JadeClient::drawBreakingProgress);
 		registration.markAsClientFeature(Identifiers.MC_EFFECTIVE_TOOL);
@@ -102,6 +109,7 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.markAsClientFeature(Identifiers.MC_PAINTING);
 		registration.markAsClientFeature(Identifiers.MC_HARVEST_TOOL);
 		registration.markAsClientFeature(Identifiers.MC_ENCHANTMENT_POWER);
+		registration.markAsClientFeature(Identifiers.MC_TOTAL_ENCHANTMENT_POWER);
 		registration.markAsClientFeature(Identifiers.MC_PLAYER_HEAD);
 		registration.markAsClientFeature(Identifiers.MC_ITEM_TOOLTIP);
 		registration.markAsClientFeature(Identifiers.MC_ANIMAL_OWNER_FETCH_NAMES);
@@ -122,6 +130,7 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.setConfigCategoryOverride(Identifiers.MC_COMMAND_BLOCK, block);
 		registration.setConfigCategoryOverride(Identifiers.MC_CROP_PROGRESS, block);
 		registration.setConfigCategoryOverride(Identifiers.MC_ENCHANTMENT_POWER, block);
+		registration.setConfigCategoryOverride(Identifiers.MC_TOTAL_ENCHANTMENT_POWER, block);
 		registration.setConfigCategoryOverride(Identifiers.MC_ENTITY_ARMOR, entity);
 		registration.setConfigCategoryOverride(Identifiers.MC_ENTITY_HEALTH, entity);
 		registration.setConfigCategoryOverride(Identifiers.MC_FURNACE, block);
@@ -141,5 +150,6 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.setConfigCategoryOverride(Identifiers.MC_REDSTONE, block);
 		registration.setConfigCategoryOverride(Identifiers.MC_TNT_STABILITY, block);
 		registration.setConfigCategoryOverride(Identifiers.MC_VILLAGER_PROFESSION, entity);
+		registration.setConfigCategoryOverride(Identifiers.MC_ZOMBIE_VILLAGER, entity);
 	}
 }

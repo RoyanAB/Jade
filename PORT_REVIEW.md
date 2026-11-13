@@ -772,6 +772,82 @@ private static final Path saveFile = new File(CommonProxy.getConfigDirectory(), 
 单人游戏里只有主机玩家，效果相同；局域网联机时其他玩家的宠物不再由服务端下发名字，
 但客户端现在会通过 `getLastKnownUsername` 自动在线补全，最终显示一致。
 
+## 6.9 补齐 1.12 可实现的 vanilla provider
+
+对照原版 `addon/vanilla/` 的 37 个文件，之前缺 11 个。逐个核对 1.12 是否有对应机制后，补了 **2 个 provider + 2 处注册 + 2 个已有 provider 的 bug**。
+
+### 新增：`TotalEnchantmentPowerProvider`（附魔台总附魔威力）
+
+- 原版用 1.20 的 `EnchantmentTableBlock.BOOKSHELF_OFFSETS` + `isValidBookShelf`。
+- 1.12 的对应逻辑在 `EnchantingTableMenu.onContentsChanged`：`(x,z) ∈ {-1,0,1}² \ {(0,0)}`，
+  要求 `(x,0,z)` 与 `(x,1,z)` 两格都是空气，然后统计 `(2x,0/1,2z)`，以及 `x≠0 && z≠0` 时的 `(2x,0/1,z)` 与 `(x,0/1,2z)`。
+- 已按 1.12 的几何**逐行复刻**（注意：1.20 的 `offset/2` 间隙判定与 1.12 不同，
+  例如 `(2,y,1)` 处 1.12 要求间隙是 `(1,y,1)`，而 1.20 要求 `(1,y,0)`，所以不能直接照搬 1.20 的写法）。
+- 威力求和仍走 `CommonProxy.getEnchantPowerBonus(...)`，与原版一致（支持 `registerCustomEnchantPower`）。
+- 注册：`registerBlockComponent(..., EnchantingTableBlock.class)`、`markAsClientFeature`、`setConfigCategoryOverride(block)`。
+
+### 新增：`ZombieVillagerProvider`（僵尸村民治愈倒计时）
+
+- 原版直接读 `ZombieVillager.villagerConversionTime`（public 字段）。
+- 1.12 的 `ZombieVillagerEntity.conversionTicks` 是 **private**，已新增访问器 mixin
+  `ZombieVillagerEntityAccess`（`@Accessor("conversionTicks")`），并在 `jade.mixins.json` 的 `mixins` 数组注册。
+- 注册：`registerEntityDataProvider`（服务端）+ `registerEntityComponent`（客户端）+ 配置分类覆盖。
+
+### 修复：`MobSpawnerProvider` 显示的是翻译键而不是方块名
+
+```java
+// 修复前
+Text name = new LiteralText(accessor.getBlock().getTranslationKey());  // "tile.mobSpawner"
+// 修复后（与原版 accessor.getBlock().getName() 等价）
+Text name = new LiteralText(accessor.getBlock().getName());            // "Monster Spawner"
+```
+
+1.12 的 `Block.getTranslationKey()` 返回 `tile.<name>`，`getName()` 才返回本地化名字。修复前刷怪笼会显示成
+`tile.mobSpawner (Pig)`。
+
+### 补齐：矿车刷怪笼（`SpawnerMinecartEntity`）
+
+- 原版 `MobSpawnerProvider` 同时实现 `IEntityComponentProvider`，注册给 `MinecartSpawner`。
+- 1.12 有 `SpawnerMinecartEntity`（刷怪笼矿车），其 `spawner` 字段是 private，
+  已新增访问器 mixin `SpawnerMinecartEntityAccess`，并让 provider 实现 `IEntityComponentProvider`。
+- 注册：`registerEntityComponent(MobSpawnerProvider.INSTANCE, SpawnerMinecartEntity.class)`。
+
+### 修复：`VillagerProfessionProvider` 不支持僵尸村民
+
+- 原版对 `Villager` 和 `ZombieVillager` 都取 `VillagerData` 并显示职业；移植版只处理 `VillagerEntity`。
+- 1.12 没有 `VillagerData`，但 `VillagerEntity.getProfession()` 与 `ZombieVillagerEntity.getProfession()`
+  都有，已改成两个分支，并补上 `registerEntityComponent(VillagerProfessionProvider.INSTANCE, ZombieVillagerEntity.class)`。
+
+### 判定为 1.12 无法实现的 9 个 provider
+
+| Provider | 原版依赖 | 1.12 情况 |
+|---|---|---|
+| `BeehiveProvider` | `BeehiveBlock(Entity)` | 1.15+ 才有蜂巢 |
+| `CampfireProvider` | `CampfireBlockEntity` | 1.14+ 才有营火 |
+| `ChiseledBookshelfProvider` | `ChiseledBookShelfBlockEntity` | 1.20+ |
+| `LecternProvider` | `LecternBlock(Entity)` | 1.14+ 才有讲台 |
+| `MobSpawnerCooldownProvider` | `TrialSpawnerBlockEntity` | 1.21+ 的试炼刷怪笼（**不是**普通刷怪笼） |
+| `WaxedProvider` | 蜂巢打蜡 | 1.17+ |
+| `BlockDisplayProvider` | `BlockDisplay` 实体 | 1.19.4+ |
+| `ItemDisplayProvider` | `ItemDisplay` 实体 | 1.19.4+ |
+| `ItemBERProvider` | `AbstractSkullBlock` / `DecoratedPotBlock` | 1.12 有头颅，但 1.12 的 `SkullItem` **没有 TEISR**，物品图标始终是默认贴图，即使塞入 `SkullOwner` 也不会改变 GUI 图标 → 实现出来没有任何可见效果 |
+
+### 新增的两个访问器 mixin
+
+```java
+@Mixin(ZombieVillagerEntity.class)
+public interface ZombieVillagerEntityAccess {
+    @Accessor("conversionTicks") int jade$getConversionTicks();
+}
+
+@Mixin(SpawnerMinecartEntity.class)
+public interface SpawnerMinecartEntityAccess {
+    @Accessor("spawner") MobSpawner jade$getSpawner();
+}
+```
+
+两个字段名都已在重映射后的 MC jar 中核对：`private int conversionTicks`、`private final MobSpawner spawner`。
+
 ## 7. 仍需处理的功能/效果差异
 
 ### 7.1 明确未移植
