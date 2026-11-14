@@ -37,13 +37,11 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 	private final BlockState blockState;
 	@Nullable
 	private final Supplier<BlockEntity> blockEntity;
-	private ItemStack fakeBlock;
 
 	private BlockAccessorImpl(Builder builder) {
 		super(builder.level, builder.player, builder.serverData, Suppliers.ofInstance(builder.hit), builder.connected, builder.showDetails);
 		blockState = builder.blockState;
 		blockEntity = builder.blockEntity;
-		fakeBlock = builder.fakeBlock;
 	}
 
 	public static void handleRequest(SyncData data, ServerPlayerEntity player, Consumer<Runnable> executor, Consumer<NbtCompound> responseSender) {
@@ -130,20 +128,6 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 	}
 
 	@Override
-	public boolean isFakeBlock() {
-		return !fakeBlock.isEmpty();
-	}
-
-	@Override
-	public ItemStack getFakeBlock() {
-		return fakeBlock;
-	}
-
-	public void setFakeBlock(ItemStack fakeBlock) {
-		this.fakeBlock = fakeBlock;
-	}
-
-	@Override
 	public boolean verifyData(NbtCompound data) {
 		if (!verify) {
 			return true;
@@ -164,7 +148,7 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 		private BlockState blockState = Blocks.AIR.defaultState();
 		@Nullable
 		private Supplier<BlockEntity> blockEntity;
-		private ItemStack fakeBlock = ItemStack.EMPTY;
+		private final ItemStack fakeBlock = ItemStack.EMPTY;
 		private boolean verify;
 
 		@Override
@@ -216,12 +200,6 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 		}
 
 		@Override
-		public Builder fakeBlock(ItemStack stack) {
-			this.fakeBlock = stack;
-			return this;
-		}
-
-		@Override
 		public Builder from(BlockAccessor accessor) {
 			level = accessor.getLevel();
 			player = accessor.getPlayer();
@@ -231,7 +209,6 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 			hit = accessor.getHitResult();
 			blockState = accessor.getBlockState();
 			blockEntity = accessor::getBlockEntity;
-			fakeBlock = accessor.getFakeBlock();
 			return this;
 		}
 
@@ -259,13 +236,11 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 		public final boolean showDetails;
 		public final HitResult hit;
 		public final BlockState blockState;
-		public final ItemStack fakeBlock;
 
 		public SyncData(BlockAccessor accessor) {
 			showDetails = accessor.showDetails();
 			hit = accessor.getHitResult();
 			blockState = accessor.getBlockState();
-			fakeBlock = accessor.getFakeBlock();
 		}
 
 		public SyncData(PacketBuffer buffer) {
@@ -278,7 +253,6 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 			int stateId = buffer.readVarInt();
 			Block block = stateId == 0 ? null : Block.byId(stateId & 0xFFF);
 			blockState = block == null ? Blocks.AIR.defaultState() : block.getStateFromMetadata(stateId >> 12);
-			fakeBlock = buffer.readItem();
 		}
 
 		public void write(PacketBuffer buffer) {
@@ -290,7 +264,6 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 			buffer.writeFloat((float) hitVec.y);
 			buffer.writeFloat((float) hitVec.z);
 			buffer.writeVarInt(Block.serialize(blockState));
-			buffer.writeItem(fakeBlock);
 		}
 
 		@Nullable
@@ -307,7 +280,6 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 				.hit(hit)
 				.blockState(blockState)
 				.blockEntity(blockEntity)
-				.fakeBlock(fakeBlock)
 				.build();
 		}
 	}

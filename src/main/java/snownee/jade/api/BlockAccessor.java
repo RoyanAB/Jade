@@ -4,7 +4,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.entity.living.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -28,13 +27,6 @@ public interface BlockAccessor extends Accessor<HitResult> {
 	BlockPos getPosition();
 
 	Direction getSide();
-
-	/**
-	 * The targeting block is a custom block created by data pack
-	 */
-	boolean isFakeBlock();
-
-	ItemStack getFakeBlock();
 
 	@Override
 	default Class<? extends Accessor<?>> getAccessorType() {
@@ -62,8 +54,6 @@ public interface BlockAccessor extends Accessor<HitResult> {
 		}
 
 		Builder blockEntity(Supplier<BlockEntity> blockEntity);
-
-		Builder fakeBlock(ItemStack stack);
 
 		Builder from(BlockAccessor accessor);
 

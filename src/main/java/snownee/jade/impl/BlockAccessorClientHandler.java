@@ -45,13 +45,9 @@ public class BlockAccessorClientHandler implements AccessorClientHandler<BlockAc
 			return null;
 		IElement icon = null;
 
-		if (accessor.isFakeBlock()) {
-			icon = ItemStackElement.of(accessor.getFakeBlock());
-		} else {
-			ItemStack pick = accessor.getPickedResult();
-			if (!pick.isEmpty())
-				icon = ItemStackElement.of(pick);
-		}
+		ItemStack pick = accessor.getPickedResult();
+		if (!pick.isEmpty())
+			icon = ItemStackElement.of(pick);
 
 		if (RayTracing.isEmptyElement(icon) && Item.byBlock(block) != Item.byBlock(Blocks.AIR)) {
 			icon = ItemStackElement.of(new ItemStack(Item.byBlock(block), 1, block.getMetadataFromState(blockState)));

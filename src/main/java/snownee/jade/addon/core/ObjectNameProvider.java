@@ -50,9 +50,6 @@ public enum ObjectNameProvider
 				// no
 			}
 		}
-		if (name == null && accessor.isFakeBlock()) {
-			name = new LiteralText(accessor.getFakeBlock().getHoverName());
-		}
 		if (name == null && WailaClientRegistration.instance().shouldPick(accessor.getBlockState())) {
 			ItemStack pick = accessor.getPickedResult();
 			if (pick != null && !pick.isEmpty())
@@ -60,7 +57,7 @@ public enum ObjectNameProvider
 		}
 		if (name == null) {
 			String key = accessor.getBlock().getTranslationKey();
-			if (I18n.hasTranslation(key)) {
+			if (I18n.hasTranslation(key + ".name")) {
 				name = new LiteralText(accessor.getBlock().getName());
 			} else {
 				ItemStack pick = accessor.getPickedResult();
