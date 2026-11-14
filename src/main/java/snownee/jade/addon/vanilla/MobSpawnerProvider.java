@@ -38,7 +38,6 @@ public enum MobSpawnerProvider implements IBlockComponentProvider, IEntityCompon
 	public void appendTooltip(ITooltip tooltip, EntityAccessor accessor, IPluginConfig config) {
 		SpawnerMinecartEntity spawner = (SpawnerMinecartEntity) accessor.getEntity();
 		Text name = ObjectNameProvider.getEntityName(spawner);
-		//port: 1.12 keeps the spawner logic in a private field, exposed through an accessor mixin
 		appendTooltip(tooltip, ((SpawnerMinecartEntityAccess) spawner).jade$getSpawner().getDisplayEntity(), name);
 	}
 
