@@ -74,13 +74,17 @@ public abstract class BoxStyle implements Cloneable {
 			return new int[]{i, i, i, i};
 		}
 		JsonArray a = e.getAsJsonArray();
-		int[] ret = new int[a.size()];
-		for (int i = 0; i < ret.length; i++) {
-			JsonElement element = a.get(i);
-			if (element.getAsJsonPrimitive().isString()) {
-				ret[i] = Color.valueOf(element.getAsString()).toInt();
-			} else {
-				ret[i] = element.getAsInt();
+		int[] ret = new int[4];
+		for (int i = 0; i < 4; i++) {
+			if (i < a.size()) {
+				JsonElement element = a.get(i);
+				if (element.getAsJsonPrimitive().isString()) {
+					ret[i] = Color.valueOf(element.getAsString()).toInt();
+				} else {
+					ret[i] = element.getAsInt();
+				}
+			} else if (def != null && i < def.length) {
+				ret[i] = def[i];
 			}
 		}
 		return ret;
@@ -96,8 +100,9 @@ public abstract class BoxStyle implements Cloneable {
 			return new float[]{f, f, f, f};
 		}
 		JsonArray a = e.getAsJsonArray();
-		float[] ret = new float[a.size()];
-		for (int i = 0; i < ret.length; i++) {
+		//port: same as readIntArray, boxProgressOffset is indexed by Direction2D#ordinal
+		float[] ret = new float[4];
+		for (int i = 0; i < 4 && i < a.size(); i++) {
 			ret[i] = a.get(i).getAsFloat();
 		}
 		return ret;

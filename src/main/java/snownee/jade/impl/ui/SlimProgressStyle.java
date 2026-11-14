@@ -36,7 +36,7 @@ public class SlimProgressStyle extends ProgressStyle {
 			overlay.size(size);
 			overlay.render(x, y, size.x, size.y);
 		} else {
-			DisplayHelper.INSTANCE.drawGradientProgress(x, y, w, h, progress, color, color);
+			DisplayHelper.INSTANCE.drawGradientProgress(x, y, w, h, progress, color);
 		}
 	}
 

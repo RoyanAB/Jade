@@ -350,16 +350,16 @@ public class DisplayHelper implements IDisplayHelper {
 	}
 
 	@Override
-	public void drawGradientProgress(float left, float top, float width, float height, float progress, int progressColor1, int progressColor2) {
-		Color color = Color.rgb(progressColor1);
+	public void drawGradientProgress(float left, float top, float width, float height, float progress, int progressColor) {
+		Color color = Color.rgb(progressColor);
 		Color highlight = Color.hsl(color.getHue(), color.getSaturation(), Math.min(color.getLightness() + 0.2, 1), color.getOpacity());
 		if (progress < 0.1F) {
-			drawGradientRect(left, top, width * progress, height, progressColor1, highlight.toInt(), true);
+			drawGradientRect(left, top, width * progress, height, progressColor, highlight.toInt(), true);
 		} else {
 			float hlWidth = width * 0.1F;
 			float normalWidth = width * progress - hlWidth;
-			fill(left, top, left + normalWidth, top + height, progressColor1);
-			drawGradientRect(left + normalWidth, top, hlWidth, height, progressColor1, highlight.toInt(), true);
+			fill(left, top, left + normalWidth, top + height, progressColor);
+			drawGradientRect(left + normalWidth, top, hlWidth, height, progressColor, highlight.toInt(), true);
 		}
 	}
 

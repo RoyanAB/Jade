@@ -362,7 +362,7 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 
 	@Override
 	public AccessorClientHandler<Accessor<?>> getAccessorHandler(Class<? extends Accessor<?>> clazz) {
-		return Objects.requireNonNull(accessorHandlers.get(clazz));
+		return Objects.requireNonNull(accessorHandlers.get(clazz), () -> "No accessor handler for " + clazz);
 	}
 
 	@Override

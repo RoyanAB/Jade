@@ -34,7 +34,7 @@ public interface IDisplayHelper {
 
 	void drawTexture(Identifier texture, float x, float y, float width, float height, float alpha);
 
-	void drawGradientProgress(float x, float y, float w, float h, float progress, int color1, int color2);
+	void drawGradientProgress(float x, float y, float w, float h, float progress, int color);
 
 	float opacity();
 }

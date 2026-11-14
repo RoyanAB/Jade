@@ -105,7 +105,7 @@ public class BoxElement extends Element implements IBoxElement {
 			if (track != null) {
 				progress = track.tick(Minecraft.getInstance().getTickDelta());
 			}
-			IDisplayHelper.get().drawGradientProgress(x + left, y + top, width, height, progress, style.boxProgressColors.get(boxProgressType), style.boxProgressColors.get(boxProgressType));
+			IDisplayHelper.get().drawGradientProgress(x + left, y + top, width, height, progress, style.boxProgressColors.get(boxProgressType));
 		}
 
 		float contentLeft = x + padding(Direction2D.LEFT);

@@ -148,7 +148,6 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 		private BlockState blockState = Blocks.AIR.defaultState();
 		@Nullable
 		private Supplier<BlockEntity> blockEntity;
-		private final ItemStack fakeBlock = ItemStack.EMPTY;
 		private boolean verify;
 
 		@Override
