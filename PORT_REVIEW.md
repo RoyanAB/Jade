@@ -398,3 +398,123 @@ resetMappingAndUpdateButtons();
 `GameOptions#setKeyCode` 内部已经调用了 `save()`，所以 `options.txt` 的持久化本来就是对的，
 唯一缺的就是内存里的映射表刷新。
 
+---
+
+## 10. 本地化（i18n）复查与清理
+
+### 10.1 统一约定
+
+| 场景 | API |
+|---|---|
+| **输出 `Text`**（tooltip、标题、Toast、GUI 文本）| `new TranslatableText(key, args...)` |
+| **需要 `String`**（复述 narration、日志、只收 String 的 1.12 控件）| `I18n.translate(key, args...)` |
+| 存在性判断 | `I18n.hasTranslation(key)` |
+
+统一后全项目 **0 处** 遗留 `new LiteralText(I18n.translate(...))`。
+
+### 10.2 统一改造（23 处）
+
+`JadeClient`（4 个 Toast）· `BlockFaceProvider` · `DistanceProvider`（2）· `AnimalOwnerProvider` ·
+`PlayerHeadProvider` · `CropProgressProvider` · `JukeboxProvider` · `PaintingProvider`（2）·
+`VanillaPlugin`（2）· `ItemStorageProvider`（3）· `UniversalPlugin` · `DebugPlugin` ·
+`BaseOptionsScreen`（2）· `PluginsConfigScreen` · `PreviewOptionsScreen` · `WailaConfigScreen`（3）·
+`OptionsList`（2）· `KeybindOptionButton` · `EnumConfigEntry`
+
+### 10.3 删除原则（重要）
+
+> **只有「1.12 根本不可能存在」的功能对应的翻译才删。**
+> 「代码里搜不到字面量」不等于「无用」—— Jade 大量使用动态 key：
+>
+> - `config.jade.plugin_<ns>.<path>` ← 由 provider 的 uid 生成
+> - `config.jade.<option>` / `_desc` / `_extra_msg` ← 由 `makeKey(optionName)` 生成
+> - `config.jade.<option>_<enumvalue>` / `_desc` ← 由枚举选项生成
+> - `jade.theme.<ns>.<path>`、`jade.instrument.<name>`、`jade.<side>`、`tooltip.jade.mode_<x>` ← 由字符串拼接生成
+
+上一轮我按静态扫描误删了 `config.jade.plugin_jade.registry_name_advanced_tooltips` 等
+**实际在用**的 key（它们是 `RegistryNameProvider.Mode.ADVANCED_TOOLTIPS` 的枚举显示名），
+现已全部恢复。
+
+### 10.4 实际删除的翻译（52 条）
+
+| 类别 | 删除的 key |
+|---|---|
+| 命令系统（未移植）| `command.jade.dump.success` |
+| 测试插件 | `__comment`、`mymod.fuel`、`config.jade.plugin_debug.furnace_fuel` + `.float_cfg` + `.str_cfg` |
+| 流体 / 能量 / 1.21 试炼刷怪笼 | `jade.fe`、`jade.fluid`、`jade.fluid.empty`、`jade.fluid2`、`jade.infinity`、`jade.input_signal`、`jade.mobduplication.time`、`jade.trial_spawner_cd`、`fluid_storage`(4)、`energy_storage`(3)、`registry_name.special.fluid` |
+| 1.15+ 蜂巢 | `jade.beehive.bees`、`jade.beehive.honey`、`config.jade.plugin_minecraft.beehive`、`beehive_extra_msg` |
+| 未移植的 1.14+/1.19+ provider | `chiseled_bookshelf`、`container_entity`、`lectern`、`waxed`、`waxed_desc`、`block_display`、`item_display`、`mob_spawner_cooldown` |
+| 1.19+ 乐器 | `jade.instrument.{banjo,bit,cow_bell,creeper,custom_head,didgeridoo,dragon,iron_xylophone,piglin,pling,skeleton,wither_skeleton,zombie}` |
+| 书籍类复述（1.12 无对应）| `narration.jade.bookName`、`narration.jade.category`、`narration.jade.clear_content.usage` |
+| 1.19+ 村民职业 key | `entity.minecraft.villager.nitwit`、`entity.minecraft.villager.none` |
+| 配方查看器快捷键 | `key.jade.show_recipes`、`key.jade.show_uses` |
+| 原版自身也未使用的旧 key | `jade.modName.cpp` |
+
+**明确保留**（虽然静态扫描搜不到字面量，但实际在用）：
+
+| key | 为什么保留 |
+|---|---|
+| `config.jade.plugin_jade.registry_name_advanced_tooltips` / `_desc` | `RegistryNameProvider.Mode.ADVANCED_TOOLTIPS` 的枚举显示名 |
+| `config.jade.plugin_jade.registry_name.special` / `_desc` | `DEBUG_SPECIAL_REGISTRY_NAME` 的配置项 |
+| `config.jade.plugin_jade.item_mod_name` | 历史 key，与原版保持一致 |
+| `config.jade.{display_mode,display_item,boss_bar_overlap,tts_mode}_*` | 枚举选项值 |
+| `config.jade.{edit_blocklist,overlay_pos*,reset_settings*}` | `makeKey` 动态生成 |
+| `gui.jade.configuration` | 1.12 的 `Screen` 没有标题字段，暂时没有调用点，但保留 |
+| `key.jade.show_details` | 原版也没有引用（实际用 `show_details_alternative`），保留以对齐原版 |
+| `tooltip.jade.villager_profession`、`config.jade.plugin_minecraft.profession` | 原版残留 key，保留以对齐原版 |
+| `modmenu.*` | ModMenu 自己读取 |
+
+### 10.5 补齐中文缺失
+
+`zh_cn` / `zh_tw` 原本缺 4 条已经使用的 key（中文下会直接显示原始 key）：
+
+```
+config.jade.plugin_jade.debug                              调试 / 除錯
+config.jade.plugin_jade.registry_name.special              特殊 ID
+config.jade.plugin_jade.registry_name.special.block_entity_type   方块实体: %s / 方塊實體: %s
+config.jade.plugin_jade.registry_name.special_desc         显示方块实体等特殊 ID。
+```
+
+### 10.6 与原版语言文件逐条对比
+
+原版 `en_us.json` 共 **289** 条，移植版 **234** 条，相差 **55 条**，`精确到条` 的分类如下：
+
+| 类别 | 条数 | keys |
+|---|---|---|
+| 命令系统（未移植）| 1 | `command.jade.dump.success` |
+| 测试插件 | 5 | `__comment`、`mymod.fuel`、`plugin_debug.furnace_fuel` ×3 |
+| 流体 / 能量 | 11 | `jade.fluid`、`jade.fluid.empty`、`jade.fluid2`、`fluid_storage` ×4、`energy_storage` ×3、`registry_name.special.fluid` |
+| 流体设置三态 | 3 | `display_fluids_none`、`display_fluids_any`、`display_fluids_source_only`（移植版只有 ON/OFF，用 `OPTION_ON/OFF`）|
+| 1.14+/1.15+ 方块 | 9 | `beehive` ×2、`jade.beehive.*` ×2、`chiseled_bookshelf`、`container_entity`、`lectern`、`waxed` ×2 |
+| 1.19+ 乐器 | 13 | `jade.instrument.*` |
+| 其它 | 13 | `entity.minecraft.villager.*` ×2、`jade.fe`、`jade.infinity`、`jade.input_signal`、`jade.mobduplication.time`、`jade.trial_spawner_cd`、`jade.modName.cpp`、`key.jade.show_recipes/show_uses`、`narration.jade.bookName/category/clear_content.usage` |
+
+**移植版没有多出任何原版不存在的 key**（差集方向是单向的）。
+
+### 10.7 本轮额外查出的问题
+
+**`config.jade.display_fluids_extra_msg` 缺失**：
+
+其余 24 个设置项都有 `_extra_msg`（搜索关键词，例如 `config.jade.display_entities_extra_msg = 'entity'`），
+只有「显示流体」这一项没有 —— 在设置界面搜索 `liquid` / `fluid` 找不到它。
+
+已补上：
+
+```
+en_us: config.jade.display_fluids_extra_msg = "liquid,fluid"
+zh_cn: config.jade.display_fluids_extra_msg = "液体,流体"
+zh_tw: config.jade.display_fluids_extra_msg = "液體,流體"
+```
+
+### 10.8 最终核对
+
+| 检查 | 结果 |
+|---|---|
+| 语言文件 | `en_us` / `zh_cn` / `zh_tw` 各 **234** 条，key 集合完全一致 |
+| 占位符一致性（en 与 zh 对比）| 0 处不一致 |
+| 代码引用但语言文件缺失 | 0 |
+| 无参调用但 key 含占位符（会 Format error）| 0 |
+| 非 `%s` 占位符（`TranslatableText` 会抛异常）| 0 |
+| `new LiteralText(I18n.translate(...))` 残留 | 0 |
+| 键位名 / 设置项 label / `_extra_msg` 覆盖 | 全部齐全 |
+| 硬编码英文 | 仅 `ON`/`OFF`（与原版一致）、`UwU`/`OwO` 彩蛋、`Jade` 兜底 |
+| 构建 | `BUILD SUCCESSFUL` |

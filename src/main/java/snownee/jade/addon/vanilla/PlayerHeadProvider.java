@@ -2,9 +2,9 @@ package snownee.jade.addon.vanilla;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.block.entity.SkullBlockEntity;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.resource.Identifier;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -31,8 +31,8 @@ public enum PlayerHeadProvider implements IBlockComponentProvider {
 			if (name == null || name.trim().isEmpty()) {
 				return;
 			}
-			String text = I18n.translate("item.skull.player.name", name);
-			tooltip.replace(Identifiers.CORE_OBJECT_NAME, IThemeHelper.get().title(new LiteralText(text)));
+			Text text = new TranslatableText("item.skull.player.name", name);
+			tooltip.replace(Identifiers.CORE_OBJECT_NAME, IThemeHelper.get().title(text));
 		}
 	}
 

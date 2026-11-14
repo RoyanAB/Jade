@@ -4,7 +4,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.Formatting;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.config.IWailaConfig;
@@ -22,7 +22,7 @@ public class PluginsConfigScreen extends PreviewOptionsScreen {
 	private Function<OptionsList, OptionsList.Entry> jumpTo;
 
 	public PluginsConfigScreen(Screen parent) {
-		super(parent, new LiteralText(I18n.translate("gui.jade.plugin_settings")));
+		super(parent, new TranslatableText("gui.jade.plugin_settings"));
 		saver = PluginConfig.INSTANCE::save;
 		canceller = PluginConfig.INSTANCE::reload;
 	}

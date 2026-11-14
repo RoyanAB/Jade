@@ -2,11 +2,9 @@ package snownee.jade.addon.vanilla;
 
 import net.minecraft.block.*;
 import net.minecraft.block.state.BlockState;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.resource.Identifier;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import snownee.jade.api.BlockAccessor;
@@ -58,7 +56,7 @@ public enum CropProgressProvider implements IBlockComponentProvider {
 		if (growthValue < 100.0F) {
 			tooltip.add(new TranslatableText("tooltip.jade.crop_growth", IThemeHelper.get().info(String.format("%.0f%%", growthValue))));
 		} else {
-			Text mature = IThemeHelper.get().success(new LiteralText(I18n.translate("tooltip.jade.crop_mature")));
+			Text mature = IThemeHelper.get().success(new TranslatableText("tooltip.jade.crop_mature"));
 			tooltip.add(new TranslatableText("tooltip.jade.crop_growth", mature));
 		}
 	}

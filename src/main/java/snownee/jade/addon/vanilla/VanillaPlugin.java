@@ -2,7 +2,6 @@ package snownee.jade.addon.vanilla;
 
 import net.minecraft.block.*;
 import net.minecraft.block.entity.*;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.entity.ItemEntity;
@@ -17,8 +16,8 @@ import net.minecraft.entity.living.mob.passive.animal.AnimalEntity;
 import net.minecraft.entity.living.mob.passive.animal.ChickenEntity;
 import net.minecraft.entity.living.mob.passive.animal.HorseBaseEntity;
 import net.minecraft.entity.vehicle.SpawnerMinecartEntity;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.JadeClient;
 import snownee.jade.addon.harvest.HarvestToolProvider;
 import snownee.jade.api.*;
@@ -122,8 +121,8 @@ public class VanillaPlugin implements IWailaPlugin {
 		registration.markAsClientFeature(Identifiers.MC_NOTE_BLOCK);
 		registration.markAsClientFeature(Identifiers.MC_VILLAGER_PROFESSION);
 
-		Text block = new LiteralText(I18n.translate("config.jade.plugin_minecraft.block"));
-		Text entity = new LiteralText(I18n.translate("config.jade.plugin_minecraft.entity"));
+		Text block = new TranslatableText("config.jade.plugin_minecraft.block");
+		Text entity = new TranslatableText("config.jade.plugin_minecraft.entity");
 		List<Text> both = Arrays.asList(block, entity);
 		registration.setConfigCategoryOverride(Identifiers.MC_ANIMAL_OWNER, entity);
 		registration.setConfigCategoryOverride(Identifiers.MC_ARMOR_STAND, both);

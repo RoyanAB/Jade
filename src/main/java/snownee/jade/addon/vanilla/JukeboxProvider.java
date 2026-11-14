@@ -2,7 +2,6 @@ package snownee.jade.addon.vanilla;
 
 import net.minecraft.block.JukeboxBlock;
 import net.minecraft.block.state.BlockState;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
@@ -28,7 +27,7 @@ public enum JukeboxProvider implements IBlockComponentProvider, IServerDataProvi
 				Jade.LOGGER.error("", e);
 			}
 		} else {
-			tooltip.add(new LiteralText(I18n.translate("tooltip.jade.empty")));
+			tooltip.add(new TranslatableText("tooltip.jade.empty"));
 		}
 	}
 

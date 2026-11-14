@@ -5,8 +5,8 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.render.platform.GlStateManager;
 import net.minecraft.client.render.platform.Lighting;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import org.lwjgl.input.Mouse;
 import snownee.jade.gui.config.NotUglyEditBox;
 import snownee.jade.gui.config.OptionsList;
@@ -46,9 +46,9 @@ public abstract class BaseOptionsScreen extends Screen {
 		options = createOptions();
 		options.setX(120);
 		optionsNav = new OptionsNav(options, 120, height - 32, 18, 18);
-		searchBox = new NotUglyEditBox(textRenderer, 0, 0, 120, 18, searchBox, new LiteralText(I18n.translate("gui.jade.search")));
+		searchBox = new NotUglyEditBox(textRenderer, 0, 0, 120, 18, searchBox, new TranslatableText("gui.jade.search"));
 		searchBox.setBordered(false);
-		searchBox.setHint(new LiteralText(I18n.translate("gui.jade.search.hint")));
+		searchBox.setHint(new TranslatableText("gui.jade.search.hint"));
 		searchBox.responder = s -> {
 			options.updateSearch(s);
 			optionsNav.refresh();

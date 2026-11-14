@@ -71,10 +71,10 @@ public enum DistanceProvider implements IBlockComponentProvider, IEntityComponen
 				xyz(tooltip, pos);
 			}
 			if (distance) {
-				tooltip.append(IElementHelper.get().text(new LiteralText(I18n.translate("jade.distance1", distanceVal))).message(distanceMsg));
+				tooltip.append(IElementHelper.get().text(new TranslatableText("jade.distance1", distanceVal)).message(distanceMsg));
 			}
 		} else if (distance) {
-			tooltip.add(IElementHelper.get().text(new LiteralText(I18n.translate("jade.distance2", distanceVal))).message(distanceMsg));
+			tooltip.add(IElementHelper.get().text(new TranslatableText("jade.distance2", distanceVal)).message(distanceMsg));
 		}
 	}
 

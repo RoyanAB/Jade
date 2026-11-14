@@ -6,7 +6,6 @@ import com.google.common.collect.Lists;
 import net.minecraft.block.entity.EnderChestBlockEntity;
 import net.minecraft.block.entity.FurnaceBlockEntity;
 import net.minecraft.block.entity.LootInventoryBlockEntity;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.menu.LockableMenuProvider;
@@ -15,6 +14,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
@@ -45,9 +45,9 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 	public static void append(ITooltip tooltip, Accessor<?> accessor, IPluginConfig config) {
 		if (!accessor.getServerData().contains("JadeItemStorage")) {
 			if (accessor.getServerData().getBoolean("Loot")) {
-				tooltip.add(new LiteralText(I18n.translate("jade.loot_not_generated")));
+				tooltip.add(new TranslatableText("jade.loot_not_generated"));
 			} else if (accessor.getServerData().getBoolean("Locked")) {
-				tooltip.add(new LiteralText(I18n.translate("jade.locked")));
+				tooltip.add(new TranslatableText("jade.locked"));
 			}
 			return;
 		}
@@ -104,7 +104,7 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 				if (data != null && data.contains("Collecting")) {
 					float progress = data.getFloat("Collecting");
 					if (progress < 1) {
-						Text component = new LiteralText(I18n.translate("jade.collectingItems"));
+						Text component = new TranslatableText("jade.collectingItems");
 						if (progress > 0) {
 							component = component.append(String.format(" %s%%", (int) (progress * 100)));
 						}

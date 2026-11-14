@@ -7,8 +7,8 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.sound.instance.SimpleSoundInstance;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.Jade;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.ui.Rect2i;
@@ -65,7 +65,7 @@ public abstract class PreviewOptionsScreen extends BaseOptionsScreen {
 				if (saver != null) {
 					saver.run();
 				}
-			}, new LiteralText(I18n.translate("gui.jade.preview")), false);
+			}, new TranslatableText("gui.jade.preview"), false);
 			previewButton.setPos(10, saveButton.getY());
 			previewButton.setWidth(85);
 			addButton(previewButton);

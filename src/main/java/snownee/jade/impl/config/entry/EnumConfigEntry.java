@@ -2,7 +2,7 @@ package snownee.jade.impl.config.entry;
 
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.resource.Identifier;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.gui.config.value.OptionValue;
 import snownee.jade.impl.config.PluginConfig;
@@ -43,7 +43,7 @@ public class EnumConfigEntry<E extends Enum<E>> extends ConfigEntry<E> {
 				String key = OptionsList.Entry.makeKey(optionName + "_" + e.name().toLowerCase(Locale.ENGLISH) + "_desc");
 				if (!I18n.hasTranslation(key))
 					return null;
-				return new LiteralText(I18n.translate(key));
+				return new TranslatableText(key);
 			});
 		});
 	}

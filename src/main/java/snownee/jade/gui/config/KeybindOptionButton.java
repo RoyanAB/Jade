@@ -3,10 +3,9 @@ package snownee.jade.gui.config;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.options.GameOptions;
 import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.Formatting;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.gui.config.widget.JadeButton;
 import snownee.jade.gui.config.widget.JadeWidget;
@@ -16,7 +15,7 @@ public class KeybindOptionButton extends OptionButton {
 	private final KeyBinding keybind;
 
 	public KeybindOptionButton(OptionsList owner, KeyBinding keybind) {
-		super(new LiteralText(I18n.translate(keybind.getName())), null);
+		super(new TranslatableText(keybind.getName()), null);
 		this.keybind = keybind;
 		JadeButton button = new JadeButton(0, 0, 100, 20, GameOptions.getKeyName(keybind.getKeyCode()));
 		JadeButtonWrapper wrapper = new JadeButtonWrapper(button, () -> {

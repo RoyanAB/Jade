@@ -1,8 +1,7 @@
 package snownee.jade.addon.core;
 
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.resource.Identifier;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -22,7 +21,7 @@ public enum BlockFaceProvider implements IBlockComponentProvider {
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
 		tooltip.replace(Identifiers.CORE_OBJECT_NAME, lists -> {
 			List<IElement> lastList = lists.get(lists.size() - 1);
-			lastList.add(IElementHelper.get().text(new LiteralText(I18n.translate("jade.blockFace", I18n.translate("jade." + accessor.getSide().name().toLowerCase(Locale.ROOT))))));
+			lastList.add(IElementHelper.get().text(new TranslatableText("jade.blockFace", new TranslatableText("jade." + accessor.getSide().name().toLowerCase(Locale.ROOT)))));
 			return lists;
 		});
 	}

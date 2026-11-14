@@ -17,10 +17,7 @@ import net.minecraft.client.render.vertex.BufferBuilder;
 import net.minecraft.client.render.vertex.DefaultVertexFormat;
 import net.minecraft.client.render.vertex.Tesselator;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.text.Formatting;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
+import net.minecraft.text.*;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.input.Keyboard;
@@ -461,7 +458,7 @@ public class OptionsList extends ListWidget {
 			}
 		}
 		if (matches.isEmpty()) {
-			visibleEntries.add(new Title(new LiteralText(I18n.translate("gui.jade.no_results")).setStyle(new Style().setColor(Formatting.GRAY))));
+			visibleEntries.add(new Title(new TranslatableText("gui.jade.no_results").setStyle(new Style().setColor(Formatting.GRAY))));
 		}
 	}
 
@@ -582,7 +579,7 @@ public class OptionsList extends ListWidget {
 		}
 
 		public static Text makeTitle(String key) {
-			return new LiteralText(I18n.translate(makeKey(key)));
+			return new TranslatableText(makeKey(key));
 		}
 
 		public static String makeKey(String key) {

@@ -10,8 +10,8 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.TooltipFlag;
 import net.minecraft.text.Formatting;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import org.jetbrains.annotations.Nullable;
@@ -63,8 +63,8 @@ public final class JadeClient {
 				general.setDisplayTooltip(!general.shouldDisplayTooltip());
 				if (!general.shouldDisplayTooltip() && general.hintOverlayToggle) {
 					SystemToast.addOrUpdate(Minecraft.getInstance().getToasts(), SystemToast.Type.TUTORIAL_HINT,
-						new LiteralText(I18n.translate("toast.jade.toggle_hint.1")),
-						new LiteralText(I18n.translate("toast.jade.toggle_hint.2", GameOptions.getKeyName(showOverlay.getKeyCode()))));
+						new TranslatableText("toast.jade.toggle_hint.1"),
+						new TranslatableText("toast.jade.toggle_hint.2", GameOptions.getKeyName(showOverlay.getKeyCode())));
 					general.hintOverlayToggle = false;
 				}
 				Jade.CONFIG.save();
@@ -81,8 +81,8 @@ public final class JadeClient {
 				general.toggleTTS();
 				if (general.shouldEnableTextToSpeech() && general.hintNarratorToggle) {
 					SystemToast.addOrUpdate(Minecraft.getInstance().getToasts(), SystemToast.Type.NARRATOR_TOGGLE,
-						new LiteralText(I18n.translate("toast.jade.tts_hint.1")),
-						new LiteralText(I18n.translate("toast.jade.tts_hint.2", GameOptions.getKeyName(narrate.getKeyCode()))));
+						new TranslatableText("toast.jade.tts_hint.1"),
+						new TranslatableText("toast.jade.tts_hint.2", GameOptions.getKeyName(narrate.getKeyCode())));
 					general.hintNarratorToggle = false;
 				}
 				Jade.CONFIG.save();

@@ -9,10 +9,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.options.KeyBinding;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.resource.Identifier;
-import net.minecraft.text.Formatting;
-import net.minecraft.text.LiteralText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
+import net.minecraft.text.*;
 import net.minecraft.util.math.MathHelper;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
@@ -45,7 +42,7 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 	private final Map<KeyBinding, Integer> keyMap;
 
 	public WailaConfigScreen(Screen parent) {
-		super(parent, new LiteralText(I18n.translate("gui.jade.jade_settings")));
+		super(parent, new TranslatableText("gui.jade.jade_settings"));
 		saver = Jade.CONFIG::save;
 		keyMap = Maps.newHashMap();
 		for (KeyBinding keyBinding : Minecraft.getInstance().options.keyBindings) {
@@ -66,7 +63,7 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 			entry.getFirstWidget().setWidth(79);
 		}
 		JadeButton button = new JadeButton(0, 0, 20, 20, "☰");
-		button.tooltip(new LiteralText(I18n.translate(OptionsList.Entry.makeKey("edit_blocklist"))));
+		button.tooltip(new TranslatableText(OptionsList.Entry.makeKey("edit_blocklist")));
 		entry.addWidget(new ButtonWrapper(button, () -> {
 			File file = new File(CommonProxy.getConfigDirectory(), "jade/" + fileName + ".json");
 			if (!file.exists()) {
@@ -131,7 +128,7 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 				squareEntry.setValue(theme.changeRoundCorner);
 			if (theme.changeOpacity != 0)
 				opacityEntry.setValue(theme.changeOpacity);
-		}, id -> new LiteralText(I18n.translate("jade.theme." + id.getNamespace() + "." + id.getPath())));
+		}, id -> new TranslatableText("jade.theme." + id.getNamespace() + "." + id.getPath()));
 		squareEntry = options.choices("overlay_square", overlay.getSquare(), overlay::setSquare);
 		opacityEntry = options.slider("overlay_alpha", overlay.getAlpha(), overlay::setAlpha);
 		options.forcePreview.add(options.slider("overlay_scale", overlay.getOverlayScale(), overlay::setOverlayScale, 0.2f, 2, FloatUnaryOperator.identity()));

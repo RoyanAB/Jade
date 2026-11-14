@@ -2,10 +2,9 @@ package snownee.jade.addon.universal;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entity;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.api.*;
 
 @WailaPlugin
@@ -29,7 +28,7 @@ public class UniversalPlugin implements IWailaPlugin {
 		registration.registerEntityComponent(EntityItemStorageProvider.INSTANCE, Entity.class);
 		registration.registerItemStorageClient(ItemStorageProvider.INSTANCE);
 
-		Text category = new LiteralText(I18n.translate("config.jade.plugin_jade"));
+		Text category = new TranslatableText("config.jade.plugin_jade");
 		registration.setConfigCategoryOverride(Identifiers.UNIVERSAL_ITEM_STORAGE, category);
 	}
 
