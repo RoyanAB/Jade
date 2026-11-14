@@ -163,19 +163,6 @@ public final class CommonProxy implements ModInitializer {
 	}
 
 	public static ItemStack getEntityPickedResult(Entity entity, PlayerEntity player, HitResult hitResult) {
-		//port: 1.12 has no Entity#getPickResult, spawn eggs carry the entity id in their nbt
-		if (entity instanceof LivingEntity) {
-			Identifier id = Entities.getKey(entity);
-			if (id != null) {
-				ItemStack stack = new ItemStack(Items.SPAWN_EGG);
-				NbtCompound entityTag = new NbtCompound();
-				entityTag.putString("id", id.toString());
-				NbtCompound tag = new NbtCompound();
-				tag.put("EntityTag", entityTag);
-				stack.setNbt(tag);
-				return stack;
-			}
-		}
 		return ItemStack.EMPTY;
 	}
 
