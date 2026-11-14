@@ -8,6 +8,7 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
@@ -49,8 +50,7 @@ public enum StatusEffectsProvider implements IEntityComponentProvider, IServerDa
 				int seconds = effect.getDuration() / 20;
 				duration = String.format("%d:%02d", seconds / 60, seconds % 60);
 			}
-			Text s = new LiteralText(I18n.translate("jade.potion",
-				getEffectName(effect).getFormattedString(), duration));
+			Text s = new TranslatableText("jade.potion", getEffectName(effect), duration);
 			box.add(effect.getEffect().isHarmful() ? IThemeHelper.get().danger(s) : IThemeHelper.get().success(s));
 		}
 		tooltip.add(helper.box(box, BoxStyle.getNestedBox()));

@@ -8,11 +8,7 @@ import net.minecraft.nbt.NbtCompound;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.view.ViewGroup;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 
@@ -109,20 +105,23 @@ public class ItemCollector<T> {
 	// map key, value equality is required
 	public static class ItemDefinition {
 		public final Item item;
+		//port: 1.12 shares one Item between all wood types, the metadata is what tells acacia from oak
+		public final int metadata;
 		@Nullable
 		public final NbtCompound tag;
 
 		ItemDefinition(ItemStack stack) {
-			this(stack.getItem(), stack.getNbt());
+			this(stack.getItem(), stack.getMetadata(), stack.getNbt());
 		}
 
-		public ItemDefinition(Item item, @Nullable NbtCompound tag) {
+		public ItemDefinition(Item item, int metadata, @Nullable NbtCompound tag) {
 			this.item = item;
+			this.metadata = metadata;
 			this.tag = tag;
 		}
 
 		public ItemStack toStack(int count) {
-			ItemStack stack = new ItemStack(item);
+			ItemStack stack = new ItemStack(item, 1, metadata);
 			stack.setSize(count);
 			stack.setNbt(tag);
 			return stack;
@@ -137,12 +136,13 @@ public class ItemCollector<T> {
 				return false;
 			}
 			ItemDefinition that = (ItemDefinition) o;
-			return item == that.item && Objects.equals(tag, that.tag);
+			return item == that.item && metadata == that.metadata && Objects.equals(tag, that.tag);
 		}
 
 		@Override
 		public int hashCode() {
-			return 31 * System.identityHashCode(item) + Objects.hashCode(tag);
+			int result = 31 * System.identityHashCode(item) + metadata;
+			return 31 * result + Objects.hashCode(tag);
 		}
 	}
 }

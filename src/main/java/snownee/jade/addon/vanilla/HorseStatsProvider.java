@@ -1,12 +1,11 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.living.attribute.EntityAttributes;
 import net.minecraft.entity.living.mob.passive.animal.HorseBaseEntity;
 import net.minecraft.entity.living.mob.passive.animal.LlamaEntity;
 import net.minecraft.resource.Identifier;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.IEntityComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -27,10 +26,9 @@ public enum HorseStatsProvider implements IEntityComponentProvider {
 		IThemeHelper t = IThemeHelper.get();
 		Text valueText = t.info(DisplayHelper.dfCommas.format(value));
 		if (showMax) {
-			return new LiteralText(I18n.translate(key,
-				I18n.translate("jade.fraction", valueText.getFormattedString(), DisplayHelper.dfCommas.format(max))));
+			return new TranslatableText(key, new TranslatableText("jade.fraction", valueText, DisplayHelper.dfCommas.format(max)));
 		}
-		return new LiteralText(I18n.translate(key, valueText.getFormattedString()));
+		return new TranslatableText(key, valueText);
 	}
 
 	private static double getJumpHeight(double jumpStrength) {

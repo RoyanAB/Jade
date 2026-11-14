@@ -53,9 +53,8 @@ public class BlockAccessorClientHandler implements AccessorClientHandler<BlockAc
 				icon = ItemStackElement.of(pick);
 		}
 
-		//port: 1.12 Item.byBlock never returns null, it falls back to the air item
 		if (RayTracing.isEmptyElement(icon) && Item.byBlock(block) != Item.byBlock(Blocks.AIR)) {
-			icon = ItemStackElement.of(new ItemStack(block));
+			icon = ItemStackElement.of(new ItemStack(Item.byBlock(block), 1, block.getMetadataFromState(blockState)));
 		}
 
 		if (RayTracing.isEmptyElement(icon) && blockState.getMaterial().isLiquid()) {

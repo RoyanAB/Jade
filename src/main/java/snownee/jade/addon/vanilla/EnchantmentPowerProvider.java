@@ -1,8 +1,7 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.resource.Identifier;
-import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -20,8 +19,7 @@ public enum EnchantmentPowerProvider implements IBlockComponentProvider {
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
 		float power = CommonProxy.getEnchantPowerBonus(accessor.getBlockState(), accessor.getLevel(), accessor.getPosition());
 		if (power > 0) {
-			tooltip.add(new LiteralText(I18n.translate("jade.ench_power",
-				IThemeHelper.get().info(DisplayHelper.dfCommas.format(power)).getFormattedString())));
+			tooltip.add(new TranslatableText("jade.ench_power", IThemeHelper.get().info(DisplayHelper.dfCommas.format(power))));
 		}
 	}
 

@@ -16,23 +16,13 @@ import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
 import org.apache.commons.lang3.mutable.MutableBoolean;
-import snownee.jade.api.Accessor;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
-import snownee.jade.api.TooltipPosition;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.ui.Direction2D;
 import snownee.jade.api.ui.IDisplayHelper;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.IElementHelper;
-import snownee.jade.api.view.ClientViewGroup;
-import snownee.jade.api.view.IClientExtensionProvider;
-import snownee.jade.api.view.IServerExtensionProvider;
-import snownee.jade.api.view.ItemView;
-import snownee.jade.api.view.ViewGroup;
+import snownee.jade.api.view.*;
 import snownee.jade.impl.WailaClientRegistration;
 import snownee.jade.impl.WailaCommonRegistration;
 import snownee.jade.impl.config.PluginConfig;
@@ -45,7 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataProvider<BlockAccessor>,
-		IServerExtensionProvider<Object, ItemStack>, IClientExtensionProvider<ItemStack, ItemView> {
+	IServerExtensionProvider<Object, ItemStack>, IClientExtensionProvider<ItemStack, ItemView> {
 
 	INSTANCE;
 
@@ -146,8 +136,8 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 					} else {
 						elements.add(helper.smallItem(stack).clearCachedMessage());
 						elements.add(helper.text(new LiteralText(IDisplayHelper.get().humanReadableNumber(stack.getSize(), "", false, null))
-								.append("× ")
-								.append(IDisplayHelper.get().stripColor(new LiteralText(stack.getHoverName())))).message(null));
+							.append("× ")
+							.append(IDisplayHelper.get().stripColor(new LiteralText(stack.getHoverName())))).message(null));
 					}
 				} else if (itemView.amountText != null) {
 					elements.add(helper.item(stack, 1, itemView.amountText));

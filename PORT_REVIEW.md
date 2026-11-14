@@ -2173,6 +2173,316 @@ if (getBlockEntity() == null || !data.contains("x")) {
 原版直接读 `data.getInt("x")`，方块实体在请求与响应之间被移除时会拿到 0 并可能误判通过。
 移植版选择返回 false（丢弃过期数据），行为更稳；除此之外与原版逐行相同。
 
+## 6.28 物品存储显示错误（金合欢显示成橡木）：metadata 丢失
+
+### 现象
+
+箱子里放金合欢原木/木板，Jade 显示成橡木。
+
+### 根因：`ItemDefinition` 只存了 item + NBT，丢了 metadata
+
+```java
+// 修复前
+ItemDefinition(ItemStack stack) {
+    this(stack.getItem(), stack.getNbt());   // ← metadata 没存
+}
+public ItemStack toStack(int count) {
+    ItemStack stack = new ItemStack(item);   // ← metadata = 0（橡木）
+    ...
+}
+```
+
+1.20 里每种木头是**独立物品**（`oak_log` / `acacia_log` …），item 本身就区分开了；
+**1.12 里是同一个 `minecraft:log`，靠 metadata 区分 0=橡木 1=云杉 2=白桦 3=丛林 4=金合欢 5=深色橡木**。
+所以聚合时所有木头都塌缩成 meta 0 的橡木。
+
+### 修复
+
+```java
+public static class ItemDefinition {
+    public final Item item;
+    //port: 1.12 shares one Item between all wood types, the metadata is what tells acacia from oak
+    public final int metadata;
+    @Nullable
+    public final NbtCompound tag;
+
+    ItemDefinition(ItemStack stack) {
+        this(stack.getItem(), stack.getMetadata(), stack.getNbt());
+    }
+
+    public ItemStack toStack(int count) {
+        ItemStack stack = new ItemStack(item, 1, metadata);
+        stack.setSize(count);
+        stack.setNbt(tag);
+        return stack;
+    }
+
+    // equals / hashCode 也把 metadata 算进去，否则不同木头会被当成同一条
+}
+```
+
+### 顺带查出同类的另外 2 处 metadata 丢失
+
+把全项目 15 处 `new ItemStack(...)` 逐个过了一遍，又找到两处：
+
+#### 1. `BlockAccessorClientHandler#getIcon` 的兜底图标
+
+```java
+// 修复前：木板 meta 4（金合欢）会画成 meta 0（橡木）
+icon = ItemStackElement.of(new ItemStack(block));
+// 修复后
+icon = ItemStackElement.of(new ItemStack(Item.byBlock(block), 1, block.getMetadataFromState(blockState)));
+```
+
+#### 2. `FallingBlockProvider` 的图标
+
+```java
+// 修复前：掉落的金合欢原木显示成橡木
+ItemStack stack = new ItemStack(entity.getBlock().getBlock());
+// 修复后
+BlockState state = entity.getBlock();
+ItemStack stack = new ItemStack(state.getBlock(), 1, state.getBlock().getMetadataFromState(state));
+```
+
+### 其余链路确认无 metadata 丢失
+
+| 位置 | 结论 |
+|---|---|
+| `ItemStorageProvider#putData` | ✓ `item.writeNbt(itemTag)` 会写 `Damage` |
+| `ItemStorageProvider#append` | ✓ `new ItemStack(itemTag)` 从 NBT 还原（含 Damage） |
+| `ItemCollector` 聚合/`toStack` | ✓ 本轮修好 |
+| `ItemIterator.ContainerItemIterator` | ✓ 直接返回容器里的原始 stack |
+| `FurnaceProvider` / `JukeboxProvider` | ✓ 走 NBT |
+| `CommonProxy#getEntityPickedResult` | ✓ 刷怪蛋用 NBT 指定实体 |
+| `ClientProxy#elementFromLiquid` | ✓ 桶没有 metadata |
+| `CropProgressProvider` / `BrewingStandProvider` / harvest 工具 | ✓ 都是无 metadata 的物品 |
+| `PlayerHeadProvider` | ✓ 不构造 ItemStack |
+
+## 6.29 addon 全包复查（第四轮）
+
+按 diff 行数排序逐个核对，重点看之前没细看的 `core/ObjectNameProvider`（100 行差异）、`debug/*`、
+`harvest/ShearsToolHandler`，以及 `VanillaPlugin` 的注册表完整性。
+
+### 修复 1：`ObjectNameProvider` 缺「大箱子」名字
+
+原版服务端是这样取名字的：
+
+```java
+if (blockEntity instanceof ChestBlockEntity && accessor.getBlock() instanceof ChestBlock chestBlock) {
+    MenuProvider menuProvider = accessor.getBlockState().getMenuProvider(accessor.getLevel(), accessor.getPosition());
+    if (menuProvider != null) {
+        name = menuProvider.getDisplayName();
+    }
+} else if (nameable.hasCustomName()) {
+    name = nameable.getDisplayName();
+}
+```
+
+这段的作用是让**双箱子显示 "Large Chest"**。移植版只留了 `hasCustomName()` 分支，
+所以双箱子会退化成方块名 "Chest"。1.12 的等价写法：
+
+```java
+//port: 1.12 has no MenuProvider on the block state, the combined chest provider carries "Large Chest"
+if (blockEntity instanceof ChestBlockEntity && accessor.getBlock() instanceof ChestBlock) {
+    LockableMenuProvider provider = ((ChestBlock) accessor.getBlock()).getCombinedMenuProvider(accessor.getLevel(), accessor.getPosition(), false);
+    if (provider != null) {
+        name = provider.getDisplayName();
+    }
+} else if (nameable.hasCustomName()) {
+    name = nameable.getDisplayName();
+}
+```
+
+（`getCombinedMenuProvider` 单箱子返回箱子本身、双箱子返回 `DoubleInventory`，名字分别是
+"Chest" / "Large Chest"。）
+
+### 修复 2：`ObjectNameProvider#getEntityName` 缺 `shouldPick` 分支
+
+原版在没有自定义名字时，先看 `WailaClientRegistration#shouldPick(entity)`，命中就用
+`entity.getPickResult().getHoverName()`。移植版整段缺失，已补上（1.12 用 `getEntityPickedResult`）：
+
+```java
+if (WailaClientRegistration.instance().shouldPick(entity)) {
+    ItemStack stack = CommonProxy.getEntityPickedResult(entity, Minecraft.getInstance().player, null);
+    if (stack != null && !stack.isEmpty()) {
+        return new LiteralText(stack.getHoverName());
+    }
+}
+```
+
+### 修复 3：16 处「把带颜色的文本拍平成字符串」会丢掉 RGB 颜色
+
+这是**上一轮加 RGB 支持后才暴露出来**的问题。这些 provider 原来是：
+
+```java
+tooltip.add(new LiteralText(I18n.translate("tooltip.jade.power", t.info(power).getFormattedString())));
+```
+
+`getFormattedString()` 会退化成 `§` 颜色码（16 色），内层 `RgbText` 的精确颜色就没了。原版是
+`Component.translatable(key, component)`，所以统一改成 `TranslatableText`：
+
+```java
+tooltip.add(new TranslatableText("tooltip.jade.power", t.info(power)));
+```
+
+`drawText` 现在会遍历 `TranslatableText` 的参数节点，`RgbText` 参数能保留精确颜色。
+
+改到的文件（16 处）：
+
+| 文件 | 处数 |
+|---|---|
+| `RedstoneProvider` | 5 |
+| `CropProgressProvider` | 2 |
+| `HorseStatsProvider` | 2 |
+| `ChickenEggProvider` / `EnchantmentPowerProvider` / `JukeboxProvider` / `MobBreedingProvider` / `MobGrowthProvider` / `MobSpawnerProvider` / `StatusEffectsProvider` | 各 1 |
+
+### 核对无问题的部分
+
+| 检查 | 结论 |
+|---|---|
+| `VanillaPlugin` 注册表 | 83 条 vs 原版 107 条，差的正好是 8 个 1.14+ 内容（蜂巢/营火/讲台/雕纹书架/蜡封/展示实体×2/刷怪笼冷却）✓ 无多余注册 |
+| `debug/BlockStatesProvider` | ✓ 仅多了一个泛型 `getValue` 辅助（1.12 的 `Property#getValue` 需要 unchecked 转换） |
+| `debug/RegistryNameProvider` | ✓ 方块/方块实体 id 对应；流体那行是 1.13+ 才有，已注释说明 |
+| `debug/DebugPlugin` | ✓ |
+| `harvest/ShearsToolHandler` | ✓ 1.12 没有 block tag，羊毛/树叶/双高草由 `CommonProxy#isShearable` 覆盖 |
+| `EnchantmentPowerProvider` | ✓（本轮顺手改成 TranslatableText） |
+| 其余 vanilla provider | 见 6.17 / 6.19 / 6.28 各轮 ✓ |
+
+## 6.30 addon 第五轮：`%d` 格式键导致 "Format error"
+
+### 现象
+
+看向红石粉/中继器，提示里出现：
+
+```
+Format error: Power: 1
+```
+
+### 根因链
+
+**1. Jade 的语言文件里三个键用的是 `%d`**
+
+- `tooltip.jade.delay` = `Delay: %d`
+- `tooltip.jade.power` = `Power: %d`
+- `jade.fraction` = `%d / %d`
+
+（`de_de`/`it_it`/`ja_jp`/`ko_kr`/`pl_pl`/`pt_br`/`ru_ru`/`uk_ua`/`zh_cn`/`zh_tw` 里也有；
+`zh_tw` 的 `jade.nextEgg`、`jade.mobgrowth.time` 同样是 `%d`。）
+
+**2. 1.12 的 `Locale#translate` 即使没有参数也会 `String.format`**
+
+```java
+public String translate(String key, Object[] args) {
+    String string = this.getTranslationOrKey(key);
+    try {
+        return String.format(string, args);
+    } catch (IllegalFormatException e) {
+        return "Format error: " + string;
+    }
+}
+```
+
+所以 `I18n.translate("tooltip.jade.power")` 直接返回 `"Format error: Power: %d"`。
+我上一版想用 `I18n.translate(key).replace("%d","%s")` 取原始串，拿到的就是这个错误串，
+再格式化就成了 `Format error: Power: 1` —— 方法确实是狗屎。
+
+**3. 1.12 的 `TranslatableText` 只支持 `%s`**
+
+```java
+if (!"s".equals(string)) {
+    throw new TranslationException(this, "Unsupported format: '" + string2 + "'");
+}
+```
+
+所以 `new TranslatableText(key, value)` 也会抛异常。
+
+### 正确修复：把语言文件里的 `%d` 统一改成 `%s`
+
+1.12 没有「只取原文不格式化」的 API，`%d` 在这个版本里两条路都走不通；而 Jade 的语言文件是我们
+自己的资源，所以直接规范化占位符：
+
+```
+11 个语言文件共 57 处 %d → %s
+tooltip.jade.delay  = "Delay: %s"
+tooltip.jade.power  = "Power: %s"
+jade.fraction       = "%s / %s"
+jade.input_signal / mymod.fuel = "%s"
+zh_tw 的 jade.nextEgg / jade.mobgrowth.time = "%s"
+```
+
+代码回到最干净的写法（等同原版的 `Component.translatable(key, value)` 结构）：
+
+```java
+// RedstoneProvider
+tooltip.add(new TranslatableText("tooltip.jade.delay", t.info(delay)));
+tooltip.add(new TranslatableText("tooltip.jade.power", t.info(state.get(power))));
+
+// HorseStatsProvider
+return new TranslatableText(key, new TranslatableText("jade.fraction", valueText, DisplayHelper.dfCommas.format(max)));
+```
+
+`%s` + `Text` 参数 → `drawText` 会遍历参数节点 → 数值仍然是主题的**精确颜色** ✓。
+
+### 全量审计
+
+- 11 个语言文件重新解析全部通过 ✓
+- 全项目「带参数的翻译键」逐个检查，占位符已 100% 为 `%s`/`%%` ✓
+
+## 6.31 addon 第六轮：`jade.error` 也是 Format error
+
+### 用脚本做全量审计
+
+这轮不再靠肉眼，写了三个静态检查：
+
+1. **无参数翻译但键里有占位符** → 会触发 `Format error`（1.12 的 `Locale#translate` 即使没有参数也
+   会 `String.format`）
+2. **占位符数量 ≠ 实参数量** → `MissingFormatArgumentException` / 参数被吞
+3. **非 `%s` 占位符**（`%d`/`%f` 等）→ `TranslatableText` 抛 `TranslationException`
+
+### 查出：`WailaExceptionHandler` 的错误行永远显示 Format error
+
+```java
+// 修复前
+Text text = new LiteralText(String.format(I18n.translate("jade.error"), ModIdentification.getModName(modid)));
+```
+
+`jade.error` = `<Error occurred, plz report to %s>`，而 `I18n.translate("jade.error")` **没有传参**，
+`String.format` 直接抛 `MissingFormatArgumentException` 被 `Locale` 吞掉，返回
+`"Format error: <Error occurred, plz report to %s>"`，再 `String.format` 一次也没用了。
+
+所以任何 provider 抛异常时，玩家看到的都是 `Format error: ...`，而不是「请联系某某」。
+
+**修复**（和原版一致）：
+
+```java
+Text text = new TranslatableText("jade.error", ModIdentification.getModName(modid));
+text.setStyle(new Style().setColor(Formatting.DARK_RED));
+tooltip.add(text);
+```
+
+### 审计结果（修复后）
+
+```
+无参数翻译 + 占位符 : 0
+占位符/实参数量不匹配 : 0
+非 %s 占位符        : 0
+```
+
+### 其它核对（无问题）
+
+| 检查 | 结论 |
+|---|---|
+| 各 provider 的注册类 vs 强转类 | 全部一致（`BrewingStandProvider`→`BrewingStandBlockEntity`、`FurnaceProvider`→`FurnaceBlockEntity`、`HorseStatsProvider`→`HorseBaseEntity`…）|
+| `state.get(...)` 守卫 | 红石（`instanceof LeverBlock` / 方块判断）、作物（`instanceof`）、唱片机（注册在 `JukeboxBlock`）、TNT（注册在 `TntBlock`）✓ |
+| `new Identifier(...)` | `CorePlugin`、`ItemStorageProvider` 都在 try/catch 里 ✓ |
+| NBT 写入/读取键 | 逐文件比对，`BrewingStand`/`Time`/`Fuel`、`JadeItemStorage`/`NewCount` 等全部对得上 ✓ |
+| `MobSpawnerProvider` 的展示实体 | 1.12 的 `MobSpawner#getDisplayEntity()` 内部有缓存，不会每帧新建实体 ✓ |
+| `AnimalOwnerProvider` | ✓ 单机时跳过同步，与原版一致 |
+| `BrewingStandProvider` | ✓ `getData(0)/getData(1)` 对应 `brewTime`/`fuel` |
+| `VillagerProfessionProvider` | ✓ 1.12 用 `getProfession()` + 职业名数组 |
+| `ZombieVillagerProvider` | ✓ 通过 mixin 读私有 `conversionTicks` |
+| `TotalEnchantmentPowerProvider` | ✓ 复刻 1.12 `EnchantingTableMenu` 的书架几何 |
+
 ## 7. 仍需处理的功能/效果差异
 
 ### 7.1 明确未移植

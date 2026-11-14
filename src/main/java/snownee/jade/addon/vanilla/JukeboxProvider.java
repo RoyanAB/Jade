@@ -7,6 +7,7 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.Jade;
 import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
@@ -22,8 +23,7 @@ public enum JukeboxProvider implements IBlockComponentProvider, IServerDataProvi
 		if (state.get(JukeboxBlock.HAS_RECORD) && accessor.getServerData().contains("Record")) {
 			try {
 				ItemStack stack = new ItemStack(accessor.getServerData().getCompound("Record"));
-				tooltip.add(new LiteralText(I18n.translate("record.nowPlaying",
-					IDisplayHelper.get().stripColor(new LiteralText(stack.getHoverName())).getFormattedString())));
+				tooltip.add(new TranslatableText("record.nowPlaying", IDisplayHelper.get().stripColor(new LiteralText(stack.getHoverName()))));
 			} catch (Exception e) {
 				Jade.LOGGER.error("", e);
 			}

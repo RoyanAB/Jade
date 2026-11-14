@@ -1,12 +1,12 @@
 package snownee.jade.addon.vanilla;
 
 import net.minecraft.block.entity.MobSpawnerBlockEntity;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.vehicle.SpawnerMinecartEntity;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.addon.core.ObjectNameProvider;
 import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
@@ -21,8 +21,7 @@ public enum MobSpawnerProvider implements IBlockComponentProvider, IEntityCompon
 		if (displayEntity == null) {
 			return;
 		}
-		Text text = new LiteralText(I18n.translate("jade.spawner",
-			name.getFormattedString(), displayEntity.getDisplayName().getFormattedString()));
+		Text text = new TranslatableText("jade.spawner", name, displayEntity.getDisplayName());
 		tooltip.replace(Identifiers.CORE_OBJECT_NAME, IThemeHelper.get().title(text));
 	}
 

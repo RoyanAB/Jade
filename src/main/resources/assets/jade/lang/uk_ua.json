@@ -2,14 +2,14 @@
   "tooltip.jade.crop_growth": "Зростання: %s",
   "tooltip.jade.crop_mature": "Дозрілий",
   "tooltip.jade.empty": "Порожньо",
-  "tooltip.jade.delay": "Затримка: %d",
+  "tooltip.jade.delay": "Затримка: %s",
   "tooltip.jade.mode": "Режим: %s",
   "tooltip.jade.mode_comparator": "Компаратор",
   "tooltip.jade.mode_subtractor": "Віднімувач",
   "tooltip.jade.state": "Стан: %s",
   "tooltip.jade.state_on": "Увімк.",
   "tooltip.jade.state_off": "Вимк.",
-  "tooltip.jade.power": "Енергія: %d",
+  "tooltip.jade.power": "Енергія: %s",
   "tooltip.jade.villager_profession": "Професія: %s",
   "gui.jade.plugin_settings": "Параметри плаґіна",
   "gui.jade.forced_plugin_config": "Цей параметр керується сервером",
@@ -106,7 +106,7 @@
   "config.jade.plugin_minecraft.tnt_stability": "Стабільність динаміту",
   "jade.tnt.unstable": "Нестабільний",
   "config.jade.plugin_minecraft.beehive": "Вулик",
-  "jade.fraction": "%d / %d",
+  "jade.fraction": "%s / %s",
   "jade.beehive.bees": "Бджоли: %s",
   "jade.beehive.honey": "Мед: %s",
   "config.jade.plugin_minecraft.note_block": "Нотний блок",
@@ -187,6 +187,6 @@
 
   "__comment": "Тільки для тестування:",
   "jade.modName.cpp": "Майстрування++",
-  "mymod.fuel": "Паливо: %d тактів",
+  "mymod.fuel": "Паливо: %s тактів",
   "config.jade.plugin_debug.furnace_fuel": "Тестове паливо"
 }

@@ -12,9 +12,9 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.callback.*;
+import snownee.jade.api.platform.PlatformWailaClientRegistration;
 import snownee.jade.api.view.IClientExtensionProvider;
 import snownee.jade.api.view.ItemView;
-import snownee.jade.api.platform.PlatformWailaClientRegistration;
 
 import java.util.List;
 import java.util.function.Consumer;

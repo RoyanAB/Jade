@@ -30,7 +30,7 @@ public interface EntityAccessor extends Accessor<HitResult> {
 	}
 
 	@NonExtendable
-	public interface Builder {
+	interface Builder {
 		Builder level(World level);
 
 		Builder player(PlayerEntity player);

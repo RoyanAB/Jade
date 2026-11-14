@@ -20,7 +20,7 @@ public class Identifiers {
 	public static final Identifier DEBUG_SPECIAL_REGISTRY_NAME = JADE("registry_name.special");
 	public static final Identifier DEBUG_BLOCK_STATES = JADE("block_states");
 	public static final Identifier UNIVERSAL_ITEM_STORAGE = MC("item_storage");
-//	public static final Identifier UNIVERSAL_FLUID_STORAGE = MC("fluid_storage");
+	//	public static final Identifier UNIVERSAL_FLUID_STORAGE = MC("fluid_storage");
 //	public static final Identifier UNIVERSAL_FLUID_STORAGE_DETAILED = MC("fluid_storage.detailed");
 //	public static final Identifier UNIVERSAL_ENERGY_STORAGE = MC("energy_storage");
 //	public static final Identifier UNIVERSAL_ENERGY_STORAGE_DETAILED = MC("energy_storage.detailed");

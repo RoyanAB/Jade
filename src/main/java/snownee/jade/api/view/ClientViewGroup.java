@@ -4,11 +4,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.api.ITooltip;
-import snownee.jade.api.ui.BoxStyle;
-import snownee.jade.api.ui.Direction2D;
-import snownee.jade.api.ui.IBoxElement;
-import snownee.jade.api.ui.IElementHelper;
-import snownee.jade.api.ui.MessageType;
+import snownee.jade.api.ui.*;
 import snownee.jade.impl.ui.HorizontalLineElement;
 
 import java.util.ArrayList;

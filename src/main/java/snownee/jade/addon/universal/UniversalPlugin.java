@@ -6,11 +6,7 @@ import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
-import snownee.jade.api.Identifiers;
-import snownee.jade.api.IWailaClientRegistration;
-import snownee.jade.api.IWailaCommonRegistration;
-import snownee.jade.api.IWailaPlugin;
-import snownee.jade.api.WailaPlugin;
+import snownee.jade.api.*;
 
 @WailaPlugin
 public class UniversalPlugin implements IWailaPlugin {

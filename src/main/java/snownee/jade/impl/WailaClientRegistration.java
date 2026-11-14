@@ -1,8 +1,6 @@
 package snownee.jade.impl;
 
 import com.google.common.collect.Maps;
-import snownee.jade.api.view.IClientExtensionProvider;
-import snownee.jade.api.view.ItemView;
 import com.google.common.collect.Sets;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.BlockState;
@@ -21,6 +19,8 @@ import snownee.jade.api.*;
 import snownee.jade.api.callback.*;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.platform.CustomEnchantPower;
+import snownee.jade.api.view.IClientExtensionProvider;
+import snownee.jade.api.view.ItemView;
 import snownee.jade.gui.PluginsConfigScreen;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.impl.config.PluginConfig;

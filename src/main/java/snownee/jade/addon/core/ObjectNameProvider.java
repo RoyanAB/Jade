@@ -1,9 +1,13 @@
 package snownee.jade.addon.core;
 
+import net.minecraft.block.ChestBlock;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.ChestBlockEntity;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.inventory.menu.LockableMenuProvider;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.Identifier;
@@ -14,6 +18,7 @@ import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.impl.WailaClientRegistration;
+import snownee.jade.util.CommonProxy;
 
 public enum ObjectNameProvider
 	implements IBlockComponentProvider, IEntityComponentProvider, IServerDataProvider<BlockAccessor> {
@@ -22,6 +27,12 @@ public enum ObjectNameProvider
 
 	public static Text getEntityName(Entity entity) {
 		if (!entity.hasCustomName()) {
+			if (WailaClientRegistration.instance().shouldPick(entity)) {
+				ItemStack stack = CommonProxy.getEntityPickedResult(entity, Minecraft.getInstance().player, null);
+				if (stack != null && !stack.isEmpty()) {
+					return new LiteralText(stack.getHoverName());
+				}
+			}
 			if (entity instanceof ItemEntity) {
 				return new LiteralText(((ItemEntity) entity).getItem().getHoverName());
 			}
@@ -75,7 +86,13 @@ public enum ObjectNameProvider
 		if (blockEntity instanceof Nameable) {
 			Nameable nameable = (Nameable) blockEntity;
 			Text name = null;
-			if (nameable.hasCustomName()) {
+			//port: 1.12 has no MenuProvider on the block state, the combined chest provider carries "Large Chest"
+			if (blockEntity instanceof ChestBlockEntity && accessor.getBlock() instanceof ChestBlock) {
+				LockableMenuProvider provider = ((ChestBlock) accessor.getBlock()).getCombinedMenuProvider(accessor.getLevel(), accessor.getPosition(), false);
+				if (provider != null) {
+					name = provider.getDisplayName();
+				}
+			} else if (nameable.hasCustomName()) {
 				name = nameable.getDisplayName();
 			}
 			if (name != null) {

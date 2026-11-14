@@ -1,5 +1,6 @@
 package snownee.jade.addon.vanilla;
 
+import net.minecraft.block.state.BlockState;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.item.ItemStack;
@@ -28,7 +29,9 @@ public enum FallingBlockProvider implements IEntityComponentProvider {
 	@Override
 	public IElement getIcon(EntityAccessor accessor, IPluginConfig config, IElement currentIcon) {
 		FallingBlockEntity entity = (FallingBlockEntity) accessor.getEntity();
-		ItemStack stack = new ItemStack(entity.getBlock().getBlock());
+		//port: keep the metadata, otherwise every falling log would look like oak
+		BlockState state = entity.getBlock();
+		ItemStack stack = new ItemStack(state.getBlock(), 1, state.getBlock().getMetadataFromState(state));
 		if (stack.isEmpty()) {
 			return currentIcon;
 		}

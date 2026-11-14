@@ -8,6 +8,7 @@ import net.minecraft.item.Items;
 import net.minecraft.resource.Identifier;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -55,11 +56,10 @@ public enum CropProgressProvider implements IBlockComponentProvider {
 	private static void addMaturityTooltip(ITooltip tooltip, float growthValue) {
 		growthValue *= 100.0F;
 		if (growthValue < 100.0F) {
-			tooltip.add(new LiteralText(I18n.translate("tooltip.jade.crop_growth",
-				IThemeHelper.get().info(String.format("%.0f%%", growthValue)).getFormattedString())));
+			tooltip.add(new TranslatableText("tooltip.jade.crop_growth", IThemeHelper.get().info(String.format("%.0f%%", growthValue))));
 		} else {
 			Text mature = IThemeHelper.get().success(new LiteralText(I18n.translate("tooltip.jade.crop_mature")));
-			tooltip.add(new LiteralText(I18n.translate("tooltip.jade.crop_growth", mature.getFormattedString())));
+			tooltip.add(new TranslatableText("tooltip.jade.crop_growth", mature));
 		}
 	}
 

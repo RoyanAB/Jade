@@ -2,11 +2,11 @@ package snownee.jade.impl;
 
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.resource.Identifier;
 import snownee.jade.Jade;
 import snownee.jade.api.*;
 import snownee.jade.api.view.IServerExtensionProvider;
-import net.minecraft.item.ItemStack;
 import snownee.jade.impl.config.PluginConfig;
 
 import java.util.ArrayList;

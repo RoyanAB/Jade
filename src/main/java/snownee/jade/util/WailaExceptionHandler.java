@@ -1,11 +1,10 @@
 package snownee.jade.util;
 
 import com.google.common.collect.Sets;
-import net.minecraft.client.resource.language.I18n;
 import net.minecraft.text.Formatting;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
@@ -52,7 +51,7 @@ public class WailaExceptionHandler {
 			if (modid == null || "minecraft".equals(modid)) {
 				modid = Jade.MODID;
 			}
-			Text text = new LiteralText(String.format(I18n.translate("jade.error"), ModIdentification.getModName(modid)));
+			Text text = new TranslatableText("jade.error", ModIdentification.getModName(modid));
 			text.setStyle(new Style().setColor(Formatting.DARK_RED));
 			tooltip.add(text);
 		}

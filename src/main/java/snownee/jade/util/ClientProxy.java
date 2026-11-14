@@ -5,15 +5,15 @@ import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.ModMetadata;
+import net.minecraft.block.Block;
+import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.nbt.NbtCompound;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
-import net.minecraft.block.material.Material;
-import net.minecraft.block.Block;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.GameMode;
 import net.ornithemc.osl.entrypoints.api.client.ClientModInitializer;
 import net.ornithemc.osl.keybinds.api.KeyBindingEvents;
@@ -28,10 +28,9 @@ import snownee.jade.Jade;
 import snownee.jade.JadeClient;
 import snownee.jade.addon.harvest.HarvestToolProvider;
 import snownee.jade.api.BlockAccessor;
-import snownee.jade.impl.ui.ItemStackElement;
-import snownee.jade.api.ui.IElement;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.Identifiers;
+import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.Rect2i;
 import snownee.jade.gui.BaseOptionsScreen;
 import snownee.jade.impl.BlockAccessorImpl;
@@ -39,6 +38,7 @@ import snownee.jade.impl.EntityAccessorImpl;
 import snownee.jade.impl.ObjectDataCenter;
 import snownee.jade.impl.config.PluginConfig;
 import snownee.jade.impl.theme.ThemeHelper;
+import snownee.jade.impl.ui.ItemStackElement;
 import snownee.jade.mixin.BossEventOverlayAccess;
 import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.overlay.OverlayRenderer;
@@ -191,6 +191,7 @@ public final class ClientProxy implements ClientModInitializer {
 			HarvestToolProvider.clearCache();
 		});
 	}
+
 	/**
 	 * 1.12 has no fluid render API, so the closest thing to a fluid icon is its bucket.
 	 */
