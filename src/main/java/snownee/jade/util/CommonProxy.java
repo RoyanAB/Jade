@@ -1,6 +1,7 @@
 package snownee.jade.util;
 
 import com.google.common.base.Strings;
+import com.google.common.cache.Cache;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
 import net.fabricmc.api.EnvType;
@@ -10,10 +11,15 @@ import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DoublePlantBlock;
 import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.entity.ChestBlockEntity;
+import net.minecraft.block.ChestBlock;
+import net.minecraft.entity.living.mob.passive.animal.HorseBaseEntity;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.entity.Entities;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.living.mob.monster.boss.EnderDragon;
 import net.minecraft.entity.living.mob.monster.boss.EnderDragonEntity;
 import net.minecraft.entity.living.mob.monster.boss.EnderDragonPart;
 import net.minecraft.entity.living.mob.monster.boss.WitherEntity;
@@ -21,6 +27,8 @@ import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.item.EnchantedBookItem;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.entity.living.LivingEntity;
 import net.minecraft.item.ShearsItem;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtList;
@@ -37,9 +45,15 @@ import net.ornithemc.osl.networking.api.server.ServerConnectionEvents;
 import net.ornithemc.osl.networking.api.server.ServerPlayNetworking;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
+import snownee.jade.api.Accessor;
 import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.WailaPlugin;
+import snownee.jade.addon.universal.ItemCollector;
+import snownee.jade.addon.universal.ItemIterator;
+import snownee.jade.addon.universal.ItemStorageProvider;
+import snownee.jade.api.view.ViewGroup;
+import snownee.jade.mixin.HorseBaseEntityAccess;
 import snownee.jade.impl.BlockAccessorImpl;
 import snownee.jade.impl.EntityAccessorImpl;
 import snownee.jade.impl.WailaClientRegistration;
@@ -47,6 +61,8 @@ import snownee.jade.impl.WailaCommonRegistration;
 import snownee.jade.impl.config.PluginConfig;
 
 import java.io.File;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
@@ -151,6 +167,19 @@ public final class CommonProxy implements ModInitializer {
 	}
 
 	public static ItemStack getEntityPickedResult(Entity entity, PlayerEntity player, HitResult hitResult) {
+		//port: 1.12 has no Entity#getPickResult, spawn eggs carry the entity id in their nbt
+		if (entity instanceof LivingEntity) {
+			Identifier id = Entities.getKey(entity);
+			if (id != null) {
+				ItemStack stack = new ItemStack(Items.SPAWN_EGG);
+				NbtCompound entityTag = new NbtCompound();
+				entityTag.putString("id", id.toString());
+				NbtCompound tag = new NbtCompound();
+				tag.put("EntityTag", entityTag);
+				stack.setNbt(tag);
+				return stack;
+			}
+		}
 		return ItemStack.EMPTY;
 	}
 
@@ -193,7 +222,7 @@ public final class CommonProxy implements ModInitializer {
 	}
 
 	public static boolean isMultipartEntity(Entity target) {
-		return target instanceof EnderDragonPart;
+		return target instanceof EnderDragon;
 	}
 
 	public static Entity wrapPartEntityParent(Entity target) {
@@ -299,4 +328,52 @@ public final class CommonProxy implements ModInitializer {
 		}
 		return players.size();
 	}
+
+	public static ItemCollector<?> createItemCollector(Object target, Cache<Object, ItemCollector<?>> containerCache) {
+		if (target instanceof HorseBaseEntity) {
+			return new ItemCollector<>(new ItemIterator.ContainerItemIterator(o -> {
+				if (o instanceof HorseBaseEntity) {
+					return ((HorseBaseEntityAccess) o).jade$getInventory();
+				}
+				return null;
+			}, 2));
+		}
+		if (target instanceof ChestBlockEntity) {
+			return new ItemCollector<>(new ItemIterator.ContainerItemIterator(o -> {
+				if (o instanceof ChestBlockEntity) {
+					ChestBlockEntity be = (ChestBlockEntity) o;
+					if (be.getBlock() instanceof ChestBlock && be.getWorld() != null) {
+						Inventory compound = ((ChestBlock) be.getBlock()).getCombinedMenuProvider(be.getWorld(), be.getPos(), false);
+						if (compound != null) {
+							return compound;
+						}
+					}
+					return be;
+				}
+				return null;
+			}, 0));
+		}
+		if (target instanceof Inventory) {
+			return new ItemCollector<>(new ItemIterator.ContainerItemIterator(0));
+		}
+		return ItemCollector.EMPTY;
+	}
+
+	@Nullable
+	public static List<ViewGroup<ItemStack>> containerGroup(Inventory container, Accessor<?> accessor) {
+		try {
+			return ItemStorageProvider.INSTANCE.containerCache.get(container, () -> new ItemCollector<>(new ItemIterator.ContainerItemIterator(0))).update(container, accessor.getLevel().getTime());
+		} catch (ExecutionException e) {
+			return null;
+		}
+	}
+
+	@Nullable
+	public static List<ViewGroup<ItemStack>> storageGroup(Object storage, Accessor<?> accessor) {
+		if (storage instanceof Inventory) {
+			return containerGroup((Inventory) storage, accessor);
+		}
+		return null;
+	}
+
 }

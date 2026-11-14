@@ -10,6 +10,10 @@ import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.block.material.Material;
+import net.minecraft.block.Block;
 import net.minecraft.world.GameMode;
 import net.ornithemc.osl.entrypoints.api.client.ClientModInitializer;
 import net.ornithemc.osl.keybinds.api.KeyBindingEvents;
@@ -24,6 +28,8 @@ import snownee.jade.Jade;
 import snownee.jade.JadeClient;
 import snownee.jade.addon.harvest.HarvestToolProvider;
 import snownee.jade.api.BlockAccessor;
+import snownee.jade.impl.ui.ItemStackElement;
+import snownee.jade.api.ui.IElement;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.ui.Rect2i;
@@ -185,4 +191,15 @@ public final class ClientProxy implements ClientModInitializer {
 			HarvestToolProvider.clearCache();
 		});
 	}
+	/**
+	 * 1.12 has no fluid render API, so the closest thing to a fluid icon is its bucket.
+	 */
+	public static IElement elementFromLiquid(Block block) {
+		if (block.getMaterial(block.defaultState()) == Material.LAVA) {
+			return ItemStackElement.of(new ItemStack(Items.LAVA_BUCKET));
+		}
+		return ItemStackElement.of(new ItemStack(Items.WATER_BUCKET));
+	}
+
+
 }

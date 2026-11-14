@@ -1,5 +1,6 @@
 package snownee.jade.impl;
 
+import com.google.common.base.Suppliers;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -10,6 +11,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.HitResult;
 import net.minecraft.world.World;
 import net.ornithemc.osl.networking.api.PacketBuffer;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.AccessorImpl;
 import snownee.jade.api.EntityAccessor;
@@ -35,26 +37,21 @@ public class EntityAccessorImpl extends AccessorImpl<HitResult> implements Entit
 
 	public static void handleRequest(SyncData data, ServerPlayerEntity player, Consumer<Runnable> executor, Consumer<NbtCompound> responseSender) {
 		executor.accept(() -> {
-			Entity target = CommonProxy.getPartEntity(data.unpackEntity(player), data.partIndex);
-			if (target == null)
+			EntityAccessor accessor = data.unpack(player);
+			if (accessor == null) {
 				return;
-			Entity entity = CommonProxy.wrapPartEntityParent(target);
-			if (player.getSquaredDistanceTo(new BlockPos(entity.x, entity.y, entity.z)) > Jade.MAX_DISTANCE_SQR)
+			}
+			Entity entity = accessor.getEntity();
+			if (entity == null || player.getSquaredDistanceTo(new BlockPos(entity.x, entity.y, entity.z)) > Jade.MAX_DISTANCE_SQR) {
 				return;
+			}
 			List<IServerDataProvider<EntityAccessor>> providers = WailaCommonRegistration.instance().getEntityNBTProviders(entity);
-			if (providers.isEmpty())
+			if (providers.isEmpty()) {
 				return;
+			}
 
-			EntityAccessor accessor = new Builder()
-				.level(player.world)
-				.player(player)
-				.serverConnected(true)
-				.showDetails(data.showDetails)
-				.entity(() -> target)
-				.hit(() -> new HitResult(target, data.hitVec))
-				.build();
-
-			NbtCompound tag = new NbtCompound();
+			// the accessor owns the tag, providers write into it directly (same as the original)
+			NbtCompound tag = accessor.getServerData();
 			for (IServerDataProvider<EntityAccessor> provider : providers) {
 				try {
 					provider.appendServerData(tag, accessor);
@@ -101,11 +98,6 @@ public class EntityAccessorImpl extends AccessorImpl<HitResult> implements Entit
 		if (!data.contains("WailaEntityID"))
 			return false;
 		return data.getInt("WailaEntityID") == getEntity().getNetworkId();
-	}
-
-	@Override
-	public Class<? extends snownee.jade.api.Accessor<?>> getAccessorType() {
-		return EntityAccessor.class;
 	}
 
 	public static class Builder implements EntityAccessor.Builder {
@@ -218,8 +210,16 @@ public class EntityAccessorImpl extends AccessorImpl<HitResult> implements Entit
 			buffer.writeFloat((float) hitVec.z);
 		}
 
-		public Entity unpackEntity(ServerPlayerEntity player) {
-			return player.world.getEntity(id);
+		@Nullable
+		public EntityAccessor unpack(ServerPlayerEntity player) {
+			Supplier<Entity> entity = Suppliers.memoize(() -> CommonProxy.getPartEntity(player.world.getEntity(id), partIndex));
+			return new EntityAccessorImpl.Builder()
+				.level(player.world)
+				.player(player)
+				.showDetails(showDetails)
+				.entity(entity)
+				.hit(Suppliers.memoize(() -> new HitResult(entity.get(), hitVec)))
+				.build();
 		}
 	}
 }

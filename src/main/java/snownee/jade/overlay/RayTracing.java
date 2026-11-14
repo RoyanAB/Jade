@@ -6,6 +6,7 @@ import net.minecraft.block.Blocks;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.living.mob.monster.boss.EnderDragonPart;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.util.math.BlockPos;
@@ -163,7 +164,10 @@ public class RayTracing {
 			return false;
 		if (target instanceof ProjectileEntity && target.ticks <= 10)
 			return false;
-		if (CommonProxy.isMultipartEntity(target))
+		if (CommonProxy.isMultipartEntity(target) && !target.isAlive())
+			return false;
+		//port: 1.12 lists dragon parts as separate entities, never target them directly
+		if (target instanceof EnderDragonPart)
 			return false;
 		if (viewEntity instanceof PlayerEntity) {
 			PlayerEntity player = (PlayerEntity) viewEntity;

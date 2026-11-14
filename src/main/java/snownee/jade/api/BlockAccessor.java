@@ -42,7 +42,7 @@ public interface BlockAccessor extends Accessor<HitResult> {
 	}
 
 	@NonExtendable
-	interface Builder {
+	public interface Builder {
 		Builder level(World level);
 
 		Builder player(PlayerEntity player);

@@ -5,6 +5,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.resource.Identifier;
 import snownee.jade.Jade;
 import snownee.jade.api.*;
+import snownee.jade.api.view.IServerExtensionProvider;
+import net.minecraft.item.ItemStack;
 import snownee.jade.impl.config.PluginConfig;
 
 import java.util.ArrayList;
@@ -18,11 +20,13 @@ public class WailaCommonRegistration implements IWailaCommonRegistration {
 
 	public final HierarchyLookup<IServerDataProvider<BlockAccessor>> blockDataProviders;
 	public final HierarchyLookup<IServerDataProvider<EntityAccessor>> entityDataProviders;
+	public final HierarchyLookup<IServerExtensionProvider<Object, ItemStack>> itemStorageProviders;
 	public final PriorityStore<Identifier, IJadeProvider> priorities;
 
 	WailaCommonRegistration() {
 		blockDataProviders = new HierarchyLookup<>(BlockEntity.class);
 		entityDataProviders = new HierarchyLookup<>(Entity.class);
+		itemStorageProviders = new HierarchyLookup<>(Object.class, true);
 		priorities = new PriorityStore<>(IJadeProvider::getDefaultPriority, IJadeProvider::getUid);
 		priorities.setSortingFunction((store, allKeys) -> {
 			List<Identifier> keys = allKeys.stream()
@@ -52,6 +56,11 @@ public class WailaCommonRegistration implements IWailaCommonRegistration {
 		entityDataProviders.register(entity, dataProvider);
 	}
 
+	@Override
+	public <T> void registerItemStorage(IServerExtensionProvider<T, ItemStack> provider, Class<? extends T> clazz) {
+		itemStorageProviders.register(clazz, (IServerExtensionProvider<Object, ItemStack>) provider);
+	}
+
 	public List<IServerDataProvider<BlockAccessor>> getBlockNBTProviders(BlockEntity block) {
 		return blockDataProviders.get(block);
 	}
@@ -63,6 +72,7 @@ public class WailaCommonRegistration implements IWailaCommonRegistration {
 	public void loadComplete() {
 		blockDataProviders.loadComplete(priorities);
 		entityDataProviders.loadComplete(priorities);
+		itemStorageProviders.loadComplete(priorities);
 	}
 
 }

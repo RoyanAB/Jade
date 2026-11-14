@@ -2,11 +2,13 @@ package snownee.jade.impl;
 
 import com.google.common.base.Suppliers;
 import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.entity.living.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.resource.Identifier;
 import net.minecraft.server.entity.living.player.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
@@ -44,40 +46,31 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 		fakeBlock = builder.fakeBlock;
 	}
 
-	private static double distanceSq(BlockPos pos, ServerPlayerEntity player) {
-		double dx = player.x - (pos.getX() + 0.5);
-		double dy = player.y - (pos.getY() + 0.5);
-		double dz = player.z - (pos.getZ() + 0.5);
-		return dx * dx + dy * dy + dz * dz;
-	}
-
 	public static void handleRequest(SyncData data, ServerPlayerEntity player, Consumer<Runnable> executor, Consumer<NbtCompound> responseSender) {
 		executor.accept(() -> {
-			BlockPos pos = data.pos;
+			BlockAccessor accessor = data.unpack(player);
+			if (accessor == null) {
+				return;
+			}
+			BlockPos pos = accessor.getPosition();
 			World world = player.world;
-			if (distanceSq(pos, player) > Jade.MAX_DISTANCE_SQR || !world.isChunkLoaded(pos))
+			//port: 1.20 uses pos.distSqr(player.blockPosition()), 1.12 only offers this helper
+			if (player.getSquaredDistanceToCenter(pos) > Jade.MAX_DISTANCE_SQR || !world.isChunkLoaded(pos)) {
 				return;
+			}
 
-			BlockEntity tile = world.getBlockEntity(pos);
-			if (tile == null)
+			BlockEntity tile = accessor.getBlockEntity();
+			if (tile == null) {
 				return;
+			}
 
 			List<IServerDataProvider<BlockAccessor>> providers = WailaCommonRegistration.instance().getBlockNBTProviders(tile);
-			if (providers.isEmpty())
+			if (providers.isEmpty()) {
 				return;
+			}
 
-			BlockAccessor accessor = new Builder()
-				.level(world)
-				.player(player)
-				.serverConnected(true)
-				.showDetails(data.showDetails)
-				.hit(data.hit)
-				.blockState(world.getBlockState(pos))
-				.blockEntity(tile)
-				.fakeBlock(data.fakeBlock)
-				.build();
-
-			NbtCompound tag = new NbtCompound();
+			// the accessor owns the tag, providers write into it directly (same as the original)
+			NbtCompound tag = accessor.getServerData();
 			for (IServerDataProvider<BlockAccessor> provider : providers) {
 				try {
 					provider.appendServerData(tag, accessor);
@@ -89,6 +82,8 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 			tag.putInt("x", pos.getX());
 			tag.putInt("y", pos.getY());
 			tag.putInt("z", pos.getZ());
+			Identifier id = CommonProxy.getId(tile.getBlock());
+			tag.putString("id", id == null ? "unknown" : id.toString());
 			responseSender.accept(tag);
 		});
 	}
@@ -159,11 +154,6 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 		return data.getInt("x") == getPosition().getX() && data.getInt("y") == getPosition().getY() && data.getInt("z") == getPosition().getZ();
 	}
 
-	@Override
-	public Class<? extends snownee.jade.api.Accessor<?>> getAccessorType() {
-		return BlockAccessor.class;
-	}
-
 	public static class Builder implements BlockAccessor.Builder {
 		private World level;
 		private PlayerEntity player;
@@ -171,10 +161,11 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 		private boolean connected;
 		private boolean showDetails;
 		private HitResult hit;
-		private BlockState blockState;
+		private BlockState blockState = Blocks.AIR.defaultState();
 		@Nullable
 		private Supplier<BlockEntity> blockEntity;
 		private ItemStack fakeBlock = ItemStack.EMPTY;
+		private boolean verify;
 
 		@Override
 		public Builder level(World level) {
@@ -232,16 +223,21 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 
 		@Override
 		public Builder from(BlockAccessor accessor) {
-			level(accessor.getLevel()).player(accessor.getPlayer()).serverData(accessor.getServerData()).serverConnected(accessor.isServerConnected()).showDetails(accessor.showDetails());
-			hit(accessor.getHitResult());
-			blockState(accessor.getBlockState());
-			blockEntity(accessor::getBlockEntity);
+			level = accessor.getLevel();
+			player = accessor.getPlayer();
+			serverData = accessor.getServerData();
+			connected = accessor.isServerConnected();
+			showDetails = accessor.showDetails();
+			hit = accessor.getHitResult();
+			blockState = accessor.getBlockState();
+			blockEntity = accessor::getBlockEntity;
 			fakeBlock = accessor.getFakeBlock();
 			return this;
 		}
 
 		@Override
 		public Builder requireVerification() {
+			verify = true;
 			return this;
 		}
 
@@ -251,41 +247,68 @@ public class BlockAccessorImpl extends AccessorImpl<HitResult> implements BlockA
 			Objects.requireNonNull(player);
 			Objects.requireNonNull(hit);
 			Objects.requireNonNull(blockState);
-			return new BlockAccessorImpl(this);
+			BlockAccessorImpl accessor = new BlockAccessorImpl(this);
+			if (verify) {
+				accessor.requireVerification();
+			}
+			return accessor;
 		}
 	}
 
 	public static class SyncData {
 		public final boolean showDetails;
-		public final BlockPos pos;
 		public final HitResult hit;
+		public final BlockState blockState;
 		public final ItemStack fakeBlock;
 
 		public SyncData(BlockAccessor accessor) {
 			showDetails = accessor.showDetails();
-			pos = accessor.getPosition();
 			hit = accessor.getHitResult();
+			blockState = accessor.getBlockState();
 			fakeBlock = accessor.getFakeBlock();
 		}
 
-		public SyncData(PacketBuffer buf) {
-			showDetails = buf.readBoolean();
-			pos = buf.readBlockPos();
-			int face = buf.readByte();
-			Vec3d hitVec = new Vec3d(buf.readFloat(), buf.readFloat(), buf.readFloat());
+		public SyncData(PacketBuffer buffer) {
+			showDetails = buffer.readBoolean();
+			BlockPos pos = buffer.readBlockPos();
+			int face = buffer.readByte();
+			Vec3d hitVec = new Vec3d(buffer.readFloat(), buffer.readFloat(), buffer.readFloat());
 			hit = new HitResult(hitVec, face < 0 || face > 5 ? Direction.UP : Direction.byId(face), pos);
-			fakeBlock = buf.readItem();
+			//port: 1.12 has no Block.stateById, Block.serialize packs block id + metadata
+			int stateId = buffer.readVarInt();
+			Block block = stateId == 0 ? null : Block.byId(stateId & 0xFFF);
+			blockState = block == null ? Blocks.AIR.defaultState() : block.getStateFromMetadata(stateId >> 12);
+			fakeBlock = buffer.readItem();
 		}
 
-		public void write(PacketBuffer buf) {
-			buf.writeBoolean(showDetails);
-			buf.writeBlockPos(hit.getPos());
-			buf.writeByte(hit.face == null ? 0 : hit.face.getId());
-			Vec3d hitVec = hit.facePos == null ? new Vec3d(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5) : hit.facePos;
-			buf.writeFloat((float) hitVec.x);
-			buf.writeFloat((float) hitVec.y);
-			buf.writeFloat((float) hitVec.z);
-			buf.writeItem(fakeBlock);
+		public void write(PacketBuffer buffer) {
+			buffer.writeBoolean(showDetails);
+			buffer.writeBlockPos(hit.getPos());
+			buffer.writeByte(hit.face == null ? 0 : hit.face.getId());
+			Vec3d hitVec = hit.facePos == null ? new Vec3d(hit.getPos().getX() + 0.5, hit.getPos().getY() + 0.5, hit.getPos().getZ() + 0.5) : hit.facePos;
+			buffer.writeFloat((float) hitVec.x);
+			buffer.writeFloat((float) hitVec.y);
+			buffer.writeFloat((float) hitVec.z);
+			buffer.writeVarInt(Block.serialize(blockState));
+			buffer.writeItem(fakeBlock);
+		}
+
+		@Nullable
+		public BlockAccessor unpack(ServerPlayerEntity player) {
+			Supplier<BlockEntity> blockEntity = null;
+			if (blockState.getBlock().hasBlockEntity()) {
+				BlockPos pos = hit.getPos();
+				blockEntity = Suppliers.memoize(() -> player.world.getBlockEntity(pos));
+			}
+			return new Builder()
+				.level(player.world)
+				.player(player)
+				.showDetails(showDetails)
+				.hit(hit)
+				.blockState(blockState)
+				.blockEntity(blockEntity)
+				.fakeBlock(fakeBlock)
+				.build();
 		}
 	}
 }

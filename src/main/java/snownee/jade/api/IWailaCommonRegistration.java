@@ -2,6 +2,8 @@ package snownee.jade.api;
 
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
+import snownee.jade.api.view.IServerExtensionProvider;
 
 public interface IWailaCommonRegistration {
 
@@ -20,5 +22,7 @@ public interface IWailaCommonRegistration {
 	 * @param entity       The highest level class to apply to
 	 */
 	void registerEntityDataProvider(IServerDataProvider<EntityAccessor> dataProvider, Class<? extends Entity> entity);
+
+	<T> void registerItemStorage(IServerExtensionProvider<T, ItemStack> provider, Class<? extends T> clazz);
 
 }

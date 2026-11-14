@@ -1,6 +1,8 @@
 package snownee.jade.impl;
 
 import com.google.common.collect.Maps;
+import snownee.jade.api.view.IClientExtensionProvider;
+import snownee.jade.api.view.ItemView;
 import com.google.common.collect.Sets;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.BlockState;
@@ -37,6 +39,7 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 
 	private static final WailaClientRegistration INSTANCE = new WailaClientRegistration();
 
+	public final Map<Identifier, IClientExtensionProvider<ItemStack, ItemView>> itemStorageProviders = Maps.newHashMap();
 	public final HierarchyLookup<IBlockComponentProvider> blockIconProviders;
 	public final HierarchyLookup<IBlockComponentProvider> blockComponentProviders;
 
@@ -198,6 +201,12 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	@Override
 	public void addConfigListener(Identifier key, Consumer<Identifier> listener) {
 		PluginConfig.INSTANCE.addConfigListener(key, listener);
+	}
+
+	@Override
+	public void registerItemStorageClient(IClientExtensionProvider<ItemStack, ItemView> provider) {
+		Objects.requireNonNull(provider.getUid());
+		itemStorageProviders.put(provider.getUid(), provider);
 	}
 
 	@Override

@@ -118,9 +118,7 @@ public class DisplayHelper implements IDisplayHelper {
 		Lighting.turnOnGui();
 		GlStateManager.enableDepthTest();
 		mc.getItemRenderer().renderGuiItem(stack, 0, 0);
-		ItemStack overlayRender = stack.copy();
-		overlayRender.setSize(1);
-		mc.getItemRenderer().renderGuiItemDecorations(mc.textRenderer, overlayRender, 0, 0, text);
+		mc.getItemRenderer().renderGuiItemDecorations(mc.textRenderer, stack, 0, 0, text);
 		Lighting.turnOff();
 		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		GlStateManager.popMatrix();

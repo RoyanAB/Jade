@@ -1604,6 +1604,575 @@ renderAmount(mc.textRenderer, stack, text);
 | `BoxStyle` / `ColorPalette` | ✓（数组长度校验见 6.6） |
 | `Theme.iconSlotInflation` | ✓ 用于图标槽 padding |
 
+## 6.20 移植 universal 包（物品部分）
+
+之前 `addon/universal` 整包没移植（依赖流体/存储 API）。这次把**物品相关**的部分补齐了。
+
+### 新增文件（11 个）
+
+| 文件 | 说明 |
+|---|---|
+| `api/view/ViewGroup` | 视图组的 NBT 序列化（`NbtList` 不支持 foreach，改成下标循环） |
+| `api/view/ItemView` | 物品视图（`Container` → `Inventory`） |
+| `api/view/ClientViewGroup` | 客户端视图组（`Component` → `Text`，其余逐行对应） |
+| `api/view/IServerExtensionProvider` | 服务端扩展 provider 接口 |
+| `api/view/IClientExtensionProvider` | 客户端扩展 provider 接口 |
+| `addon/universal/ItemIterator` | 容器迭代器（`Container#getContainerSize/getItem` → `Inventory#getSize/getItem`） |
+| `addon/universal/ItemCollector` | 物品汇总/缓存（record `ItemDefinition` → 手写 `equals`/`hashCode`，否则 map 去重失效） |
+| `addon/universal/ItemStorageProvider` | 方块容器（箱子/桶/熔炉除外…） |
+| `addon/universal/EntityItemStorageProvider` | 实体容器（马） |
+| `addon/universal/UniversalPlugin` | 只注册物品部分 |
+| `mixin/HorseBaseEntityAccess` | 访问马的 `inventory` 字段（1.12 没有 `AbstractHorseAccess`） |
+
+### 1.12 适配要点
+
+| 原版 1.20 | 1.12 |
+|---|---|
+| `Container` | `Inventory`（`getSize()`/`getItem(int)`） |
+| `stack.getTag()/setTag()` | `getNbt()/setNbt()` |
+| `stack.getCount()/setCount()` | `getSize()/setSize()` |
+| `getAllKeys()` | `getKeys()` |
+| `record ItemDefinition` | 普通类 + 手写 `equals`/`hashCode`（`item` 用 `==`，`tag` 用 `NbtCompound.equals`） |
+| `RandomizableContainer` + `ContainerEntity` 的 `getLootTable()` | `LootInventoryBlockEntity#getLootTableId()` |
+| `LockCode` / `BaseContainerBlockEntity.lockKey` | 1.12 无锁码机制，跳过（`getCombinedMenuProvider(..., false)` 遇到上锁箱子会返回 null，回退到单箱子） |
+| `AbstractFurnaceBlockEntity` | `FurnaceBlockEntity` |
+| `PlayerEnderChestContainer` | `player.getEnderChestInventory()` |
+| `AbstractHorseAccess#getInventory()` | `HorseBaseEntityAccess#jade$getInventory()`（mixin 访问 `inventory` 字段） |
+| `ChestBlock.getContainer(...)` | `ChestBlock#getCombinedMenuProvider(world, pos, false)`（返回 `LockableMenuProvider`，本身就是 `Inventory`，双箱子会合并成 `DoubleInventory`） |
+| Fabric `ItemStorage.SIDED` | 1.12 无存储 API；`createItemCollector` 只认 `Inventory` |
+| `Component.translatable` | `new LiteralText(I18n.translate(...))` |
+| `" %s%%".formatted(x)` | `String.format(" %s%%", x)` |
+| `List.of` / `toList()` | `Collections.singletonList` / 循环 |
+
+### 注册链路
+
+- `IWailaCommonRegistration#registerItemStorage` + `WailaCommonRegistration.itemStorageProviders`
+  （`HierarchyLookup<>(Object.class, true)`，`loadComplete` 里补了 `itemStorageProviders.loadComplete(priorities)`）
+- `IWailaClientRegistration#registerItemStorageClient` + `WailaClientRegistration.itemStorageProviders`
+  （`Map<Identifier, IClientExtensionProvider<ItemStack, ItemView>>`）
+- `CommonProxy#createItemCollector / containerGroup / storageGroup`
+- `Identifiers.UNIVERSAL_ITEM_STORAGE` 从注释里放出来
+- `fabric.mod.json` 的 `jade` entrypoint 加上 `UniversalPlugin`
+
+### 功能
+
+- 箱子 / 大箱子 / 木桶 / 漏斗 / 发射器 / 投掷器 / 熔炉（跳过）/ 酿造台 / 唱片机 / 潜影盒（1.12 无）… 只要是 `Inventory`
+- 玩家末影箱（显示玩家自己的末影箱内容，与原版一致）
+- 马/驴/骡的背包（从索引 2 开始，跳过鞍和 armor）
+- 战利品箱未生成 → 显示 `jade.loot_not_generated`
+- 超过 54 种物品时分批收集，显示 `jade.collectingItems` 进度
+- 4 个配置项：`item_storage.detailed_amount` / `normal_amount` / `show_name_amount` / `items_per_line`
+  （lang 键本来就齐全 ✓）
+
+### 未移植（仍属于流体/能量/进度）
+
+`FluidStorageProvider`、`EntityFluidStorageProvider`、`EnergyStorageProvider`、
+`EntityEnergyStorageProvider`、`ProgressProvider`、`EntityProgressProvider` —— 1.12 没有流体/能量 API，
+进度视图也没有对应场景。
+
+## 6.21 universal 物品部分的复查
+
+逐行对照 `ItemStorageProvider` / `ItemCollector` / `ItemIterator` / `api/view/*` 与原版，
+并回查 1.12 源码。
+
+### 找到并修复：`Locked` 没实现（1.12 其实有锁）
+
+我第一版以为 1.12 没有锁码机制，直接把 `Locked` 分支跳过了 —— 但 1.12 **有**：
+
+```java
+public interface LockableMenuProvider extends Inventory, MenuProvider {
+    boolean isLocked();
+    ...
+}
+public class InventoryBlockEntity extends BlockEntity implements LockableMenuProvider { ... }
+public class InventoryLock {
+    public static final InventoryLock NONE = new InventoryLock("");
+    public boolean isEmpty() { ... }
+}
+```
+
+箱子可以用 `/setblock ... {Lock:"钥匙"}` 上锁，`ChestBlock.isLocked(world, pos)` 也会因此返回 true。
+所以补回了原版的两处：
+
+```java
+// getGroups：上锁的容器不显示内容（创造/旁观模式除外）
+if (player != null && !player.abilities.creativeMode && !player.isSpectator()
+        && target instanceof LockableMenuProvider && ((LockableMenuProvider) target).isLocked()) {
+    return Collections.emptyList();
+}
+
+// putData：拿不到数据时标记 Locked，客户端显示 "Locked"
+} else if (player != null && !player.abilities.creativeMode && !player.isSpectator()
+        && target instanceof LockableMenuProvider && ((LockableMenuProvider) target).isLocked()) {
+    tag.putBoolean("Locked", true);
+}
+```
+
+（顺带解决了 `putData` 里 `player` 变量声明了却没用的问题。）
+
+### 其余核对结果（无问题）
+
+| 检查点 | 结论 |
+|---|---|
+| `ItemCollector` 分批收集（每批 `MAX_SIZE*2 = 108`，最多 10000） | ✓ 与原版一致 |
+| `mergedResult` 缓存 + `lastTimeFinished + 5` 节流 | ✓ |
+| `ItemIterator.version` 全局自增导致「内容未变」分支永不命中 | ✓ 原版就是这样（照搬） |
+| `ItemDefinition` 值相等 | ✓ 手写 `equals`/`hashCode`（`item` 用 `==`，`tag` 用 `NbtCompound.equals`） |
+| 大箱子合并 | ✓ `ChestBlock#getCombinedMenuProvider(world, pos, false)` 返回的 `LockableMenuProvider` 本身就是 `Inventory`，双箱子时是 `DoubleInventory` |
+| 马背包 `fromIndex = 2` | ✓ 跳过鞍/护甲槽；没箱子的马 `getSize() == 2` → 空流 → 不显示 ✓ |
+| 末影箱 | ✓ `player.getEnderChestInventory()` |
+| NBT 往返 | ✓ `>64` 时先 `setSize(1)` 再写（1.12 `Count` 是 **byte**，不 clamp 会溢出）→ 写 `NewCount` → 还原 |
+| 未知物品 id | ✓ 1.12 `ItemStack(NbtCompound)` 里 `Item.byKey` 返回 null → `isEmpty()` → 客户端跳过 |
+| `groups == null` 守卫 | ✓ 原版没有（`readList` 可能返回 null，原版会 NPE），移植版加了 |
+| `HierarchyLookup<>(Object.class, true)` | ✓ `getInternal` 对 `Object.class` 会走到 `objects.get(Object)` ✓ |
+| 配置项 / lang 键 | ✓ 4 个配置 + `config.jade.plugin_minecraft.item_storage*` 全部存在 |
+| `renderAmount`（上一节补的） | ✓ `helper.item(stack)` 现在会画数量，`smallItem` 传 `""` 不画 |
+
+### 与原版仍存的差异（不可消除）
+
+| 原版 1.20 | 移植版 | 影响 |
+|---|---|---|
+| Fabric `ItemStorage.SIDED`（任意方块实体暴露的物品存储） | 只认 `Inventory` | 1.12 的 mod 容器几乎都实现 `IInventory`，实际影响很小 |
+| `ContainerEntity`（带战利品表的运输实体） | 无 | 1.12 运输实体没有战利品表概念 |
+| `Container#getContainerSize/getItem` | `Inventory#getSize/getItem` | 纯改名 |
+| `record ItemDefinition` | 手写类 | 行为等价 |
+| `Component.translatable` | `I18n.translate` + `LiteralText` | 文本相同，无颜色差异 |
+| `" %s%%".formatted()` | `String.format` | 等价 |
+
+## 6.22 universal 物品部分二次复查
+
+这次做了三件事：逐方法结构对比、逐个 1.12 API 回查、无用代码清理。
+
+### 方法结构对比（6 个类逐一核对）
+
+用脚本把原版和移植版的**方法签名列表**拉出来对比，确认没有漏方法：
+
+| 类 | 结论 |
+|---|---|
+| `ItemStorageProvider` | 8 个方法一一对应 ✓ |
+| `ItemCollector` | 4 个方法 + `ItemDefinition`（record → 类 + 手写 `equals`/`hashCode`）✓ |
+| `ItemIterator` | 4 个抽象/工具方法 + `SlottedItemIterator`(2) + `ContainerItemIterator`(3) + `SlotlessItemIterator`(2) ✓ |
+| `ViewGroup` | 7 个方法 ✓ |
+| `ItemView` / `ClientViewGroup` | ✓ |
+
+### 本轮没有发现新的功能性 Bug
+
+几个重点回查结果：
+
+| 疑点 | 结论 |
+|---|---|
+| `ItemIterator#getVersion` 全局自增 → 「内容未变」分支永不命中 | **原版就是这样**，照搬；实际靠 `lastTimeFinished + 5` 节流 ✓ |
+| `ItemCollector` 只读 27 格箱子时 `progress = 0` | `Collecting` 只在 `group.views.isEmpty()` 时才显示，正常箱子不显示 ✓ |
+| `ItemDefinition` 按引用持有 NBT | 原版同样；收集完立即 `items.clear()`，窗口很小 ✓ |
+| `NON_EMPTY` 里的 `CustomModelData` 判断 | 1.12 没有这个 NBT，属死代码但无害，保留以示对齐 ✓ |
+| 未知/缺失 mod 物品 id | 1.12 `ItemStack(NbtCompound)` → `Item.byKey` 返回 null → `isEmpty()` → 客户端跳过 ✓ |
+| `writeNbt` 对空栈 | 1.12 会写 `id = minecraft:air`，不会 NPE ✓ |
+| 陷阱箱 | `Blocks.TRAPPED_CHEST` 也是 `ChestBlock`，双箱合并同样生效 ✓ |
+| 创造模式看上锁箱子 | `getGroups` 的上锁判断放行 → `getCombinedMenuProvider(..., false)` 返回 null → 回退到单箱子，内容可见 ✓（与原版一致）|
+| 0 格容器 / 空容器 | `IntStream.range(0,0)` → 空流 → `finished` → 空视图 → `saveList` 跳过 → 不显示 ✓ |
+| 双箱 54 格 | `DoubleInventory.getSize() = 54` ✓ |
+
+### 清理
+
+- `ItemStorageProvider` 里三个没用到的 import（`Block` / `BlockEntity` / `Entity`）已删除
+- `CommonProxy` 新增方法里的全限定名（`com.google.common.cache.Cache`、`snownee.jade.api.Accessor`、
+  `java.util.List`、`java.util.concurrent.ExecutionException`）改成正常 import，风格与原版一致
+
+### 与原版仍存的差异（均为 1.12 限制，非 bug）
+
+| 原版 1.20 | 移植版 | 说明 |
+|---|---|---|
+| Fabric `ItemStorage.SIDED`（任意方块实体暴露的物品存储） | 只认 `Inventory` | 1.12 的 mod 容器基本都实现 `IInventory`，实际影响很小 |
+| `ContainerEntity`（带战利品表的运输实体） | 无 | 1.12 运输实体没有战利品表 |
+| `Container#getContainerSize/getItem` | `Inventory#getSize/getItem` | 纯改名 |
+| `record ItemDefinition` | 手写类 | 行为等价（`item` 用 `==`，`tag` 用 `NbtCompound.equals`） |
+| `Component.translatable` | `I18n.translate` + `LiteralText` | 文本相同 |
+| `" %s%%".formatted()` | `String.format` | 等价 |
+
+## 6.23 严重 Bug：服务端 accessor 没拿到 serverData，物品存储直接 NPE
+
+### 现象
+
+游戏里看向箱子，物品列表**完全不显示**。
+
+### 根因
+
+原版服务端收数据时，`tag` 是**从 accessor 里取的**：
+
+```java
+// 原版 BlockAccessorImpl#handleRequest
+BlockAccessor accessor = data.unpack(player);   // unpack 时已经带上了 serverData
+...
+CompoundTag tag = accessor.getServerData();     // ← 就是 provider 要写的那个 tag
+for (provider : providers) provider.appendServerData(tag, accessor);
+```
+
+移植版是反过来的 —— 先 new 一个 tag，再 build accessor，**没有把 tag 传进去**：
+
+```java
+// 修复前
+BlockAccessor accessor = new Builder()
+    .level(world).player(player).serverConnected(true)   // ← 没有 .serverData(tag)
+    ...build();
+
+NbtCompound tag = new NbtCompound();                     // ← 另一个 tag
+provider.appendServerData(tag, accessor);
+```
+
+于是 `accessor.getServerData()` 返回 **null**，而 `ItemStorageProvider.putData` 第一行就是：
+
+```java
+NbtCompound tag = accessor.getServerData();   // null
+...
+tag.putString("JadeItemStorageUid", ...);     // NPE
+```
+
+NPE 被 `WailaExceptionHandler` 吞掉（只打日志），tag 里什么都没写，客户端自然什么也收不到。
+
+### 修复
+
+照原版改成「先建 tag，再把它交给 accessor」（方块和实体两条路径都要改）：
+
+```java
+NbtCompound tag = new NbtCompound();
+BlockAccessor accessor = new Builder()
+    .level(world)
+    .player(player)
+    //port: providers read accessor.getServerData() on the server, it must be the same tag
+    .serverData(tag)
+    .serverConnected(true)
+    ...
+    .build();
+```
+
+`EntityAccessorImpl` 同样处理。
+
+### 影响面
+
+全项目只有 `ItemStorageProvider#putData` 在服务端读 `accessor.getServerData()`（已用脚本把所有
+`appendServerData` 实现扫了一遍确认），所以这个 bug 只影响物品存储；其余 provider 都用方法参数 `tag`，
+不受影响。
+
+### 教训
+
+前两轮 review 只盯着新移植的 addon 代码，没有回头检查**框架侧**的 accessor 构造 ——
+而 `putData` 的写法是照抄原版的，问题出在移植框架时漏了 `.serverData(tag)`。
+
+## 6.24 按原版重写 BlockAccessorImpl / EntityAccessorImpl（含 SyncData#unpack）
+
+### 为什么之前那个「修复」是错的
+
+上一节我在 `handleRequest` 里加了 `.serverData(tag)` 并继续用 `new NbtCompound()` 传参 —— 但
+`AccessorImpl` 的构造函数是：
+
+```java
+this.serverData = serverData == null ? new NbtCompound() : serverData.copy();
+```
+
+它会 **copy** 一份，所以 `accessor.getServerData()` 拿到的是副本，`ItemStorageProvider#putData`
+写进副本、然后被丢弃 —— 数据照样传不出去。
+
+### 原版的结构
+
+```java
+BlockAccessor accessor = data.unpack(player);     // unpack 不传 serverData
+...
+CompoundTag tag = accessor.getServerData();       // ← accessor 自己那份（构造时 new 出来的）
+provider.appendServerData(tag, accessor);         // 写进同一个对象
+responseSender.accept(tag);
+```
+
+关键是 `unpack` **不**传 serverData，让 `AccessorImpl` 构造时 new 一个，之后 provider 写的和
+`accessor.getServerData()` 读的就是**同一个实例**。
+
+### 重写内容
+
+**`BlockAccessorImpl`**
+- 新增 `SyncData#unpack(ServerPlayerEntity)`：按 `blockState.hasBlockEntity()` 决定是否挂
+  `Suppliers.memoize(() -> player.world.getBlockEntity(hit.getPos()))`，其余照原版 build
+- `handleRequest` 改成 `data.unpack(player)` + `accessor.getServerData()`
+- `SyncData` 从「pos + hit」改成原版的「showDetails + hit + blockState + fakeBlock」，
+  方块状态走 `Block.serialize` / `Block.byId` / `getStateFromMetadata`（1.12 没有 `Block.stateById`）
+- `Builder` 补回 `verify` 字段 + `requireVerification()`，`build()` 里 `if (verify) accessor.requireVerification()`
+- 服务端数据补上原版的 `tag.putString("id", ...)`
+
+**`EntityAccessorImpl`**
+- 新增 `SyncData#unpack(ServerPlayerEntity)`：`CommonProxy.getPartEntity(player.world.getEntity(id), partIndex)`
+  包成 memoize，`hit` 也用 memoize 的 `new HitResult(entity.get(), hitVec)`
+- `handleRequest` 改成 `data.unpack(player)` + `accessor.getServerData()`
+- 删掉原来的 `unpackEntity(player)` 临时方法
+
+### 1.12 适配对照
+
+| 原版 | 移植版 |
+|---|---|
+| `ServerLevel` / `player.serverLevel()` | `World` / `player.world` |
+| `BlockHitResult` | `HitResult`（`getPos()`/`face`/`facePos`） |
+| `buf.writeBlockHitResult/readBlockHitResult` | 手写 `writeBlockPos + face + 3×float` |
+| `Block.getId(state)` / `Block.stateById(id)` | `Block.serialize(state)` / `Block.byId(id & 0xFFF)` + `getStateFromMetadata(id >> 12)` |
+| `pos.distSqr(player.blockPosition())` | 自写 `distanceSq(pos, player)` |
+| `world.isLoaded(pos)` | `world.isChunkLoaded(pos)` |
+| `tile.getType()` | `tile.getBlock()` + `CommonProxy.getId(Block)` |
+| `entity.getId()` | `entity.getNetworkId()` |
+
+### 结果
+
+`ItemStorageProvider#putData` 现在写的就是最终发出去的那个 tag，箱子物品列表可以正常显示了。
+
+## 6.25 全部 Accessor 相关代码复查
+
+对照范围：`api/Accessor`、`api/AccessorImpl`、`api/BlockAccessor`、`api/EntityAccessor`、
+`api/AccessorClientHandler`、`impl/BlockAccessorImpl`、`impl/EntityAccessorImpl`、
+`impl/BlockAccessorClientHandler`、`impl/EntityAccessorClientHandler`、`impl/ObjectDataCenter`、
+`overlay/WailaTickHandler`、`util/CommonProxy`（part entity 部分）、`overlay/RayTracing`。
+
+### 找到并修复：3 个问题
+
+#### 1. `BlockAccessorClientHandler#getIcon` 的兜底图标判断永远成立
+
+```java
+// 原版：方块有对应物品才兜底
+if (RayTracing.isEmptyElement(icon) && block.asItem() != Items.AIR) {
+    icon = ItemStackElement.of(new ItemStack(block));
+}
+
+// 修复前：1.12 的 Item.byBlock 永远不会返回 null，它会退化成空气物品
+if (RayTracing.isEmptyElement(icon) && Item.byBlock(block) != null) { ... }
+```
+
+1.12 的 `Item.byBlock(Block)` 是：
+
+```java
+public static Item byBlock(Block block) {
+    Item item = BLOCK_ITEMS.get(block);
+    return item == null ? byBlock(Blocks.AIR) : item;   // ← 永不 null
+}
+```
+
+所以对没有物品的方块（水、火、活塞头…）会生成一个空气 `ItemStack`。已改成与空气物品比较：
+
+```java
+//port: 1.12 Item.byBlock never returns null, it falls back to the air item
+if (RayTracing.isEmptyElement(icon) && Item.byBlock(block) != Item.byBlock(Blocks.AIR)) {
+```
+
+#### 2. 缺了液体图标分支
+
+原版在物品兜底之后还有一段：
+
+```java
+if (RayTracing.isEmptyElement(icon) && block instanceof LiquidBlock) {
+    icon = ClientProxy.elementFromLiquid((LiquidBlock) block);
+}
+```
+
+移植版整段缺失 —— 水/岩浆方块没有图标。1.12 没有流体渲染 API，所以补了一个桶图标近似：
+
+```java
+// impl/BlockAccessorClientHandler
+if (RayTracing.isEmptyElement(icon) && blockState.getMaterial().isLiquid()) {
+    icon = ClientProxy.elementFromLiquid(block);
+}
+
+// util/ClientProxy
+public static IElement elementFromLiquid(Block block) {
+    if (block.getMaterial(block.defaultState()) == Material.LAVA) {
+        return ItemStackElement.of(new ItemStack(Items.LAVA_BUCKET));
+    }
+    return ItemStackElement.of(new ItemStack(Items.WATER_BUCKET));
+}
+```
+
+#### 3. `CommonProxy#isMultipartEntity` 语义与原版相反
+
+```java
+// 原版
+return target instanceof EnderDragon;
+// 修复前
+return target instanceof EnderDragonPart;
+```
+
+`RayTracing#canBeTarget` 里原版是 `if (isMultipartEntity(target) && !target.isPickable()) return false;`。
+1.12 没有 `isPickable()`，且**龙的身体部位是独立实体**，所以拆成两段：
+
+```java
+if (CommonProxy.isMultipartEntity(target) && !target.isAlive())
+    return false;
+//port: 1.12 lists dragon parts as separate entities, never target them directly
+if (target instanceof EnderDragonPart)
+    return false;
+```
+
+`isMultipartEntity` 本身恢复成原版的 `instanceof EnderDragon`。
+
+### 核对无问题的部分
+
+| 文件 | 结论 |
+|---|---|
+| `api/Accessor` | ✓ 只有类型改名（`Level`→`World`、`Player`→`PlayerEntity`、`CompoundTag`→`NbtCompound`、`FriendlyByteBuf`→`PacketBuffer`） |
+| `api/AccessorImpl` | ✓ 一致；`serverData == null ? new NbtCompound() : serverData.copy()` 与原版相同（这是物品存储那个 bug 的根源，见 6.24） |
+| `api/BlockAccessor` / `api/EntityAccessor` | ✓ 只有类型改名；本轮把 `interface Builder` 补回 `public interface Builder` |
+| `api/AccessorClientHandler` | ✓ 完全一致 |
+| `impl/BlockAccessorImpl` | ✓ 已按原版重写（见 6.24） |
+| `impl/EntityAccessorImpl` | ✓ 已按原版重写（见 6.24） |
+| `impl/EntityAccessorClientHandler` | ✓ 等价（`!displayBosses && isBoss` → `displayBosses || !isBoss`） |
+| `impl/ObjectDataCenter` | ✓ `getKeys().clear()` 在 1.12 返回的是 `elements.keySet()` 实时视图，行为与原版 `getAllKeys().clear()` 一致 |
+| `overlay/WailaTickHandler` 的 accessor 构造 | ✓ `blockState/blockEntity/hit/requireVerification` 全部对应 |
+| `util/CommonProxy` 的 `getPartEntityIndex` / `getPartEntity` | ✓ 与原版一致 |
+
+## 6.26 Accessor 代码二次复查（对齐结构）
+
+这轮把 accessor 相关代码逐文件做**方法级结构对比**，把能对齐的都对齐了。
+
+### 方法结构对比（1:1）
+
+| 文件 | 原版方法数 | 移植版 | 结论 |
+|---|---|---|---|
+| `api/Accessor` | 11 | 11 | ✓ 只有类型改名 |
+| `api/AccessorImpl` | 6 | 6 | ✓ |
+| `api/BlockAccessor` | 7 + Builder(12) | 同 | ✓ |
+| `api/EntityAccessor` | 3 + Builder(11) | 同 | ✓ |
+| `api/AccessorClientHandler` | 5 | 5 | ✓ 完全一致 |
+| `impl/BlockAccessorImpl` | 14 + Builder(12) + SyncData(5) | 同 | ✓ |
+| `impl/EntityAccessorImpl` | 7 + Builder(10) + SyncData(5) | 同 | ✓ |
+| `impl/BlockAccessorClientHandler` | 5 | 5 | ✓ |
+| `impl/EntityAccessorClientHandler` | 5 | 5 | ✓ |
+| `impl/ObjectDataCenter` | 9 | 9 | ✓ |
+
+### 本轮对齐的 3 处
+
+#### 1. 删掉多余的 `getAccessorType()` 覆写
+
+`BlockAccessor` / `EntityAccessor` 接口里已经有 `default getAccessorType()`，原版的
+`BlockAccessorImpl` / `EntityAccessorImpl` **不覆写**它。移植版多写了两个 `@Override`，已删除。
+
+#### 2. 距离判断改用 1.12 自带方法，去掉自定义 helper
+
+```java
+// 原版
+if (pos.distSqr(player.blockPosition()) > Jade.MAX_DISTANCE_SQR || !world.isLoaded(pos)) return;
+
+// 上一版（自己写的 helper）
+if (distanceSq(pos, player) > Jade.MAX_DISTANCE_SQR || !world.isChunkLoaded(pos)) return;
+private static double distanceSq(...) { ... }
+
+// 现在
+//port: 1.20 uses pos.distSqr(player.blockPosition()), 1.12 only offers this helper
+if (player.getSquaredDistanceToCenter(pos) > Jade.MAX_DISTANCE_SQR || !world.isChunkLoaded(pos)) return;
+```
+
+`Entity#getSquaredDistanceToCenter(BlockPos)` 是 1.12 自带的，语义与原版的 `distSqr` 基本一致，
+自定义的 `distanceSq` 已删除。
+
+#### 3. `EntityAccessorClientHandler#shouldDisplay` 恢复原版的 if 结构
+
+```java
+// 原版
+if (!general.getDisplayBosses() && CommonProxy.isBoss(accessor.getEntity())) {
+    return false;
+}
+return true;
+
+// 上一版（等价但结构不同）
+return general.getDisplayBosses() || !CommonProxy.isBoss(accessor.getEntity());
+```
+
+### 逐项 bug 复核（本轮无新 bug）
+
+| 检查点 | 结论 |
+|---|---|
+| `SyncData` 写入/读取字段顺序 | 方块：`showDetails, pos, face, 3×float, stateId, item` ✓ 对称；实体：`showDetails, id, partIndex, 3×float` ✓ 对称 |
+| `Block.serialize` / `Block.byId` / `getStateFromMetadata` 往返 | ✓ `stateId == 0` 视为空气（只有空气的 id 是 0） |
+| `unpack` 不传 serverData | ✓ 让 `AccessorImpl` 构造时 new 一个，provider 写的和 `getServerData()` 读的是同一实例（6.24 的修复） |
+| `unpack` 里 `hasBlockEntity()` 判断 | ✓ 无 BE 的方块 `blockEntity = null`，`handleRequest` 会提前返回 |
+| 实体 `unpack` 的 memoize | ✓ `getPartEntity(parent, partIndex)`，`hit` 也用 memoize |
+| `verifyData` | 方块比 x/y/z ✓、实体比 `WailaEntityID` ✓（移植版多加了 null / contains 守卫，行为更稳） |
+| `getPickedResult` | ✓ 方块走 `getBlockPickedResult`，实体走 `getEntityPickedResult` |
+| `getTarget` | 方块返回 `getBlockEntity()` ✓、实体返回 `getEntity()`（已 wrap 到父实体）✓ |
+| `ObjectDataCenter` | ✓ `getKeys().clear()` 在 1.12 返回实时 keySet，等同原版 `getAllKeys().clear()` |
+| `WailaTickHandler` 构造 accessor | ✓ `blockState / blockEntity / hit / requireVerification` 一一对应 |
+
+## 6.27 Accessor 相关代码第三次细查
+
+这次逐个方法、逐行对照，并把**周边链路**（请求包、响应包、图标、数据缓存）也一起查了。
+
+### 找到并修复：`getEntityPickedResult` 恒返回空
+
+```java
+// 修复前
+public static ItemStack getEntityPickedResult(Entity entity, PlayerEntity player, HitResult hitResult) {
+    return ItemStack.EMPTY;   // ← 什么都没做
+}
+```
+
+原版是：
+
+```java
+public static ItemStack getEntityPickedResult(Entity entity, Player player, EntityHitResult hitResult) {
+    if (entity instanceof EntityPickInteractionAware aware) {
+        return aware.getPickedStack(player, hitResult);
+    }
+    ItemStack stack = entity.getPickResult();
+    return stack == null ? ItemStack.EMPTY : stack;
+}
+```
+
+1.12 没有 `Entity#getPickResult`，但**刷怪蛋是用 NBT 指定实体的**（`SpawnEggItem#readTypeFromNbt`
+读 `EntityTag.id`），所以按这个方式补上：
+
+```java
+//port: 1.12 has no Entity#getPickResult, spawn eggs carry the entity id in their nbt
+if (entity instanceof LivingEntity) {
+    Identifier id = Entities.getKey(entity);
+    if (id != null) {
+        ItemStack stack = new ItemStack(Items.SPAWN_EGG);
+        NbtCompound entityTag = new NbtCompound();
+        entityTag.putString("id", id.toString());
+        NbtCompound tag = new NbtCompound();
+        tag.put("EntityTag", entityTag);
+        stack.setNbt(tag);
+        return stack;
+    }
+}
+return ItemStack.EMPTY;
+```
+
+**注意**：工具提示的图标**看起来没变化** —— 因为 `EntityAccessorClientHandler` 本来就会把「刷怪蛋 + 活体实体」
+的情况过滤掉（`icon` 保持 null，交给 provider）。改的是 API 行为，让 `accessor.getPickedResult()`
+与原版一致。
+
+### 逐文件逐方法核对结果
+
+| 文件 | 核对内容 | 结论 |
+|---|---|---|
+| `api/Accessor` | 11 个方法签名 | ✓ 完全一致（只有类型名） |
+| `api/AccessorImpl` | 构造器 `serverData == null ? new : copy()`、6 个方法 | ✓ 逐行一致 |
+| `api/BlockAccessor` | 7 个方法 + Builder 12 个 | ✓ 逐行一致 |
+| `api/EntityAccessor` | `getRawEntity()` 默认实现 + Builder 11 个 | ✓ 逐行一致 |
+| `api/AccessorClientHandler` | 5 个方法 | ✓ 完全一致 |
+| `impl/BlockAccessorImpl` | `handleRequest` / `SyncData` / `Builder` / 14 个方法 | ✓ 1:1 |
+| `impl/EntityAccessorImpl` | `handleRequest` / `SyncData` / `Builder` / 7 个方法 | ✓ 1:1 |
+| `impl/BlockAccessorClientHandler` | `shouldDisplay` / `shouldRequestData` / `requestData` / `getIcon` / `gatherComponents` | ✓ |
+| `impl/EntityAccessorClientHandler` | 同上 5 个 | ✓ 完全一致（含刷怪蛋过滤） |
+| `impl/ObjectDataCenter` | `set` / `get` / `getServerData` / `setServerData` / 计时器 / `getIcon` | ✓ 逐行一致 |
+| `overlay/WailaTickHandler` | accessor 构造 + `shouldRequestData` + 限流请求 | ✓ 一致 |
+| `overlay/RayTracing#getIcon` | `ObjectDataCenter.get()` → `getIcon()` → `isEmptyElement` | ✓ 完全一致 |
+| `util/CommonProxy` | `getPartEntityIndex` / `getPartEntity` / `wrapPartEntityParent` / `isMultipartEntity` / `getBlockPickedResult` / `getEntityPickedResult` | ✓（最后一项本轮修好） |
+| `util/ClientProxy` | `requestBlockData` / `requestEntityData` | ✓ 一致 |
+
+### 唯一有意保留的差异
+
+`BlockAccessorImpl#verifyData` 比原版多了两个守卫：
+
+```java
+if (getBlockEntity() == null || !data.contains("x")) {
+    return false;
+}
+```
+
+原版直接读 `data.getInt("x")`，方块实体在请求与响应之间被移除时会拿到 0 并可能误判通过。
+移植版选择返回 false（丢弃过期数据），行为更稳；除此之外与原版逐行相同。
+
 ## 7. 仍需处理的功能/效果差异
 
 ### 7.1 明确未移植
