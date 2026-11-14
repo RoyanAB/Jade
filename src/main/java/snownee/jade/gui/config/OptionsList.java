@@ -553,6 +553,7 @@ public class OptionsList extends ListWidget {
 		if (selectedKey != null) {
 			GameOptions options = Minecraft.getInstance().options;
 			options.setKeyCode(selectedKey, keyCode == 1 ? Keyboard.KEY_NONE : keyCode);
+			KeyBinding.resetMapping();
 			selectedKey = null;
 			resetMappingAndUpdateButtons();
 			return true;

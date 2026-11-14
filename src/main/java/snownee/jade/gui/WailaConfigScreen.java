@@ -56,6 +56,7 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 		canceller = () -> {
 			Jade.CONFIG.invalidate();
 			keyMap.forEach(KeyBinding::setKeyCode);
+			KeyBinding.resetMapping();
 			Minecraft.getInstance().options.save();
 		};
 	}
@@ -167,6 +168,8 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 						keyBinding.setKeyCode(keyBinding.getDefaultKeyCode());
 					}
 				}
+				//port: rebuild the 1.12 keyCode -> KeyBinding map, otherwise the defaults only apply after a restart
+				KeyBinding.resetMapping();
 				minecraft.options.save();
 				try {
 					int themesHash = Jade.CONFIG.get().getOverlay().themesHash;

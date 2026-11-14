@@ -333,3 +333,68 @@ registration.addRayTraceCallback(-10, snownee.jade.JadeClient::builtInOverrides)
 METHOD = re.compile(r'^[ \t]*(?:(?:public|protected|private|static|final|abstract|...)\s+)+'
                     r'(?:<[^>{};]+>\s*)?([A-Za-z_][\w$.<>\[\], ?]*?)\s+([A-Za-z_]\w*)\s*\(([^)]*)\)', re.M)
 ```
+
+---
+
+## 9. 键位修改不生效（需重启）
+
+### 现象
+
+在 Jade 的设置界面里改键位，按钮上显示新键，但**按新键没反应**，重启游戏后才生效。
+
+### 根因
+
+1.12 的 `KeyBinding` 用一个**静态映射表**把「键码 → 键位」缓存起来：
+
+```java
+private static final Int2ObjectHashMap<KeyBinding> BY_KEY_CODE = new Int2ObjectHashMap<>();
+
+public static void set(int keyCode, boolean pressed) {
+    KeyBinding keyBinding = BY_KEY_CODE.get(keyCode);   // ← 键盘事件走这里
+    if (keyBinding != null) keyBinding.setPressed(pressed);
+}
+
+public static void resetMapping() {
+    BY_KEY_CODE.clear();
+    for (KeyBinding keyBinding : ALL.values()) {
+        BY_KEY_CODE.put(keyBinding.keyCode, keyBinding);
+    }
+}
+```
+
+而 `GameOptions#setKeyCode` **只改实例字段并保存 options.txt**：
+
+```java
+public void setKeyCode(KeyBinding keyBinding, int code) {
+    keyBinding.setKeyCode(code);
+    this.save();
+}
+```
+
+没有重建 `BY_KEY_CODE` —— 所以新键码在表里查不到，老键码仍指向这个键位。
+重启时 `GameOptions#load()` 会重建映射表，于是「重启后才生效」。
+
+原版 1.12 的控制界面每次改键都会调 `KeyBinding.resetMapping()`：
+`ControlsListWidget:159`、`ControlsOptionsScreen:66/78`。
+
+### 修复（3 处）
+
+| 位置 | 场景 | 修复 |
+|---|---|---|
+| `gui/config/OptionsList#keyPressed` | 实际改键 | 在 `options.setKeyCode(...)` 之后补 `KeyBinding.resetMapping()` |
+| `gui/WailaConfigScreen` 的 `canceller` | 关闭界面不保存、回滚键位 | 回滚后补 `KeyBinding.resetMapping()` |
+| `gui/WailaConfigScreen` 的「重置设置」 | 恢复默认键位 | 恢复后补 `KeyBinding.resetMapping()` |
+
+```java
+GameOptions options = Minecraft.getInstance().options;
+options.setKeyCode(selectedKey, keyCode == 1 ? Keyboard.KEY_NONE : keyCode);
+//port: 1.12 caches keyCode -> KeyBinding in a static map, vanilla rebuilds it in the controls
+//screen too; without this the new key only works after a restart
+KeyBinding.resetMapping();
+selectedKey = null;
+resetMappingAndUpdateButtons();
+```
+
+`GameOptions#setKeyCode` 内部已经调用了 `save()`，所以 `options.txt` 的持久化本来就是对的，
+唯一缺的就是内存里的映射表刷新。
+
