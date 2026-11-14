@@ -1,7 +1,6 @@
 package snownee.jade.overlay;
 
 import com.google.common.base.Predicate;
-import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.state.BlockState;
 import net.minecraft.client.Minecraft;
@@ -17,7 +16,6 @@ import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.Accessor;
-import snownee.jade.api.config.IWailaConfig.FluidMode;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.impl.ObjectDataCenter;
 import snownee.jade.impl.WailaClientRegistration;
@@ -120,20 +118,14 @@ public class RayTracing {
 			traceEnd = eyePosition.add(lookVector.x * playerReach, lookVector.y * playerReach, lookVector.z * playerReach);
 		}
 
-		FluidMode fluidMode = Jade.CONFIG.get().getGeneral().getDisplayFluids();
-		boolean allowLiquids = fluidMode != FluidMode.NONE;
+		//port: 1.12 cannot hit flowing fluids, the setting is a plain ON/OFF toggle
+		boolean allowLiquids = Jade.CONFIG.get().getGeneral().shouldDisplayFluids();
 		BlockPos eyePos = new BlockPos(eyePosition);
 		if (world.getBlockState(eyePos).getMaterial().isLiquid()) {
 			// do not target the fluid the player is inside of
 			allowLiquids = false;
 		}
 		HitResult blockResult = world.rayTrace(eyePosition, traceEnd, allowLiquids);
-		if (blockResult != null && blockResult.type == HitResult.Type.BLOCK && fluidMode == FluidMode.SOURCE_ONLY) {
-			Block block = world.getBlockState(blockResult.getPos()).getBlock();
-			if (block == Blocks.FLOWING_WATER || block == Blocks.FLOWING_LAVA) {
-				blockResult = world.rayTrace(eyePosition, traceEnd, false);
-			}
-		}
 
 		if (entityResult != null) {
 			if (blockResult != null && blockResult.type == HitResult.Type.BLOCK) {

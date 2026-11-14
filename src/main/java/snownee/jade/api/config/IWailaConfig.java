@@ -33,10 +33,6 @@ public interface IWailaConfig {
 		HOLD_KEY, TOGGLE, LITE
 	}
 
-	enum FluidMode {
-		NONE, ANY, SOURCE_ONLY
-	}
-
 	enum BossBarOverlapMode {
 		NO_OPERATION, HIDE_BOSS_BAR, HIDE_TOOLTIP, PUSH_DOWN
 	}
@@ -83,11 +79,7 @@ public interface IWailaConfig {
 
 		boolean shouldDisplayFluids();
 
-		FluidMode getDisplayFluids();
-
 		void setDisplayFluids(boolean displayFluids);
-
-		void setDisplayFluids(FluidMode displayFluids);
 
 		boolean showItemModNameTooltip();
 

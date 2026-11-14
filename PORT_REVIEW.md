@@ -2483,6 +2483,54 @@ tooltip.add(text);
 | `ZombieVillagerProvider` | ✓ 通过 mixin 读私有 `conversionTicks` |
 | `TotalEnchantmentPowerProvider` | ✓ 复刻 1.12 `EnchantingTableMenu` 的书架几何 |
 
+## 6.32 流体设置简化为 ON / OFF（不做流体射线）
+
+用户决定不做流体射线（1.12 的 `LiquidBlock#canRayTrace` 只认 LEVEL 0，要额外追踪才能命中流动流体），
+并把流体设置简化为纯开关。相应改动：
+
+### 1. `FluidMode` 只剩两个值
+
+```java
+/**
+ * port: 1.12 cannot hit flowing fluids through World#rayTrace, so only ON/OFF is offered.
+ */
+enum FluidMode {
+    NONE, ANY
+}
+```
+
+`SOURCE_ONLY` 已删除，`WailaConfig.ConfigGeneral` 的 `getDisplayFluids()` / `setDisplayFluids(FluidMode)`
+保持原样（只剩两个值）。
+
+### 2. `RayTracing` 去掉 SOURCE_ONLY 的特殊处理
+
+```java
+//port: 1.12 cannot hit flowing fluids, the setting is a plain ON/OFF toggle
+boolean allowLiquids = Jade.CONFIG.get().getGeneral().shouldDisplayFluids();
+BlockPos eyePos = new BlockPos(eyePosition);
+if (world.getBlockState(eyePos).getMaterial().isLiquid()) {
+    // do not target the fluid the player is inside of
+    allowLiquids = false;
+}
+HitResult blockResult = world.rayTrace(eyePosition, traceEnd, allowLiquids);
+```
+
+`wrapBlock` 也回到原样（不再把 `FLOWING_WATER` 映射成 `WATER`）。
+
+### 3. 配置界面变成 ON/OFF 开关
+
+```java
+options.choices("display_fluids", general.shouldDisplayFluids(), general::setDisplayFluids).parent(entry);
+```
+
+从三态循环（None / Any / Source Only）改成布尔循环，显示绿色 **ON** / 红色 **OFF**
+（`OptionsList.OPTION_ON` / `OPTION_OFF`）。
+
+### 4. 语言文件
+
+`config.jade.display_fluids_extra_msg` 从 `liquid,source,only` 改成 `liquid,fluid`
+（搜索关键字）。`display_fluids_none` / `_any` / `_source_only` 变成未使用，留着不影响。
+
 ## 7. 仍需处理的功能/效果差异
 
 ### 7.1 明确未移植

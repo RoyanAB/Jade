@@ -47,10 +47,6 @@ import snownee.jade.overlay.WailaTickHandler;
 import java.util.Optional;
 
 public final class ClientProxy implements ClientModInitializer {
-
-	private static long lastFrameSampleNanos;
-	private static float cachedFrameDelta;
-
 	public static boolean hasJEI = false;
 	public static boolean hasREI = false;
 	public static boolean hasFastScroll = CommonProxy.isModLoaded("fastscroll");

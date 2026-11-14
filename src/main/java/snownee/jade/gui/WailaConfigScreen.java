@@ -91,7 +91,7 @@ public class WailaConfigScreen extends PreviewOptionsScreen {
 		options.choices("display_bosses", general.getDisplayBosses(), general::setDisplayBosses).parent(entry);
 		entry = options.choices("display_blocks", general.getDisplayBlocks(), general::setDisplayBlocks);
 		editBlocklist(entry, "hide-blocks", () -> CorePlugin.createBlockBlocklist().get());
-		options.choices("display_fluids", general.getDisplayFluids(), general::setDisplayFluids).parent(entry);
+		options.choices("display_fluids", general.shouldDisplayFluids(), general::setDisplayFluids).parent(entry);
 		options.choices("display_mode", general.getDisplayMode(), general::setDisplayMode, builder -> {
 			builder.withTooltip(mode -> {
 				String key = "display_mode_" + mode.name().toLowerCase(Locale.ENGLISH) + "_desc";

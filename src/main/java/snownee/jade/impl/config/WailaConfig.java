@@ -63,7 +63,7 @@ public class WailaConfig implements IWailaConfig {
 		private boolean hideFromTabList = true;
 		private boolean enableTextToSpeech = false;
 		private TTSMode ttsMode = TTSMode.PRESS;
-		private FluidMode fluidMode = FluidMode.ANY;
+		private boolean fluidMode = true;
 		private float reachDistance = 0;
 		@Expose
 		private boolean debug = false;
@@ -158,21 +158,11 @@ public class WailaConfig implements IWailaConfig {
 
 		@Override
 		public boolean shouldDisplayFluids() {
-			return fluidMode != FluidMode.NONE;
-		}
-
-		@Override
-		public FluidMode getDisplayFluids() {
 			return fluidMode;
 		}
 
 		@Override
 		public void setDisplayFluids(boolean displayFluids) {
-			fluidMode = displayFluids ? FluidMode.ANY : FluidMode.NONE;
-		}
-
-		@Override
-		public void setDisplayFluids(FluidMode displayFluids) {
 			fluidMode = displayFluids;
 		}
 
