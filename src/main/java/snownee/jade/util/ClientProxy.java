@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.ModMetadata;
+import net.minecraft.client.ClientPlayerInteractionManager;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
@@ -118,16 +119,8 @@ public final class ClientProxy implements ClientModInitializer {
 	}
 
 	public static GameMode getGameMode() {
-		if (Minecraft.getInstance().player == null) {
-			return GameMode.SURVIVAL;
-		}
-		if (Minecraft.getInstance().player.isCreative()) {
-			return GameMode.CREATIVE;
-		}
-		if (Minecraft.getInstance().player.isSpectator()) {
-			return GameMode.SPECTATOR;
-		}
-		return GameMode.SURVIVAL;
+		ClientPlayerInteractionManager interactionManager = Minecraft.getInstance().interactionManager;
+		return interactionManager == null ? GameMode.SURVIVAL : interactionManager.getGameMode();
 	}
 
 	@Override
@@ -179,7 +172,7 @@ public final class ClientProxy implements ClientModInitializer {
 		ClientResourceLoaderEvents.END_RESOURCE_RELOAD.register((manager, context) -> {
 			ThemeHelper.INSTANCE.reload();
 			ModIdentification.INSTANCE.onResourceManagerReload();
-			HarvestToolProvider.clearCache();
+			HarvestToolProvider.INSTANCE.onResourceManagerReload();
 		});
 	}
 

@@ -64,20 +64,19 @@ public class SimpleToolHandler implements ToolHandler {
 	}
 
 	/**
-	 * 1.12 equivalent of 1.20's {@code ItemStack#isCorrectToolForDrops}: the tool has to actually
-	 * speed up mining this block, and - only for materials that require a tool - the tier has to
-	 * be high enough.
+	 * 1.12 equivalent of 1.20's {@code ItemStack#isCorrectToolForDrops}: the tool has to be the
+	 * right kind of tool for this block, and - only for materials that require a tool - the tier
+	 * has to be high enough.
 	 * <p>
 	 * {@code ItemStack#canMineBlock} must not be used on its own: vanilla only overrides it for
 	 * special cases (shovel: snow, sword: cobweb, shears: web/tripwire, axe: nothing), so asking
 	 * it about dirt or a log would report no tool at all.
 	 */
 	public static boolean isEffective(BlockState state, ItemStack tool) {
-		if (tool.getMiningSpeed(state) <= 1.0F) {
-			return false;
+		if (tool.getMiningSpeed(state) > 1.0F) {
+			return state.getMaterial().isToolNotRequired() || tool.canMineBlock(state);
 		}
-		// same short circuit as PlayerInventory#canMineBlock
-		return state.getMaterial().isToolNotRequired() || tool.canMineBlock(state);
+		return !state.getMaterial().isToolNotRequired() && tool.canMineBlock(state);
 	}
 
 	@Override

@@ -15,6 +15,7 @@ import net.minecraft.resource.Identifier;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec2f;
+import net.minecraft.world.GameMode;
 import net.minecraft.world.World;
 import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
@@ -22,8 +23,10 @@ import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.IElement.Align;
 import snownee.jade.api.ui.IElementHelper;
+import snownee.jade.util.ClientProxy;
 import snownee.jade.util.CommonProxy;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -66,28 +69,25 @@ public class HarvestToolProvider implements IBlockComponentProvider {
 		TOOL_HANDLERS.put(handler.getUid(), handler);
 	}
 
-	public static void clearCache() {
-		resultCache.invalidateAll();
-	}
-
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
 		PlayerEntity player = accessor.getPlayer();
 		if (!config.get(Identifiers.MC_HARVEST_TOOL_CREATIVE) && (player.isCreative() || player.isSpectator())) {
 			return;
 		}
-		BlockState state = accessor.getBlockState();
-		//port: 1.20 asks player.blockActionRestricted(...); 1.12 decides this with
-		//PlayerEntity#canModifyWorld and ItemStack#hasMineBlockOverride (CanDestroy), see
-		//ClientPlayerInteractionManager#tryBreakBlock
-		if (!player.canModifyWorld()) {
+		World level = accessor.getLevel();
+		BlockPos pos = accessor.getPosition();
+		GameMode gameMode = ClientProxy.getGameMode();
+
+		if (gameMode == GameMode.ADVENTURE && !player.canModifyWorld()) {
 			ItemStack held = player.getItemInMainHand();
-			if (held.isEmpty() || !held.hasMineBlockOverride(state.getBlock())) {
+			if (held.isEmpty() || !held.hasMineBlockOverride(accessor.getBlock())) {
 				return;
 			}
 		}
-		float destroySpeed = state.getMiningSpeed(accessor.getLevel(), accessor.getPosition());
-		float destroyProgress = state.getMiningSpeed(player, accessor.getLevel(), accessor.getPosition());
+		BlockState state = accessor.getBlockState();
+		float destroySpeed = state.getMiningSpeed(level, pos);
+		float destroyProgress = state.getMiningSpeed(player, level, pos);
 		if (destroySpeed < 0 || destroyProgress <= 0) {
 			if (config.get(Identifiers.MC_SHOW_UNBREAKABLE)) {
 				Text text = IThemeHelper.get().failure(I18n.translate("jade.harvest_tool.unbreakable"));
@@ -118,16 +118,16 @@ public class HarvestToolProvider implements IBlockComponentProvider {
 		BlockState state = accessor.getBlockState();
 		boolean requiresTool = !state.getMaterial().isToolNotRequired();
 		if (!requiresTool && !config.get(Identifiers.MC_EFFECTIVE_TOOL)) {
-			return java.util.Collections.emptyList();
+			return Collections.emptyList();
 		}
 		List<ItemStack> tools;
 		try {
 			tools = resultCache.get(state, () -> getTool(state, accessor.getLevel(), accessor.getPosition()));
 		} catch (ExecutionException e) {
-			return java.util.Collections.emptyList();
+			return Collections.emptyList();
 		}
 		if (tools.isEmpty()) {
-			return java.util.Collections.emptyList();
+			return Collections.emptyList();
 		}
 
 		int offsetY = 0;
@@ -158,6 +158,10 @@ public class HarvestToolProvider implements IBlockComponentProvider {
 		}
 
 		return elements;
+	}
+
+	public void onResourceManagerReload() {
+		resultCache.invalidateAll();
 	}
 
 	@Override
