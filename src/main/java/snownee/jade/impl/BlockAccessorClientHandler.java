@@ -53,10 +53,6 @@ public class BlockAccessorClientHandler implements AccessorClientHandler<BlockAc
 			icon = ItemStackElement.of(new ItemStack(Item.byBlock(block), 1, block.getMetadataFromState(blockState)));
 		}
 
-		if (RayTracing.isEmptyElement(icon) && blockState.getMaterial().isLiquid()) {
-			icon = ClientProxy.elementFromLiquid(block);
-		}
-
 		for (IBlockComponentProvider provider : WailaClientRegistration.instance().getBlockIconProviders(block, PluginConfig.INSTANCE::get)) {
 			try {
 				IElement element = provider.getIcon(accessor, PluginConfig.INSTANCE, icon);

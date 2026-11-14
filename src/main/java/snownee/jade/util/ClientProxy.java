@@ -5,18 +5,15 @@ import com.google.gson.JsonObject;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.ModMetadata;
-import net.minecraft.block.Block;
-import net.minecraft.block.material.Material;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.resource.language.I18n;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.world.GameMode;
 import net.ornithemc.osl.entrypoints.api.client.ClientModInitializer;
-import net.ornithemc.osl.keybinds.api.KeyBindingEvents;
+import net.ornithemc.osl.keybinds.api.KeybindEvents;
+import net.ornithemc.osl.keybinds.api.KeybindRegistry;
 import net.ornithemc.osl.lifecycle.api.client.MinecraftClientEvents;
 import net.ornithemc.osl.networking.api.PacketBuffer;
 import net.ornithemc.osl.networking.api.client.ClientConnectionEvents;
@@ -30,7 +27,6 @@ import snownee.jade.addon.harvest.HarvestToolProvider;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.Identifiers;
-import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.Rect2i;
 import snownee.jade.gui.BaseOptionsScreen;
 import snownee.jade.impl.BlockAccessorImpl;
@@ -38,7 +34,6 @@ import snownee.jade.impl.EntityAccessorImpl;
 import snownee.jade.impl.ObjectDataCenter;
 import snownee.jade.impl.config.PluginConfig;
 import snownee.jade.impl.theme.ThemeHelper;
-import snownee.jade.impl.ui.ItemStackElement;
 import snownee.jade.mixin.BossEventOverlayAccess;
 import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.overlay.OverlayRenderer;
@@ -137,12 +132,12 @@ public final class ClientProxy implements ClientModInitializer {
 
 	@Override
 	public void initClient() {
-		KeyBindingEvents.REGISTER_KEYBINDS.register(registry -> {
-			JadeClient.openConfig = registry.register("key.jade.config", Keyboard.KEY_NUMPAD0, "Jade");
-			JadeClient.showOverlay = registry.register("key.jade.show_overlay", Keyboard.KEY_NUMPAD1, "Jade");
-			JadeClient.toggleLiquid = registry.register("key.jade.toggle_liquid", Keyboard.KEY_NUMPAD2, "Jade");
-			JadeClient.narrate = registry.register("key.jade.narrate", Keyboard.KEY_NUMPAD5, "Jade");
-			JadeClient.showDetails = registry.register("key.jade.show_details_alternative", Keyboard.KEY_NONE, "Jade");
+		KeybindEvents.REGISTER_KEYBINDS.register(() -> {
+			JadeClient.openConfig = KeybindRegistry.register("key.jade.config", Keyboard.KEY_NUMPAD0, "Jade");
+			JadeClient.showOverlay = KeybindRegistry.register("key.jade.show_overlay", Keyboard.KEY_NUMPAD1, "Jade");
+			JadeClient.toggleLiquid = KeybindRegistry.register("key.jade.toggle_liquid", Keyboard.KEY_NUMPAD2, "Jade");
+			JadeClient.narrate = KeybindRegistry.register("key.jade.narrate", Keyboard.KEY_NUMPAD5, "Jade");
+			JadeClient.showDetails = KeybindRegistry.register("key.jade.show_details_alternative", Keyboard.KEY_NONE, "Jade");
 		});
 		MinecraftClientEvents.READY.register(mc -> {
 			CommonProxy.loadComplete();
@@ -187,16 +182,5 @@ public final class ClientProxy implements ClientModInitializer {
 			HarvestToolProvider.clearCache();
 		});
 	}
-
-	/**
-	 * 1.12 has no fluid render API, so the closest thing to a fluid icon is its bucket.
-	 */
-	public static IElement elementFromLiquid(Block block) {
-		if (block.getMaterial(block.defaultState()) == Material.LAVA) {
-			return ItemStackElement.of(new ItemStack(Items.LAVA_BUCKET));
-		}
-		return ItemStackElement.of(new ItemStack(Items.WATER_BUCKET));
-	}
-
 
 }
