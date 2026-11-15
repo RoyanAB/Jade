@@ -201,6 +201,8 @@ public class OverlayRenderer {
 
 		GlStateManager.popMatrix();
 
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+
 		if (blend)
 			GlStateManager.enableBlend();
 		else

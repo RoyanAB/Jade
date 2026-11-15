@@ -260,37 +260,41 @@ public class DisplayHelper implements IDisplayHelper {
 
 	@Override
 	public void drawText(Text text, float x, float y, int color) {
-		boolean shadow = Jade.CONFIG.get().getOverlay().getTheme().text.shadow();
-		float alpha = opacity();
-		if (alpha != 1) {
-			color = IConfigOverlay.applyAlpha(color, alpha);
-		}
-		TextRenderer font = Minecraft.getInstance().textRenderer;
-		//port: 1.12's TextRenderer#draw already takes an arbitrary ARGB color, the only limitation is
-		//that Style can only hold the 16 Formatting colors. Walking the text tree lets us hand the
-		//exact color of RgbText nodes to the renderer, nested components included.
-		if (text instanceof RgbText) {
-			// fast path: a single colored run is by far the most common case
-			String content = text.getContent();
-			if (!content.isEmpty()) {
-				font.draw(text.getStyle().asString() + content, x, y, ((RgbText) text).getColor(), shadow);
+		try {
+			boolean shadow = Jade.CONFIG.get().getOverlay().getTheme().text.shadow();
+			float alpha = opacity();
+			if (alpha != 1) {
+				color = IConfigOverlay.applyAlpha(color, alpha);
 			}
-			return;
-		}
-		float curX = x;
-		for (Text node : text) {
-			String content = node.getContent();
-			if (content.isEmpty()) {
-				continue;
+			TextRenderer font = Minecraft.getInstance().textRenderer;
+			//port: 1.12's TextRenderer#draw already takes an arbitrary ARGB color, the only limitation is
+			//that Style can only hold the 16 Formatting colors. Walking the text tree lets us hand the
+			//exact color of RgbText nodes to the renderer, nested components included.
+			if (text instanceof RgbText) {
+				// fast path: a single colored run is by far the most common case
+				String content = text.getContent();
+				if (!content.isEmpty()) {
+					font.draw(text.getStyle().asString() + content, x, y, ((RgbText) text).getColor(), shadow);
+				}
+				return;
 			}
-			if (node instanceof RgbText) {
-				// a styled run keeps its own color, exactly like 1.20 where the per-glyph color wins
-				// over the base color (so it does not take part in the tooltip fade either)
-				font.draw(node.getStyle().asString() + content, curX, y, ((RgbText) node).getColor(), shadow);
-			} else {
-				font.draw(node.getStyle().asString() + content, curX, y, color, shadow);
+			float curX = x;
+			for (Text node : text) {
+				String content = node.getContent();
+				if (content.isEmpty()) {
+					continue;
+				}
+				if (node instanceof RgbText) {
+					// a styled run keeps its own color, exactly like 1.20 where the per-glyph color wins
+					// over the base color (so it does not take part in the tooltip fade either)
+					font.draw(node.getStyle().asString() + content, curX, y, ((RgbText) node).getColor(), shadow);
+				} else {
+					font.draw(node.getStyle().asString() + content, curX, y, color, shadow);
+				}
+				curX += font.getWidth(content);
 			}
-			curX += font.getWidth(content);
+		} finally {
+			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		}
 	}
 
