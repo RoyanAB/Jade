@@ -1,8 +1,7 @@
 package snownee.jade.impl.ui;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.phys.Vec2;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.Vec2f;
 import snownee.jade.api.ui.Direction2D;
 import snownee.jade.api.ui.ProgressStyle;
 import snownee.jade.overlay.DisplayHelper;
@@ -31,13 +30,13 @@ public class SlimProgressStyle extends ProgressStyle {
 	}
 
 	@Override
-	public void render(GuiGraphics guiGraphics, float x, float y, float w, float h, float progress, Component text) {
+	public void render(float x, float y, float w, float h, float progress, Text text) {
 		if (overlay != null) {
-			Vec2 size = new Vec2(w * progress, h);
+			Vec2f size = new Vec2f(w * progress, h);
 			overlay.size(size);
-			overlay.render(guiGraphics, x, y, size.x, size.y);
+			overlay.render(x, y, size.x, size.y);
 		} else {
-			DisplayHelper.INSTANCE.drawGradientProgress(guiGraphics, x, y, w, h, progress, color);
+			DisplayHelper.INSTANCE.drawGradientProgress(x, y, w, h, progress, color);
 		}
 	}
 

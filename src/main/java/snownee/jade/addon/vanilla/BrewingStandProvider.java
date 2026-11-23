@@ -1,16 +1,11 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.entity.BrewingStandBlockEntity;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
+import net.minecraft.block.entity.BrewingStandBlockEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.resource.Identifier;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.ui.IElementHelper;
@@ -21,10 +16,10 @@ public enum BrewingStandProvider implements IBlockComponentProvider, IServerData
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-		if (!accessor.getServerData().contains("BrewingStand", Tag.TAG_COMPOUND)) {
+		if (!accessor.getServerData().contains("BrewingStand")) {
 			return;
 		}
-		CompoundTag tag = accessor.getServerData().getCompound("BrewingStand");
+		NbtCompound tag = accessor.getServerData().getCompound("BrewingStand");
 		int fuel = tag.getInt("Fuel");
 		int time = tag.getInt("Time");
 		IElementHelper helper = IElementHelper.get();
@@ -38,16 +33,16 @@ public enum BrewingStandProvider implements IBlockComponentProvider, IServerData
 	}
 
 	@Override
-	public void appendServerData(CompoundTag tag, BlockAccessor accessor) {
+	public void appendServerData(NbtCompound tag, BlockAccessor accessor) {
 		BrewingStandBlockEntity brewingStand = (BrewingStandBlockEntity) accessor.getBlockEntity();
-		CompoundTag compound = new CompoundTag();
-		compound.putInt("Time", brewingStand.brewTime);
-		compound.putInt("Fuel", brewingStand.fuel);
+		NbtCompound compound = new NbtCompound();
+		compound.putInt("Time", brewingStand.getData(0));
+		compound.putInt("Fuel", brewingStand.getData(1));
 		tag.put("BrewingStand", compound);
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_BREWING_STAND;
 	}
 }

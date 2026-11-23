@@ -1,15 +1,14 @@
 package snownee.jade.api.view;
 
-import java.util.List;
-import java.util.Objects;
-
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.world.Container;
-import net.minecraft.world.item.ItemStack;
 import snownee.jade.api.Accessor;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.util.CommonProxy;
+
+import java.util.List;
+import java.util.Objects;
 
 public class ItemView {
 
@@ -24,13 +23,13 @@ public class ItemView {
 		this.item = item;
 	}
 
-	public static List<ViewGroup<ItemStack>> groupOf(Container container, Accessor<?> accessor) {
+	public static List<ViewGroup<ItemStack>> groupOf(Inventory container, Accessor<?> accessor) {
 		return CommonProxy.containerGroup(container, accessor);
 	}
 
 	/**
-	 * @param storage  On Fabric, it accepts {@code Storage<ItemVariant>}. On Forge/NeoForge, it accepts {@code IItemHandler}.
-	 * @param accessor
+	 * @param storage a platform specific item storage. 1.12 has no item storage API, so anything that
+	 *                is an {@link Inventory} is accepted here.
 	 */
 	public static List<ViewGroup<ItemStack>> groupOf(Object storage, Accessor<?> accessor) {
 		return CommonProxy.storageGroup(storage, accessor);

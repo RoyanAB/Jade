@@ -1,15 +1,12 @@
 package snownee.jade.api.view;
 
-import java.util.List;
-import java.util.function.Function;
-
+import com.google.common.collect.Lists;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
 import org.jetbrains.annotations.Nullable;
 
-import com.google.common.collect.Lists;
-
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import java.util.List;
+import java.util.function.Function;
 
 public class ViewGroup<T> {
 
@@ -17,16 +14,16 @@ public class ViewGroup<T> {
 	@Nullable
 	public String id;
 	@Nullable
-	protected CompoundTag extraData;
+	protected NbtCompound extraData;
 
 	public ViewGroup(List<T> views) {
 		this.views = views;
 	}
 
-	public void save(CompoundTag tag, Function<T, CompoundTag> writer) {
-		ListTag list = new ListTag();
-		for (var view : views) {
-			list.add(writer.apply(view));
+	public void save(NbtCompound tag, Function<T, NbtCompound> writer) {
+		NbtList list = new NbtList();
+		for (T view : views) {
+			list.addElement(writer.apply(view));
 		}
 		tag.put("Views", list);
 		if (id != null) {
@@ -37,11 +34,11 @@ public class ViewGroup<T> {
 		}
 	}
 
-	public static <T> ViewGroup<T> read(CompoundTag tag, Function<CompoundTag, T> reader) {
-		ListTag list = tag.getList("Views", Tag.TAG_COMPOUND);
+	public static <T> ViewGroup<T> read(NbtCompound tag, Function<NbtCompound, T> reader) {
+		NbtList list = tag.getList("Views", 10);
 		List<T> views = Lists.newArrayList();
-		for (var view : list) {
-			views.add(reader.apply((CompoundTag) view));
+		for (int i = 0; i < list.size(); i++) {
+			views.add(reader.apply(list.getCompound(i)));
 		}
 		ViewGroup<T> group = new ViewGroup<>(views);
 		if (tag.contains("Id")) {
@@ -53,17 +50,18 @@ public class ViewGroup<T> {
 		return group;
 	}
 
-	public static <T> boolean saveList(CompoundTag tag, String key, List<ViewGroup<T>> groups, Function<T, CompoundTag> writer) {
-		if (groups == null || groups.isEmpty())
+	public static <T> boolean saveList(NbtCompound tag, String key, List<ViewGroup<T>> groups, Function<T, NbtCompound> writer) {
+		if (groups == null || groups.isEmpty()) {
 			return false;
-		ListTag groupList = new ListTag();
+		}
+		NbtList groupList = new NbtList();
 		for (ViewGroup<T> group : groups) {
 			if (group.views.isEmpty()) {
 				continue;
 			}
-			CompoundTag groupTag = new CompoundTag();
+			NbtCompound groupTag = new NbtCompound();
 			group.save(groupTag, writer);
-			groupList.add(groupTag);
+			groupList.addElement(groupTag);
 		}
 		if (!groupList.isEmpty()) {
 			tag.put(key, groupList);
@@ -73,14 +71,14 @@ public class ViewGroup<T> {
 	}
 
 	@Nullable
-	public static <T> List<ViewGroup<T>> readList(CompoundTag tag, String key, Function<CompoundTag, T> reader) {
-		ListTag list = tag.getList(key, Tag.TAG_COMPOUND);
+	public static <T> List<ViewGroup<T>> readList(NbtCompound tag, String key, Function<NbtCompound, T> reader) {
+		NbtList list = tag.getList(key, 10);
 		if (list.isEmpty()) {
 			return null;
 		}
 		List<ViewGroup<T>> groups = Lists.newArrayList();
-		for (var item : list) {
-			ViewGroup<T> group = read((CompoundTag) item, reader);
+		for (int i = 0; i < list.size(); i++) {
+			ViewGroup<T> group = read(list.getCompound(i), reader);
 			if (!group.views.isEmpty()) {
 				groups.add(group);
 			}
@@ -88,9 +86,9 @@ public class ViewGroup<T> {
 		return groups;
 	}
 
-	public CompoundTag getExtraData() {
+	public NbtCompound getExtraData() {
 		if (extraData == null) {
-			extraData = new CompoundTag();
+			extraData = new NbtCompound();
 		}
 		return extraData;
 	}
@@ -98,4 +96,5 @@ public class ViewGroup<T> {
 	public void setProgress(float progress) {
 		getExtraData().putFloat("Progress", progress);
 	}
+
 }

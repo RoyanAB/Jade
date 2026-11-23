@@ -1,10 +1,9 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.EnchantmentTableBlock;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -20,27 +19,37 @@ public enum TotalEnchantmentPowerProvider implements IBlockComponentProvider {
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-		Level world = accessor.getLevel();
+		World world = accessor.getLevel();
 		BlockPos pos = accessor.getPosition();
 		float power = 0;
-		// EnchantmentMenu.java
-		for (BlockPos blockpos : EnchantmentTableBlock.BOOKSHELF_OFFSETS) {
-			if (EnchantmentTableBlock.isValidBookShelf(world, pos, blockpos)) {
-				power += getPower(world, pos.offset(blockpos));
+		// EnchantingTableMenu.java
+		for (int x = -1; x <= 1; x++) {
+			for (int z = -1; z <= 1; z++) {
+				if ((x == 0 && z == 0) || !world.isAir(pos.add(x, 0, z)) || !world.isAir(pos.add(x, 1, z))) {
+					continue;
+				}
+				power += getPower(world, pos.add(x * 2, 0, z * 2));
+				power += getPower(world, pos.add(x * 2, 1, z * 2));
+				if (x != 0 && z != 0) {
+					power += getPower(world, pos.add(x * 2, 0, z));
+					power += getPower(world, pos.add(x * 2, 1, z));
+					power += getPower(world, pos.add(x, 0, z * 2));
+					power += getPower(world, pos.add(x, 1, z * 2));
+				}
 			}
 		}
 
 		if (power > 0) {
-			tooltip.add(Component.translatable("jade.ench_power", IThemeHelper.get().info(DisplayHelper.dfCommas.format(power))));
+			tooltip.add(new TranslatableText("jade.ench_power", IThemeHelper.get().info(DisplayHelper.dfCommas.format(power))));
 		}
 	}
 
-	public static float getPower(Level world, BlockPos pos) {
+	public static float getPower(World world, BlockPos pos) {
 		return CommonProxy.getEnchantPowerBonus(world.getBlockState(pos), world, pos);
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_TOTAL_ENCHANTMENT_POWER;
 	}
 

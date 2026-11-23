@@ -1,14 +1,13 @@
 package snownee.jade.addon.universal;
 
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.world.Container;
-import net.minecraft.world.item.ItemStack;
 
 public abstract class ItemIterator<T> {
 	public static final AtomicLong version = new AtomicLong();
@@ -22,7 +21,8 @@ public abstract class ItemIterator<T> {
 		this.currentIndex = this.fromIndex = fromIndex;
 	}
 
-	public @Nullable T find(Object target) {
+	@Nullable
+	public T find(Object target) {
 		return containerFinder.apply(target);
 	}
 
@@ -81,22 +81,22 @@ public abstract class ItemIterator<T> {
 		}
 	}
 
-	public static class ContainerItemIterator extends SlottedItemIterator<Container> {
+	public static class ContainerItemIterator extends SlottedItemIterator<Inventory> {
 		public ContainerItemIterator(int fromIndex) {
-			this(Container.class::cast, fromIndex);
+			this(Inventory.class::cast, fromIndex);
 		}
 
-		public ContainerItemIterator(Function<Object, @Nullable Container> containerFinder, int fromIndex) {
+		public ContainerItemIterator(Function<Object, @Nullable Inventory> containerFinder, int fromIndex) {
 			super(containerFinder, fromIndex);
 		}
 
 		@Override
-		protected int getSlotCount(Container container) {
-			return container.getContainerSize();
+		protected int getSlotCount(Inventory container) {
+			return container.getSize();
 		}
 
 		@Override
-		protected ItemStack getItemInSlot(Container container, int slot) {
+		protected ItemStack getItemInSlot(Inventory container, int slot) {
 			return container.getItem(slot);
 		}
 	}

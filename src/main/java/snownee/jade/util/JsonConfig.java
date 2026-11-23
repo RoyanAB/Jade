@@ -1,34 +1,33 @@
 package snownee.jade.util;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Style;
+import org.jetbrains.annotations.Nullable;
+import snownee.jade.Jade;
+
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import org.jetbrains.annotations.Nullable;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
-
 public class JsonConfig<T> {
 
-	/* off */
 	public static final Gson DEFAULT_GSON = new GsonBuilder()
-			.setPrettyPrinting()
-			.serializeNulls()
-			.enableComplexMapKeySerialization()
-			.registerTypeAdapter(ResourceLocation.class, new ResourceLocation.Serializer())
-			.registerTypeAdapter(Style.class, new CodecJsonSerializer<>(Style.Serializer.CODEC))
-			.setLenient()
-			.create();
-	/* on */
+		.setPrettyPrinting()
+		.serializeNulls()
+		.enableComplexMapKeySerialization()
+		.registerTypeAdapter(Identifier.class, new Identifier.Serializer())
+		.registerTypeAdapter(Style.class, new Style.Serializer())
+		.setLenient()
+		.create();
 
 	private final File configFile;
 	private final CachedSupplier<T> configGetter;
@@ -42,25 +41,23 @@ public class JsonConfig<T> {
 				write(def, false);
 				return def;
 			}
-			try (FileReader reader = new FileReader(configFile, StandardCharsets.UTF_8)) {
+			try (BufferedReader reader = Files.newBufferedReader(configFile.toPath(), StandardCharsets.UTF_8)) {
 				T ret = gson.fromJson(reader, configClass);
 				if (ret == null) {
 					ret = defaultFactory.get();
 					write(ret, false);
 				}
 				return ret;
-			} catch (Exception e) {
-				e.printStackTrace();
-				try {
-					configFile.renameTo(new File(configFile.getPath() + ".invalid"));
-				} catch (Exception e1) {
-				}
+			} catch (Throwable e) {
+				Jade.LOGGER.error("Failed to read config file {}", configFile, e);
+				backUpInvalid(configFile);
 				T def = defaultFactory.get();
 				write(def, false);
 				return def;
 			}
 		});
 		configGetter.onUpdate = onUpdate;
+		mkdirs(configFile);
 	}
 
 	public JsonConfig(String fileName, Class<T> configClass, @Nullable Runnable onUpdate) {
@@ -83,19 +80,52 @@ public class JsonConfig<T> {
 	}
 
 	public void save() {
-		write(get(), false); // Does not need to invalidate since the saved instance already has updated values
+		write(get(), false);
 	}
 
 	public void write(T t, boolean invalidate) {
-		if (!configFile.getParentFile().exists())
-			configFile.getParentFile().mkdirs();
+		mkdirs(configFile);
+		Path target = configFile.toPath();
+		Path temp = target.resolveSibling(configFile.getName() + ".tmp");
 
-		try (FileWriter writer = new FileWriter(configFile, StandardCharsets.UTF_8)) {
-			writer.write(gson.toJson(t));
+		try {
+			String json = gson.toJson(t);
+			Files.write(temp, json.getBytes(StandardCharsets.UTF_8));
+			try {
+				Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+			} catch (AtomicMoveNotSupportedException e) {
+				Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+			}
 			if (invalidate)
 				invalidate();
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (Throwable e) {
+			Jade.LOGGER.error("Failed to write config file {}", configFile, e);
+			try {
+				Files.deleteIfExists(temp);
+			} catch (Throwable ignored) {
+			}
+		}
+	}
+
+	/**
+	 * Move a broken config file aside so it is not silently lost when the defaults are written back
+	 */
+	public static void backUpInvalid(File file) {
+		if (file.length() <= 0) {
+			return;
+		}
+		try {
+			Files.move(file.toPath(),
+				file.toPath().resolveSibling(file.getName() + ".invalid"),
+				StandardCopyOption.REPLACE_EXISTING);
+		} catch (Exception backupError) {
+			Jade.LOGGER.error("Failed to back up config file {}", file, backupError);
+		}
+	}
+
+	private void mkdirs(File file) {
+		if (!file.getParentFile().exists()) {
+			file.getParentFile().mkdirs();
 		}
 	}
 
@@ -110,7 +140,7 @@ public class JsonConfig<T> {
 	static class CachedSupplier<T> {
 
 		private final Supplier<T> supplier;
-		private T value;
+		private volatile T value;
 		private Runnable onUpdate;
 
 		public CachedSupplier(Supplier<T> supplier) {
@@ -118,16 +148,21 @@ public class JsonConfig<T> {
 		}
 
 		public T get() {
-			if (value == null) {
+			T v = value;
+			if (v == null) {
 				synchronized (this) {
-					value = supplier.get();
-					Objects.requireNonNull(value);
-					if (onUpdate != null) {
-						onUpdate.run();
+					v = value;
+					if (v == null) {
+						v = supplier.get();
+						Objects.requireNonNull(v);
+						if (onUpdate != null) {
+							onUpdate.run();
+						}
+						value = v;
 					}
 				}
 			}
-			return value;
+			return v;
 		}
 
 		public void invalidate() {

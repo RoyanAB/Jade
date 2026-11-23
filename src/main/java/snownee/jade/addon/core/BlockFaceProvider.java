@@ -1,10 +1,7 @@
 package snownee.jade.addon.core;
 
-import java.util.List;
-
-import net.minecraft.client.resources.language.I18n;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -12,6 +9,9 @@ import snownee.jade.api.Identifiers;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.IElementHelper;
+
+import java.util.List;
+import java.util.Locale;
 
 public enum BlockFaceProvider implements IBlockComponentProvider {
 
@@ -21,13 +21,13 @@ public enum BlockFaceProvider implements IBlockComponentProvider {
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
 		tooltip.replace(Identifiers.CORE_OBJECT_NAME, lists -> {
 			List<IElement> lastList = lists.get(lists.size() - 1);
-			lastList.add(IElementHelper.get().text(Component.translatable("jade.blockFace", I18n.get("jade." + accessor.getSide().getName()))));
+			lastList.add(IElementHelper.get().text(new TranslatableText("jade.blockFace", new TranslatableText("jade." + accessor.getSide().name().toLowerCase(Locale.ROOT)))));
 			return lists;
 		});
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.CORE_BLOCK_FACE;
 	}
 

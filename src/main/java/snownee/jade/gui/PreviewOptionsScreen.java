@@ -1,21 +1,23 @@
 package snownee.jade.gui;
 
-import java.util.Objects;
-
-import com.mojang.blaze3d.platform.InputConstants;
-
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.CycleButton;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
-import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.client.gui.GuiElement;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.client.sound.instance.SimpleSoundInstance;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.Jade;
 import snownee.jade.api.config.IWailaConfig;
+import snownee.jade.api.ui.Rect2i;
 import snownee.jade.gui.config.OptionsList;
+import snownee.jade.gui.config.widget.CycleButtonWidget;
 import snownee.jade.overlay.OverlayRenderer;
+import snownee.jade.util.ClientProxy;
+
+import java.util.Objects;
 
 public abstract class PreviewOptionsScreen extends BaseOptionsScreen {
 
@@ -23,13 +25,15 @@ public abstract class PreviewOptionsScreen extends BaseOptionsScreen {
 	private boolean adjustDragging;
 	private double dragOffsetX;
 	private double dragOffsetY;
+	private CycleButtonWidget<Boolean> previewButton;
 
-	public PreviewOptionsScreen(Screen parent, Component title) {
+	public PreviewOptionsScreen(Screen parent, Text title) {
 		super(parent, title);
 	}
 
 	public static boolean isAdjustingPosition() {
-		return Minecraft.getInstance().screen instanceof PreviewOptionsScreen screen && screen.adjustingPosition;
+		Minecraft mc = Minecraft.getInstance();
+		return mc.screen instanceof PreviewOptionsScreen && ((PreviewOptionsScreen) mc.screen).adjustingPosition;
 	}
 
 	private static float calculateAnchor(float center, float size) {
@@ -44,104 +48,119 @@ public abstract class PreviewOptionsScreen extends BaseOptionsScreen {
 	}
 
 	private static float maybeSnap(float value) {
-		if (!Screen.hasControlDown() && value > 0.475f && value < 0.525f) {
+		if (!Screen.isControlDown() && value > 0.475f && value < 0.525f) {
 			return 0.5f;
 		}
 		return value;
 	}
 
 	@Override
-	protected void init() {
+	public void init() {
 		Objects.requireNonNull(minecraft);
 		super.init();
-		if (minecraft.level != null) {
-			CycleButton<Boolean> previewButton = CycleButton.booleanBuilder(OptionsList.OPTION_ON, OptionsList.OPTION_OFF).create(10, saveButton.getY(), 85, 20, Component.translatable("gui.jade.preview"), (button, value) -> {
-				Jade.CONFIG.get().getGeneral().previewOverlay = value;
-				saver.run();
-			});
-			previewButton.setValue(Jade.CONFIG.get().getGeneral().previewOverlay);
-			addRenderableWidget(previewButton);
+		previewButton = null;
+		if (minecraft.world != null) {
+			previewButton = new CycleButtonWidget<>(java.util.Arrays.asList(Boolean.TRUE, Boolean.FALSE), v -> v ? OptionsList.OPTION_ON : OptionsList.OPTION_OFF, Jade.CONFIG.get().getGeneral().previewOverlay, v -> {
+				Jade.CONFIG.get().getGeneral().previewOverlay = v;
+				if (saver != null) {
+					saver.run();
+				}
+			}, new TranslatableText("gui.jade.preview"), false);
+			previewButton.setPos(10, saveButton.getY());
+			previewButton.setWidth(85);
+			addButton(previewButton);
 		}
 	}
 
 	public boolean forcePreviewOverlay() {
 		Objects.requireNonNull(minecraft);
-		if (adjustingPosition) return true;
-		if (!isDragging() || options == null) return false;
+		if (adjustingPosition) {
+			return true;
+		}
+		if (options == null || !options.isWidgetInteracting()) {
+			return false;
+		}
 		OptionsList.Entry entry = options.getSelected();
-		if (entry == null || entry.getFirstWidget() == null) return false;
+		if (entry == null || entry.getFirstWidget() == null) {
+			return false;
+		}
 		return options.forcePreview.contains(entry);
 	}
 
 	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int p_94697_) {
+	public void render(int mouseX, int mouseY, float partialTicks) {
+		super.render(mouseX, mouseY, partialTicks);
+		if (adjustingPosition) {
+			GuiElement.fill(0, 0, width, height, 0x80AAAAAA);
+			drawCenteredString(textRenderer, I18n.translate("config.jade.overlay_pos.exit"), width / 2, height / 2 - 7, 0xFFFFFF);
+			IWailaConfig.IConfigOverlay config = IWailaConfig.get().getOverlay();
+			Rect2i rect = OverlayRenderer.rect.expectedRect;
+			if (IWailaConfig.get().getGeneral().isDebug()) {
+				int anchorX = (int) (rect.getX() + rect.getWidth() * config.getAnchorX());
+				int anchorY = (int) (rect.getY() + rect.getHeight() * config.getAnchorY());
+				GuiElement.fill(anchorX - 2, anchorY - 2, anchorX + 1, anchorY + 1, 0xFFFF0000);
+			}
+			if (config.getOverlayPosX() == 0.5f) {
+				GuiElement.fill(width / 2, rect.getY() - 5, width / 2 + 1, rect.getY() + rect.getHeight() + 4, 0xFF0000FF);
+			}
+			if (config.getOverlayPosY() == 0.5f) {
+				GuiElement.fill(rect.getX() - 5, height / 2, rect.getX() + rect.getWidth() + 4, height / 2 + 1, 0xFF0000FF);
+			}
+		}
+		ClientProxy.onRenderTick();
+		if (!adjustingPosition) {
+			renderHoverTooltips(mouseX, mouseY);
+		}
+	}
+
+	@Override
+	protected void mouseClicked(int mouseX, int mouseY, int button) {
 		if (adjustingPosition) {
 			Objects.requireNonNull(minecraft);
 			Rect2i rect = OverlayRenderer.rect.expectedRect;
-			if (rect.contains((int) mouseX, (int) mouseY)) {
-				setDragging(true);
+			if (rect.contains(mouseX, mouseY)) {
 				adjustDragging = true;
 				float centerX = rect.getX() + rect.getWidth() / 2F;
 				float centerY = rect.getY() + rect.getHeight() / 2F;
 				dragOffsetX = mouseX - centerX;
 				dragOffsetY = mouseY - centerY;
-				return true;
 			} else {
 				adjustingPosition = false;
 				adjustDragging = false;
-				minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
-				return true;
+				minecraft.getSoundManager().play(SimpleSoundInstance.of(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			}
+			return;
 		}
-
-		return super.mouseClicked(mouseX, mouseY, p_94697_);
+		super.mouseClicked(mouseX, mouseY, button);
 	}
 
 	@Override
-	public boolean mouseReleased(double d, double e, int i) {
+	protected void mouseReleased(int mouseX, int mouseY, int button) {
 		if (adjustingPosition) {
-			setDragging(false);
 			adjustDragging = false;
-			return true;
+			return;
 		}
-		return super.mouseReleased(d, e, i);
+		super.mouseReleased(mouseX, mouseY, button);
 	}
 
 	@Override
-	public boolean mouseScrolled(double mouseX, double mouseY, double deltaX, double deltaY) {
+	protected void keyPressed(char chr, int keyCode) {
 		if (adjustingPosition) {
-			return true;
-		}
-		return super.mouseScrolled(mouseX, mouseY, deltaX, deltaY);
-	}
-
-	@Override
-	public boolean keyPressed(int i, int j, int k) {
-		if (adjustingPosition) {
-			return true;
-		}
-		return super.keyPressed(i, j, k);
-	}
-
-	@Override
-	public boolean keyReleased(int i, int j, int k) {
-		Objects.requireNonNull(minecraft);
-		if (adjustingPosition) {
-			if (i == InputConstants.KEY_ESCAPE) {
+			if (keyCode == 1) {
 				adjustingPosition = false;
 				adjustDragging = false;
-				minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+				minecraft.getSoundManager().play(SimpleSoundInstance.of(SoundEvents.UI_BUTTON_CLICK, 1.0F));
 			}
-			return true;
+			return;
 		}
-		return super.keyReleased(i, j, k);
+		super.keyPressed(chr, keyCode);
 	}
 
 	@Override
-	public boolean mouseDragged(double d, double e, int i, double f, double g) {
+	protected void mouseDragged(int mouseX, int mouseY, int button, long time) {
 		if (adjustingPosition && adjustDragging) {
-			float centerX = (float) d - (float) dragOffsetX;
-			float centerY = (float) e - (float) dragOffsetY;
+			float centerX = mouseX - (float) dragOffsetX;
+			float centerY = mouseY - (float) dragOffsetY;
 			float anchorX = calculateAnchor(centerX, width);
 			float anchorY = calculateAnchor(centerY, height);
 			Rect2i rect = OverlayRenderer.rect.expectedRect;
@@ -152,34 +171,16 @@ public abstract class PreviewOptionsScreen extends BaseOptionsScreen {
 			config.setOverlayPosY(maybeSnap(posY));
 			config.setAnchorX(config.tryFlip(anchorX));
 			config.setAnchorY(anchorY);
-			return true;
+			return;
 		}
-		return super.mouseDragged(d, e, i, f, g);
+		super.mouseDragged(mouseX, mouseY, button, time);
 	}
 
 	@Override
-	public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-		super.render(guiGraphics, mouseX, mouseY, partialTicks);
-		if (adjustingPosition) {
-			guiGraphics.fill(0, 0, width, height, 50, 0x80AAAAAA);
-			guiGraphics.pose().pushPose();
-			guiGraphics.pose().translate(0, 0, 50);
-			guiGraphics.drawCenteredString(font, Component.translatable("config.jade.overlay_pos.exit"), width / 2, height / 2 - 7, 0xFFFFFF);
-			guiGraphics.pose().popPose();
-			IWailaConfig.IConfigOverlay config = IWailaConfig.get().getOverlay();
-			Rect2i rect = OverlayRenderer.rect.expectedRect;
-			if (IWailaConfig.get().getGeneral().isDebug()) {
-				int anchorX = (int) (rect.getX() + rect.getWidth() * config.getAnchorX());
-				int anchorY = (int) (rect.getY() + rect.getHeight() * config.getAnchorY());
-				guiGraphics.fill(anchorX - 2, anchorY - 2, anchorX + 1, anchorY + 1, 1000, 0xFFFF0000);
-			}
-			if (config.getOverlayPosX() == 0.5f) {
-				guiGraphics.fill(width / 2, rect.getY() - 5, width / 2 + 1, rect.getY() + rect.getHeight() + 4, 1000, 0xFF0000FF);
-			}
-			if (config.getOverlayPosY() == 0.5f) {
-				guiGraphics.fill(rect.getX() - 5, height / 2, rect.getX() + rect.getWidth() + 4, height / 2 + 1, 1000, 0xFF0000FF);
-			}
-			deferredTooltipRendering = null;
+	protected void buttonClicked(ButtonWidget button) {
+		if (button == previewButton) {
+			return;
 		}
+		super.buttonClicked(button);
 	}
 }

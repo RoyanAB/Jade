@@ -1,24 +1,19 @@
 package snownee.jade.impl;
 
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.resource.Identifier;
+import snownee.jade.Jade;
+import snownee.jade.api.*;
+import snownee.jade.api.view.IServerExtensionProvider;
+import snownee.jade.impl.config.PluginConfig;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import snownee.jade.Jade;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IJadeProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.IWailaCommonRegistration;
-import snownee.jade.api.view.IServerExtensionProvider;
-import snownee.jade.impl.config.PluginConfig;
 
 public class WailaCommonRegistration implements IWailaCommonRegistration {
 
@@ -26,34 +21,28 @@ public class WailaCommonRegistration implements IWailaCommonRegistration {
 
 	public final HierarchyLookup<IServerDataProvider<BlockAccessor>> blockDataProviders;
 	public final HierarchyLookup<IServerDataProvider<EntityAccessor>> entityDataProviders;
-	public final PriorityStore<ResourceLocation, IJadeProvider> priorities;
-
 	public final HierarchyLookup<IServerExtensionProvider<Object, ItemStack>> itemStorageProviders;
-	public final HierarchyLookup<IServerExtensionProvider<Object, CompoundTag>> fluidStorageProviders;
-	public final HierarchyLookup<IServerExtensionProvider<Object, CompoundTag>> energyStorageProviders;
-	public final HierarchyLookup<IServerExtensionProvider<Object, CompoundTag>> progressProviders;
+	public final HierarchyLookup<IServerExtensionProvider<Object, NbtCompound>> progressProviders;
+	public final PriorityStore<Identifier, IJadeProvider> priorities;
 
 	WailaCommonRegistration() {
 		blockDataProviders = new HierarchyLookup<>(BlockEntity.class);
 		entityDataProviders = new HierarchyLookup<>(Entity.class);
+		itemStorageProviders = new HierarchyLookup<>(Object.class, true);
+		progressProviders = new HierarchyLookup<>(Object.class, true);
 		priorities = new PriorityStore<>(IJadeProvider::getDefaultPriority, IJadeProvider::getUid);
 		priorities.setSortingFunction((store, allKeys) -> {
-			List<ResourceLocation> keys = allKeys.stream()
-					.filter(PluginConfig::isPrimaryKey)
-					.sorted(Comparator.comparingInt(store::byKey))
-					.collect(Collectors.toCollection(ArrayList::new));
-			allKeys.stream().filter(Predicate.not(PluginConfig::isPrimaryKey)).forEach($ -> {
+			List<Identifier> keys = allKeys.stream()
+				.filter(PluginConfig::isPrimaryKey)
+				.sorted(Comparator.comparingInt(store::byKey))
+				.collect(Collectors.toCollection(ArrayList::new));
+			allKeys.stream().filter($ -> !PluginConfig.isPrimaryKey($)).forEach($ -> {
 				int index = keys.indexOf(PluginConfig.getPrimaryKey($));
 				keys.add(index + 1, $);
 			});
 			return keys;
 		});
 		priorities.setConfigFile(Jade.MODID + "/sort-order");
-
-		itemStorageProviders = new HierarchyLookup<>(Object.class, true);
-		fluidStorageProviders = new HierarchyLookup<>(Object.class, true);
-		energyStorageProviders = new HierarchyLookup<>(Object.class, true);
-		progressProviders = new HierarchyLookup<>(Object.class, true);
 	}
 
 	public static WailaCommonRegistration instance() {
@@ -70,7 +59,15 @@ public class WailaCommonRegistration implements IWailaCommonRegistration {
 		entityDataProviders.register(entity, dataProvider);
 	}
 
-	/* PROVIDER GETTERS */
+	@Override
+	public <T> void registerItemStorage(IServerExtensionProvider<T, ItemStack> provider, Class<? extends T> clazz) {
+		itemStorageProviders.register(clazz, (IServerExtensionProvider<Object, ItemStack>) provider);
+	}
+
+	@Override
+	public <T> void registerProgress(IServerExtensionProvider<T, NbtCompound> provider, Class<? extends T> clazz) {
+		progressProviders.register(clazz, (IServerExtensionProvider<Object, NbtCompound>) provider);
+	}
 
 	public List<IServerDataProvider<BlockAccessor>> getBlockNBTProviders(BlockEntity block) {
 		return blockDataProviders.get(block);
@@ -84,29 +81,7 @@ public class WailaCommonRegistration implements IWailaCommonRegistration {
 		blockDataProviders.loadComplete(priorities);
 		entityDataProviders.loadComplete(priorities);
 		itemStorageProviders.loadComplete(priorities);
-		fluidStorageProviders.loadComplete(priorities);
-		energyStorageProviders.loadComplete(priorities);
 		progressProviders.loadComplete(priorities);
-	}
-
-	@Override
-	public <T> void registerItemStorage(IServerExtensionProvider<T, ItemStack> provider, Class<? extends T> clazz) {
-		itemStorageProviders.register(clazz, (IServerExtensionProvider<Object, ItemStack>) provider);
-	}
-
-	@Override
-	public <T> void registerFluidStorage(IServerExtensionProvider<T, CompoundTag> provider, Class<? extends T> clazz) {
-		fluidStorageProviders.register(clazz, (IServerExtensionProvider<Object, CompoundTag>) provider);
-	}
-
-	@Override
-	public <T> void registerEnergyStorage(IServerExtensionProvider<T, CompoundTag> provider, Class<? extends T> clazz) {
-		energyStorageProviders.register(clazz, (IServerExtensionProvider<Object, CompoundTag>) provider);
-	}
-
-	@Override
-	public <T> void registerProgress(IServerExtensionProvider<T, CompoundTag> provider, Class<? extends T> clazz) {
-		progressProviders.register(clazz, (IServerExtensionProvider<Object, CompoundTag>) provider);
 	}
 
 }

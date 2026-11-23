@@ -1,38 +1,38 @@
 package snownee.jade.gui.config.value;
 
+import snownee.jade.gui.config.widget.JadeTextField;
+
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-
-import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.network.chat.Component;
 
 public class InputOptionValue<T> extends OptionValue<T> {
 
 	public static final Predicate<String> INTEGER = s -> s.matches("[-+]?[0-9]+");
 	public static final Predicate<String> FLOAT = s -> s.matches("[-+]?([0-9]*\\.[0-9]+|[0-9]+)");
 
-	private final EditBox textField;
+	private final JadeTextField textField;
 	private final Predicate<String> validator;
 
+	@SuppressWarnings("unchecked")
 	public InputOptionValue(Runnable responder, String optionName, T value, Consumer<T> setter, Predicate<String> validator) {
 		super(optionName, setter);
 		this.value = value;
 		this.validator = validator;
-		textField = new EditBox(client.font, 0, 0, 98, 18, Component.literal(""));
-		textField.setValue(String.valueOf(value));
-		textField.setResponder(s -> {
+		textField = new JadeTextField(client.textRenderer, 0, 0, 98, 18);
+		textField.setText(String.valueOf(value));
+		textField.responder = s -> {
 			if (this.validator.test(s)) {
 				setValue(s);
-				textField.setTextColor(ChatFormatting.WHITE.getColor());
+				textField.setEditableColor(0xFFFFFF);
 			} else {
-				textField.setTextColor(ChatFormatting.RED.getColor());
+				textField.setEditableColor(0xFF0000);
 			}
 			responder.run();
-		});
+		};
 		addWidget(textField, 0);
 	}
 
+	@SuppressWarnings("unchecked")
 	private void setValue(String text) {
 		if (value instanceof String)
 			value = (T) text;
@@ -59,12 +59,12 @@ public class InputOptionValue<T> extends OptionValue<T> {
 
 	@Override
 	public boolean isValidValue() {
-		return validator.test(textField.getValue());
+		return validator.test(textField.getText());
 	}
 
 	@Override
 	public void setValue(T value) {
-		textField.setValue(String.valueOf(value));
+		textField.setText(String.valueOf(value));
 	}
 
 }

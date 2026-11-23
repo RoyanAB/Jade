@@ -1,11 +1,9 @@
 package snownee.jade.api.ui;
 
-import java.util.Objects;
-
+import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
+import java.util.Objects;
 
 public abstract class ProgressStyle {
 
@@ -55,5 +53,5 @@ public abstract class ProgressStyle {
 		return fitContentY;
 	}
 
-	public abstract void render(GuiGraphics guiGraphics, float x, float y, float w, float h, float progress, Component text);
+	public abstract void render(float x, float y, float w, float h, float progress, Text text);
 }

@@ -1,12 +1,11 @@
 package snownee.jade.overlay;
 
-import java.util.List;
-
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
-
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resource.Identifier;
 import snownee.jade.util.SmoothChasingValue;
+
+import java.util.List;
 
 public class ProgressTracker {
 
@@ -15,7 +14,7 @@ public class ProgressTracker {
 		private int ticksSinceWidthChanged;
 		private int ticksSinceValueChanged;
 		private boolean updatedThisTick;
-		private SmoothChasingValue progress = new SmoothChasingValue();
+		private final SmoothChasingValue progress = new SmoothChasingValue();
 
 		public float getWidth() {
 			return width;
@@ -27,9 +26,9 @@ public class ProgressTracker {
 		}
 	}
 
-	private final ListMultimap<ResourceLocation, TrackInfo> map = ArrayListMultimap.create();
+	private final ListMultimap<Identifier, TrackInfo> map = ArrayListMultimap.create();
 
-	public TrackInfo createInfo(ResourceLocation tag, float progress, boolean canDecrease, float expectedWidth) {
+	public TrackInfo createInfo(Identifier tag, float progress, boolean canDecrease, float expectedWidth) {
 		List<TrackInfo> infos = map.get(tag);
 		TrackInfo info = null;
 		for (TrackInfo o : infos) {
@@ -51,7 +50,7 @@ public class ProgressTracker {
 			if (info.ticksSinceValueChanged > 10) {
 				info.progress.withSpeed(0.4F);
 			} else if (canDecrease || progress >= info.progress.getTarget()) {
-				float spd = Math.abs(progress - info.progress.getTarget()) / info.ticksSinceValueChanged;
+				float spd = Math.abs(progress - info.progress.getTarget()) / Math.max(1, info.ticksSinceValueChanged);
 				spd = Math.max(0.1F, 4F * spd);
 				info.progress.withSpeed(spd);
 			}

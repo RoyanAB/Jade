@@ -1,13 +1,10 @@
 package snownee.jade.addon.vanilla;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.mojang.authlib.GameProfile;
-
-import net.minecraft.client.resources.language.I18n;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.entity.SkullBlockEntity;
+import net.minecraft.block.entity.SkullBlockEntity;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -22,27 +19,25 @@ public enum PlayerHeadProvider implements IBlockComponentProvider {
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-		if (accessor.getBlockEntity() instanceof SkullBlockEntity tile) {
-			GameProfile profile = tile.getOwnerProfile();
-			if (profile == null)
+		if (accessor.getBlockEntity() instanceof SkullBlockEntity) {
+			GameProfile profile = ((SkullBlockEntity) accessor.getBlockEntity()).getProfile();
+			if (profile == null) {
 				return;
+			}
 			String name = profile.getName();
 			if (name == null) {
 				name = CommonProxy.getLastKnownUsername(profile.getId());
 			}
-			if (name == null || StringUtils.isBlank(name)) {
+			if (name == null || name.trim().isEmpty()) {
 				return;
 			}
-			if (!name.contains(" ") && !name.contains("§")) {
-				name = I18n.get(Items.PLAYER_HEAD.getDescriptionId() + ".named", name);
-			}
-			tooltip.replace(Identifiers.CORE_OBJECT_NAME, IThemeHelper.get().title(name));
+			Text text = new TranslatableText("item.skull.player.name", name);
+			tooltip.replace(Identifiers.CORE_OBJECT_NAME, IThemeHelper.get().title(text));
 		}
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_PLAYER_HEAD;
 	}
-
 }

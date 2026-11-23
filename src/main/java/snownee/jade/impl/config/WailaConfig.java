@@ -1,24 +1,24 @@
 package snownee.jade.impl.config;
 
-import java.util.List;
-import java.util.Optional;
-
 import com.google.common.collect.Lists;
 import com.google.gson.annotations.Expose;
-
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
-import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.entity.living.Arm;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Formatting;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.MathHelper;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.theme.Theme;
 import snownee.jade.util.CommonProxy;
 import snownee.jade.util.ModIdentification;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Get this instance from {@link IWailaConfig#get()}
@@ -63,22 +63,22 @@ public class WailaConfig implements IWailaConfig {
 		private boolean hideFromTabList = true;
 		private boolean enableTextToSpeech = false;
 		private TTSMode ttsMode = TTSMode.PRESS;
-		private FluidMode fluidMode = FluidMode.ANY;
+		private boolean fluidMode = true;
 		private float reachDistance = 0;
 		@Expose
 		private boolean debug = false;
 		private boolean itemModNameTooltip = true;
 		private BossBarOverlapMode bossBarOverlapMode = BossBarOverlapMode.PUSH_DOWN;
-		private boolean builtinCamouflage = true;
 
 		public static void init() {
-			/* off */
-			List<String> names = itemModNameTooltipDisabledByMods.stream()
-					.filter(CommonProxy::isModLoaded)
-					.map(ModIdentification::getModName)
-					.map(Optional::orElseThrow)
-					.toList();
-			/* on */
+			List<String> names = Lists.newArrayList();
+			for (String modid : itemModNameTooltipDisabledByMods) {
+				if (!CommonProxy.isModLoaded(modid)) {
+					continue;
+				}
+				Optional<String> name = ModIdentification.getModName(modid);
+				name.ifPresent(names::add);
+			}
 			itemModNameTooltipDisabledByMods.clear();
 			itemModNameTooltipDisabledByMods.addAll(names);
 		}
@@ -155,21 +155,11 @@ public class WailaConfig implements IWailaConfig {
 
 		@Override
 		public boolean shouldDisplayFluids() {
-			return fluidMode != FluidMode.NONE;
-		}
-
-		@Override
-		public FluidMode getDisplayFluids() {
 			return fluidMode;
 		}
 
 		@Override
 		public void setDisplayFluids(boolean displayFluids) {
-			fluidMode = displayFluids ? FluidMode.ANY : FluidMode.NONE;
-		}
-
-		@Override
-		public void setDisplayFluids(FluidMode displayFluids) {
 			fluidMode = displayFluids;
 		}
 
@@ -180,7 +170,7 @@ public class WailaConfig implements IWailaConfig {
 
 		@Override
 		public void setReachDistance(float reachDistance) {
-			this.reachDistance = Mth.clamp(reachDistance, 0, 20);
+			this.reachDistance = MathHelper.clamp(reachDistance, 0, 20);
 		}
 
 		@Override
@@ -232,21 +222,10 @@ public class WailaConfig implements IWailaConfig {
 		public void setDisplayBosses(boolean displayBosses) {
 			this.displayBosses = displayBosses;
 		}
-
-		@Override
-		public boolean getBuiltinCamouflage() {
-			return builtinCamouflage;
-		}
-
-		@Override
-		public void setBuiltinCamouflage(boolean builtinCamouflage) {
-			this.builtinCamouflage = builtinCamouflage;
-		}
-
 	}
 
 	public static class ConfigOverlay implements IConfigOverlay {
-		public ResourceLocation activeTheme = Theme.DEFAULT_THEME_ID;
+		public Identifier activeTheme = Theme.DEFAULT_THEME_ID;
 		public int themesHash;
 		private float overlayPosX = 0.5F;
 		private float overlayPosY = 1.0F;
@@ -265,22 +244,22 @@ public class WailaConfig implements IWailaConfig {
 
 		@Override
 		public float getOverlayPosX() {
-			return Mth.clamp(overlayPosX, 0.0F, 1.0F);
+			return MathHelper.clamp(overlayPosX, 0.0F, 1.0F);
 		}
 
 		@Override
 		public void setOverlayPosX(float overlayPosX) {
-			this.overlayPosX = Mth.clamp(overlayPosX, 0.0F, 1.0F);
+			this.overlayPosX = MathHelper.clamp(overlayPosX, 0.0F, 1.0F);
 		}
 
 		@Override
 		public float getOverlayPosY() {
-			return Mth.clamp(overlayPosY, 0.0F, 1.0F);
+			return MathHelper.clamp(overlayPosY, 0.0F, 1.0F);
 		}
 
 		@Override
 		public void setOverlayPosY(float overlayPosY) {
-			this.overlayPosY = Mth.clamp(overlayPosY, 0.0F, 1.0F);
+			this.overlayPosY = MathHelper.clamp(overlayPosY, 0.0F, 1.0F);
 		}
 
 		@Override
@@ -290,27 +269,27 @@ public class WailaConfig implements IWailaConfig {
 
 		@Override
 		public void setOverlayScale(float overlayScale) {
-			this.overlayScale = Mth.clamp(overlayScale, 0.2F, 2.0F);
+			this.overlayScale = MathHelper.clamp(overlayScale, 0.2F, 2.0F);
 		}
 
 		@Override
 		public float getAnchorX() {
-			return Mth.clamp(overlayAnchorX, 0.0F, 1.0F);
+			return MathHelper.clamp(overlayAnchorX, 0.0F, 1.0F);
 		}
 
 		@Override
 		public void setAnchorX(float overlayAnchorX) {
-			this.overlayAnchorX = Mth.clamp(overlayAnchorX, 0.0F, 1.0F);
+			this.overlayAnchorX = MathHelper.clamp(overlayAnchorX, 0.0F, 1.0F);
 		}
 
 		@Override
 		public float getAnchorY() {
-			return Mth.clamp(overlayAnchorY, 0.0F, 1.0F);
+			return MathHelper.clamp(overlayAnchorY, 0.0F, 1.0F);
 		}
 
 		@Override
 		public void setAnchorY(float overlayAnchorY) {
-			this.overlayAnchorY = Mth.clamp(overlayAnchorY, 0.0F, 1.0F);
+			this.overlayAnchorY = MathHelper.clamp(overlayAnchorY, 0.0F, 1.0F);
 		}
 
 		@Override
@@ -325,7 +304,7 @@ public class WailaConfig implements IWailaConfig {
 
 		@Override
 		public float tryFlip(float f) {
-			if (flipMainHand && Minecraft.getInstance().options.mainHand().get() == HumanoidArm.LEFT)
+			if (flipMainHand && Minecraft.getInstance().options.mainArm == Arm.LEFT)
 				f = 1 - f;
 			return f;
 		}
@@ -352,7 +331,7 @@ public class WailaConfig implements IWailaConfig {
 
 		@Override
 		public void setAlpha(float alpha) {
-			this.alpha = Mth.clamp(alpha, 0, 1);
+			this.alpha = MathHelper.clamp(alpha, 0, 1);
 		}
 
 		@Override
@@ -363,7 +342,7 @@ public class WailaConfig implements IWailaConfig {
 		}
 
 		@Override
-		public void applyTheme(ResourceLocation id) {
+		public void applyTheme(Identifier id) {
 			activeThemeInstance = IThemeHelper.get().getTheme(id);
 			activeTheme = activeThemeInstance.id;
 		}
@@ -406,7 +385,7 @@ public class WailaConfig implements IWailaConfig {
 	}
 
 	public static class ConfigFormatting implements IConfigFormatting {
-		private Style itemModNameStyle = Style.EMPTY.applyFormats(ChatFormatting.BLUE, ChatFormatting.ITALIC);
+		private Style itemModNameStyle = new Style().setColor(Formatting.BLUE).setItalic(true);
 
 		@Override
 		public Style getItemModNameStyle() {
@@ -419,8 +398,8 @@ public class WailaConfig implements IWailaConfig {
 		}
 
 		@Override
-		public Component registryName(String name) {
-			return Component.literal(name).withStyle(IThemeHelper.get().isLightColorScheme() ? ChatFormatting.DARK_GRAY : ChatFormatting.GRAY);
+		public Text registryName(String name) {
+			return new LiteralText(name).setStyle(new Style().setColor(IThemeHelper.get().isLightColorScheme() ? Formatting.DARK_GRAY : Formatting.GRAY));
 		}
 	}
 

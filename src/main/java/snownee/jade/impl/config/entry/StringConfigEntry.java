@@ -1,17 +1,17 @@
 package snownee.jade.impl.config.entry;
 
-import java.util.function.Predicate;
-
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resource.Identifier;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.gui.config.value.OptionValue;
 import snownee.jade.impl.config.PluginConfig;
 
+import java.util.function.Predicate;
+
 public class StringConfigEntry extends ConfigEntry<String> {
 
-	private Predicate<String> validator;
+	private final Predicate<String> validator;
 
-	public StringConfigEntry(ResourceLocation id, String defaultValue, Predicate<String> validator) {
+	public StringConfigEntry(Identifier id, String defaultValue, Predicate<String> validator) {
 		super(id, defaultValue);
 		this.validator = validator;
 	}

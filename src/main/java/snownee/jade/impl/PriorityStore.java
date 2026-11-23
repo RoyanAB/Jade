@@ -1,27 +1,19 @@
 package snownee.jade.impl;
 
-import java.lang.reflect.Type;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.ToIntFunction;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
-
 import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.util.JsonConfig;
+
+import java.lang.reflect.Type;
+import java.util.*;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.ToIntFunction;
 
 public class PriorityStore<K, V> {
 
@@ -31,7 +23,11 @@ public class PriorityStore<K, V> {
 	@Nullable
 	private String configFile;
 	private ImmutableList<K> sortedList = ImmutableList.of();
-	private BiFunction<PriorityStore<K, V>, Collection<K>, List<K>> sortingFunction = (store, allKeys) -> allKeys.stream().sorted(Comparator.comparingInt(store::byKey)).toList();
+	private BiFunction<PriorityStore<K, V>, Collection<K>, List<K>> sortingFunction = (store, allKeys) -> {
+		List<K> list = new ArrayList<>(allKeys);
+		list.sort(Comparator.comparingInt(store::byKey));
+		return list;
+	};
 
 	public PriorityStore(ToIntFunction<V> defaultPriorityGetter, Function<V, K> keyGetter) {
 		this.defaultPriorityGetter = defaultPriorityGetter;
@@ -70,7 +66,7 @@ public class PriorityStore<K, V> {
 			}.getType();
 			JsonConfig<Map<K, Integer>> config = new JsonConfig<>(configFile, type, null, LinkedHashMap::new);
 			Map<K, Integer> map = config.get();
-			for (var e : map.entrySet()) {
+			for (Map.Entry<K, Integer> e : map.entrySet()) {
 				if (e.getValue() != null)
 					priorities.put(e.getKey(), e.getValue().intValue());
 			}

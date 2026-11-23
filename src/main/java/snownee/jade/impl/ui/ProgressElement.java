@@ -1,32 +1,25 @@
 package snownee.jade.impl.ui;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
-import net.minecraft.world.phys.Vec2;
-import snownee.jade.api.ui.BoxStyle;
-import snownee.jade.api.ui.Element;
-import snownee.jade.api.ui.IDisplayHelper;
-import snownee.jade.api.ui.IElement;
-import snownee.jade.api.ui.ProgressStyle;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec2f;
+import org.jetbrains.annotations.Nullable;
+import snownee.jade.api.ui.*;
 import snownee.jade.overlay.ProgressTracker.TrackInfo;
 import snownee.jade.overlay.WailaTickHandler;
 
 public class ProgressElement extends Element implements StyledElement {
 	private final float progress;
 	@Nullable
-	private final Component text;
+	private final Text text;
 	private final ProgressStyle style;
 	private final BoxStyle boxStyle;
 	private TrackInfo track;
-	private boolean canDecrease;
+	private final boolean canDecrease;
 
-	public ProgressElement(float progress, Component text, ProgressStyle style, BoxStyle boxStyle, boolean canDecrease) {
-		this.progress = Mth.clamp(progress, 0, 1);
+	public ProgressElement(float progress, @Nullable Text text, ProgressStyle style, BoxStyle boxStyle, boolean canDecrease) {
+		this.progress = MathHelper.clamp(progress, 0, 1);
 		this.text = text;
 		this.style = style;
 		this.boxStyle = boxStyle;
@@ -34,42 +27,42 @@ public class ProgressElement extends Element implements StyledElement {
 	}
 
 	@Override
-	public Vec2 getSize() {
+	public Vec2f getSize() {
 		int height = text == null ? 8 : 14;
 		float width = 0;
 		width += boxStyle.borderWidth() * 2;
 		if (text != null) {
-			Font font = Minecraft.getInstance().font;
-			width += font.width(text) + 3;
+			width += Minecraft.getInstance().textRenderer.getWidth(text.getString()) + 3;
 		}
 		width = Math.max(20, width);
 		if (getTag() != null) {
 			track = WailaTickHandler.instance().progressTracker.createInfo(getTag(), progress, canDecrease, width);
 			width = track.getWidth();
 		}
-		return new Vec2(width, height);
+		return new Vec2f(width, height);
 	}
 
 	@Override
-	public void render(GuiGraphics guiGraphics, float x, float y, float maxX, float maxY) {
+	public void render(float x, float y, float maxX, float maxY) {
 		float width = style.direction().isHorizontal() && style.fitContentX() ? maxX - x : getCachedSize().x;
 		float height = style.direction().isVertical() && style.fitContentY() ? maxY - y : getCachedSize().y;
 		x = style.direction().isHorizontal() ? x : x + (maxX - x - width) / 2;
 		y = style.direction().isVertical() ? y : y + (maxY - y - height) / 2;
-		boxStyle.render(guiGraphics, this, x, y, width, height, IDisplayHelper.get().opacity());
+		boxStyle.render(this, x, y, width, height, IDisplayHelper.get().opacity());
 		float progress = this.progress;
 		if (track == null && getTag() != null) {
 			track = WailaTickHandler.instance().progressTracker.createInfo(getTag(), progress, canDecrease, width);
 		}
 		if (track != null) {
-			progress = track.tick(Minecraft.getInstance().getDeltaFrameTime());
+			progress = track.tick(Minecraft.getInstance().getTickDelta());
 		}
 		float b = boxStyle.borderWidth();
-		style.render(guiGraphics, x + b, y + b, width - b * 2, height - b * 2, progress, text);
+		style.render(x + b, y + b, width - b * 2, height - b * 2, progress, text);
 	}
 
 	@Override
-	public @Nullable String getMessage() {
+	@Nullable
+	public String getMessage() {
 		return text == null ? null : text.getString();
 	}
 

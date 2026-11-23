@@ -1,19 +1,13 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.RecordItem;
-import net.minecraft.world.level.block.JukeboxBlock;
-import net.minecraft.world.level.block.entity.JukeboxBlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.block.JukeboxBlock;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.Jade;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.ui.IDisplayHelper;
 
@@ -23,35 +17,32 @@ public enum JukeboxProvider implements IBlockComponentProvider, IServerDataProvi
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-		BlockState state = accessor.getBlockState();
-		if (state.getValue(JukeboxBlock.HAS_RECORD) && accessor.getServerData().contains("Record")) {
-			try {
-				ItemStack stack = ItemStack.of(accessor.getServerData().getCompound("Record"));
-				Component name;
-				if (stack.getItem() instanceof RecordItem record) {
-					name = record.getDisplayName();
-				} else {
-					name = stack.getHoverName();
-				}
-				tooltip.add(Component.translatable("record.nowPlaying", IDisplayHelper.get().stripColor(name)));
-			} catch (Exception e) {
-				Jade.LOGGER.error("", e);
+		if (!accessor.getServerData().contains("Record")) {
+			if (!accessor.getBlockState().get(JukeboxBlock.HAS_RECORD)) {
+				tooltip.add(new TranslatableText("tooltip.jade.empty"));
 			}
-		} else {
-			tooltip.add(Component.translatable("tooltip.jade.empty"));
+			return;
+		}
+		try {
+			ItemStack stack = new ItemStack(accessor.getServerData().getCompound("Record"));
+			if (stack.isEmpty()) {
+				tooltip.add(new TranslatableText("tooltip.jade.empty"));
+				return;
+			}
+			tooltip.add(new TranslatableText("record.nowPlaying", IDisplayHelper.get().stripColor(new LiteralText(stack.getHoverName()))));
+		} catch (Exception e) {
+			Jade.LOGGER.error("", e);
 		}
 	}
 
 	@Override
-	public void appendServerData(CompoundTag data, BlockAccessor accessor) {
-		ItemStack stack = ((JukeboxBlockEntity) accessor.getBlockEntity()).getTheItem();
-		if (!stack.isEmpty()) {
-			data.put("Record", stack.save(new CompoundTag()));
-		}
+	public void appendServerData(NbtCompound data, BlockAccessor accessor) {
+		ItemStack stack = ((JukeboxBlock.JukeboxBlockEntity) accessor.getBlockEntity()).getRecord();
+		data.put("Record", stack.writeNbt(new NbtCompound()));
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_JUKEBOX;
 	}
 }

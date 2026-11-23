@@ -1,47 +1,28 @@
 package snownee.jade.addon.universal;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.lang3.mutable.MutableBoolean;
-
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
-
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.LockCode;
-import net.minecraft.world.RandomizableContainer;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.vehicle.ContainerEntity;
-import net.minecraft.world.inventory.PlayerEnderChestContainer;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
-import net.minecraft.world.level.block.entity.BaseContainerBlockEntity;
-import net.minecraft.world.level.block.entity.EnderChestBlockEntity;
-import snownee.jade.api.Accessor;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
-import snownee.jade.api.TooltipPosition;
+import net.minecraft.block.entity.EnderChestBlockEntity;
+import net.minecraft.block.entity.FurnaceBlockEntity;
+import net.minecraft.entity.living.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.inventory.menu.LockableMenuProvider;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.world.Lootable;
+import org.apache.commons.lang3.mutable.MutableBoolean;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.ui.Direction2D;
 import snownee.jade.api.ui.IDisplayHelper;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.IElementHelper;
-import snownee.jade.api.view.ClientViewGroup;
-import snownee.jade.api.view.IClientExtensionProvider;
-import snownee.jade.api.view.IServerExtensionProvider;
-import snownee.jade.api.view.ItemView;
-import snownee.jade.api.view.ViewGroup;
+import snownee.jade.api.view.*;
 import snownee.jade.impl.WailaClientRegistration;
 import snownee.jade.impl.WailaCommonRegistration;
 import snownee.jade.impl.config.PluginConfig;
@@ -49,8 +30,12 @@ import snownee.jade.impl.ui.HorizontalLineElement;
 import snownee.jade.util.CommonProxy;
 import snownee.jade.util.WailaExceptionHandler;
 
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
 public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataProvider<BlockAccessor>,
-		IServerExtensionProvider<Object, ItemStack>, IClientExtensionProvider<ItemStack, ItemView> {
+	IServerExtensionProvider<Object, ItemStack>, IClientExtensionProvider<ItemStack, ItemView> {
 
 	INSTANCE;
 
@@ -60,32 +45,37 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 	public static void append(ITooltip tooltip, Accessor<?> accessor, IPluginConfig config) {
 		if (!accessor.getServerData().contains("JadeItemStorage")) {
 			if (accessor.getServerData().getBoolean("Loot")) {
-				tooltip.add(Component.translatable("jade.loot_not_generated"));
+				tooltip.add(new TranslatableText("jade.loot_not_generated"));
 			} else if (accessor.getServerData().getBoolean("Locked")) {
-				tooltip.add(Component.translatable("jade.locked"));
+				tooltip.add(new TranslatableText("jade.locked"));
 			}
 			return;
 		}
-		var provider = Optional.ofNullable(ResourceLocation.tryParse(accessor.getServerData().getString("JadeItemStorageUid"))).map(WailaClientRegistration.instance().itemStorageProviders::get);
-		if (provider.isEmpty()) {
+		IClientExtensionProvider<ItemStack, ItemView> provider = null;
+		try {
+			provider = WailaClientRegistration.instance().itemStorageProviders.get(new Identifier(accessor.getServerData().getString("JadeItemStorageUid")));
+		} catch (Exception ignored) {
+		}
+		if (provider == null) {
 			return;
 		}
-		var groups = provider.get().getClientGroups(accessor, ViewGroup.readList(accessor.getServerData(), "JadeItemStorage", itemTag -> {
-			ItemStack item = ItemStack.of(itemTag);
-			if (!item.isEmpty() && itemTag.contains("NewCount"))
-				item.setCount(itemTag.getInt("NewCount"));
+		List<ClientViewGroup<ItemView>> groups = provider.getClientGroups(accessor, ViewGroup.readList(accessor.getServerData(), "JadeItemStorage", itemTag -> {
+			ItemStack item = new ItemStack(itemTag);
+			if (!item.isEmpty() && itemTag.contains("NewCount")) {
+				item.setSize(itemTag.getInt("NewCount"));
+			}
 			return item;
 		}));
 
-		if (groups.isEmpty()) {
+		if (groups == null || groups.isEmpty()) {
 			return;
 		}
 
 		MutableBoolean showName = new MutableBoolean(true);
 		{
 			int totalSize = 0;
-			for (var group : groups) {
-				for (var view : group.views) {
+			for (ClientViewGroup<ItemView> group : groups) {
+				for (ItemView view : group.views) {
 					if (view.amountText != null) {
 						showName.setFalse();
 					}
@@ -94,8 +84,9 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 					}
 				}
 			}
-			if (showName.isTrue())
+			if (showName.isTrue()) {
 				showName.setValue(totalSize < PluginConfig.INSTANCE.getInt(Identifiers.MC_ITEM_STORAGE_SHOW_NAME_AMOUNT));
+			}
 		}
 
 		IElementHelper helper = IElementHelper.get();
@@ -109,13 +100,13 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 				}
 			}
 			if (group.views.isEmpty()) {
-				CompoundTag data = group.extraData;
-				if (data != null && data.contains("Collecting", Tag.TAG_ANY_NUMERIC)) {
+				NbtCompound data = group.extraData;
+				if (data != null && data.contains("Collecting")) {
 					float progress = data.getFloat("Collecting");
 					if (progress < 1) {
-						MutableComponent component = Component.translatable("jade.collectingItems");
+						Text component = new TranslatableText("jade.collectingItems");
 						if (progress > 0) {
-							component.append(" %s%%".formatted((int) (progress * 100)));
+							component = component.append(String.format(" %s%%", (int) (progress * 100)));
 						}
 						theTooltip.add(component);
 					}
@@ -128,8 +119,9 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 			for (int i = 0; i < realSize; i++) {
 				ItemView itemView = group.views.get(i);
 				ItemStack stack = itemView.item;
-				if (stack.isEmpty())
+				if (stack.isEmpty()) {
 					continue;
+				}
 				if (i > 0 && (showName.isTrue() || drawnCount >= PluginConfig.INSTANCE.getInt(Identifiers.MC_ITEM_STORAGE_ITEMS_PER_LINE))) {
 					theTooltip.add(elements);
 					theTooltip.setLineMargin(-1, Direction2D.DOWN, -1);
@@ -143,9 +135,9 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 						elements.addAll(itemView.description);
 					} else {
 						elements.add(helper.smallItem(stack).clearCachedMessage());
-						elements.add(helper.text(Component.literal(IDisplayHelper.get().humanReadableNumber(stack.getCount(), "", false, null))
-								.append("× ")
-								.append(IDisplayHelper.get().stripColor(stack.getHoverName()))).message(null));
+						elements.add(helper.text(new LiteralText(IDisplayHelper.get().humanReadableNumber(stack.getSize(), "", false, null))
+							.append("× ")
+							.append(IDisplayHelper.get().stripColor(new LiteralText(stack.getHoverName())))).message(null));
 					}
 				} else if (itemView.amountText != null) {
 					elements.add(helper.item(stack, 1, itemView.amountText));
@@ -162,34 +154,32 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 	}
 
 	public static void putData(Accessor<?> accessor) {
-		CompoundTag tag = accessor.getServerData();
+		NbtCompound tag = accessor.getServerData();
 		Object target = accessor.getTarget();
-		Player player = accessor.getPlayer();
-		for (var provider : WailaCommonRegistration.instance().itemStorageProviders.get(target)) {
-			var groups = provider.getGroups(accessor, target);
+		PlayerEntity player = accessor.getPlayer();
+		for (IServerExtensionProvider<Object, ItemStack> provider : WailaCommonRegistration.instance().itemStorageProviders.get(target)) {
+			List<ViewGroup<ItemStack>> groups = provider.getGroups(accessor, target);
 			if (groups == null) {
 				continue;
 			}
 			if (ViewGroup.saveList(tag, "JadeItemStorage", groups, item -> {
-				CompoundTag itemTag = new CompoundTag();
-				int count = item.getCount();
+				NbtCompound itemTag = new NbtCompound();
+				int count = item.getSize();
 				if (count > 64) {
-					item.setCount(1);
+					item.setSize(1);
 				}
-				item.save(itemTag);
+				item.writeNbt(itemTag);
 				if (count > 64) {
 					itemTag.putInt("NewCount", count);
-					item.setCount(count);
+					item.setSize(count);
 				}
 				return itemTag;
 			})) {
 				tag.putString("JadeItemStorageUid", provider.getUid().toString());
-			} else if (target instanceof RandomizableContainer containerEntity && containerEntity.getLootTable() != null) {
+			} else if (target instanceof Lootable && ((Lootable) target).getLootTableId() != null) {
 				tag.putBoolean("Loot", true);
-			} else if (!player.isCreative() && !player.isSpectator() && target instanceof BaseContainerBlockEntity te) {
-				if (te.lockKey != LockCode.NO_LOCK) {
-					tag.putBoolean("Locked", true);
-				}
+			} else if (player != null && !player.abilities.creativeMode && !player.isSpectator() && target instanceof LockableMenuProvider && ((LockableMenuProvider) target).isLocked()) {
+				tag.putBoolean("Locked", true);
 			}
 			break;
 		}
@@ -197,21 +187,22 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-		if (accessor.getBlockEntity() instanceof AbstractFurnaceBlockEntity)
+		if (accessor.getBlockEntity() instanceof FurnaceBlockEntity) {
 			return;
+		}
 		append(tooltip, accessor, config);
 	}
 
 	@Override
-	public void appendServerData(CompoundTag tag, BlockAccessor accessor) {
-		if (accessor.getBlockEntity() instanceof AbstractFurnaceBlockEntity) {
+	public void appendServerData(NbtCompound tag, BlockAccessor accessor) {
+		if (accessor.getBlockEntity() instanceof FurnaceBlockEntity) {
 			return;
 		}
 		putData(accessor);
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.UNIVERSAL_ITEM_STORAGE;
 	}
 
@@ -222,21 +213,16 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 
 	@Override
 	public List<ViewGroup<ItemStack>> getGroups(Accessor<?> accessor, Object target) {
-		if (target instanceof RandomizableContainer te && te.getLootTable() != null) {
-			return List.of();
+		if (target instanceof Lootable && ((Lootable) target).getLootTableId() != null) {
+			return java.util.Collections.emptyList();
 		}
-		if (target instanceof ContainerEntity containerEntity && containerEntity.getLootTable() != null) {
-			return List.of();
-		}
-		Player player = accessor.getPlayer();
-		if (!player.isCreative() && !player.isSpectator() && target instanceof BaseContainerBlockEntity te) {
-			if (te.lockKey != LockCode.NO_LOCK) {
-				return List.of();
-			}
+		PlayerEntity player = accessor.getPlayer();
+		if (player != null && !player.abilities.creativeMode && !player.isSpectator() && target instanceof LockableMenuProvider && ((LockableMenuProvider) target).isLocked()) {
+			return java.util.Collections.emptyList();
 		}
 		if (player != null && target instanceof EnderChestBlockEntity) {
-			PlayerEnderChestContainer inventory = player.getEnderChestInventory();
-			return new ItemCollector<>(new ItemIterator.ContainerItemIterator(0)).update(inventory, accessor.getLevel().getGameTime());
+			Inventory inventory = player.getEnderChestInventory();
+			return new ItemCollector<>(new ItemIterator.ContainerItemIterator(0)).update(inventory, accessor.getLevel().getTime());
 		}
 		ItemCollector<?> itemCollector;
 		try {
@@ -248,11 +234,14 @@ public enum ItemStorageProvider implements IBlockComponentProvider, IServerDataP
 		if (itemCollector == ItemCollector.EMPTY) {
 			return null;
 		}
-		return itemCollector.update(target, accessor.getLevel().getGameTime());
+		return itemCollector.update(target, accessor.getLevel().getTime());
 	}
 
 	@Override
 	public List<ClientViewGroup<ItemView>> getClientGroups(Accessor<?> accessor, List<ViewGroup<ItemStack>> groups) {
+		if (groups == null) {
+			return java.util.Collections.emptyList();
+		}
 		return ClientViewGroup.map(groups, ItemView::new, null);
 	}
 

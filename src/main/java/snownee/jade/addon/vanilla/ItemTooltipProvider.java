@@ -1,32 +1,22 @@
 package snownee.jade.addon.vanilla;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-
-import com.google.common.collect.Lists;
-import com.mojang.datafixers.util.Either;
-
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.FormattedText;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.TextColor;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.inventory.tooltip.TooltipComponent;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.TooltipFlag;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Formatting;
+import net.minecraft.text.LiteralText;
 import snownee.jade.JadeClient;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.IEntityComponentProvider;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.config.IPluginConfig;
-import snownee.jade.impl.ui.TextElement;
 import snownee.jade.util.ModIdentification;
+
+import java.util.List;
+import java.util.Objects;
 
 public enum ItemTooltipProvider implements IEntityComponentProvider {
 
@@ -36,40 +26,26 @@ public enum ItemTooltipProvider implements IEntityComponentProvider {
 	public void appendTooltip(ITooltip tooltip, EntityAccessor accessor, IPluginConfig config) {
 		ItemStack stack = ((ItemEntity) accessor.getEntity()).getItem();
 		JadeClient.hideModName = true;
-		List<Either<FormattedText, TooltipComponent>> lines = Lists.newArrayList();
-		stack.getTooltipLines(null, TooltipFlag.Default.NORMAL)
-				.stream()
-				.peek(component -> {
-					if (component instanceof MutableComponent mutable && mutable.getStyle().getColor() != null) {
-						mutable.setStyle(mutable.getStyle().withColor((TextColor) null));
-					}
-				})
-				.map(Either::<FormattedText, TooltipComponent>left)
-				.forEach(lines::add);
+		List<String> lines = stack.getTooltip(null, TooltipFlag.Default.NORMAL);
 		JadeClient.hideModName = false;
 		if (lines.isEmpty()) {
 			return;
 		}
-		List<FormattedText> realLines = lines.stream().map($ -> $.left()).filter(Optional::isPresent).map(Optional::get).skip(1).toList();
 		String modName = ModIdentification.getModName(stack);
-		Font font = Minecraft.getInstance().font;
-		int maxWidth = 250;
-		for (FormattedText text : realLines) {
-			if (Objects.equals(ChatFormatting.stripFormatting(text.getString()), modName)) {
+		for (int i = 1; i < lines.size(); i++) {
+			String line = Formatting.strip(lines.get(i));
+			if (Objects.equals(line, modName)) {
 				continue;
 			}
-			int width = font.width(text);
-			if (width > maxWidth) {
-				tooltip.add(Component.literal(font.substrByWidth(text, maxWidth - 5).getString() + ".."));
-			} else {
-				tooltip.add(new TextElement(text));
+			if (Minecraft.getInstance().textRenderer.getWidth(line) > 250) {
+				line = Minecraft.getInstance().textRenderer.trim(line, 245) + "..";
 			}
+			tooltip.add(new LiteralText(line));
 		}
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_ITEM_TOOLTIP;
 	}
-
 }

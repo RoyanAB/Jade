@@ -1,14 +1,9 @@
 package snownee.jade.impl.ui;
 
-import org.joml.Vector3f;
-
 import com.google.common.base.Preconditions;
-
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.phys.Vec2;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.Vec2f;
 import snownee.jade.api.config.IWailaConfig.IConfigOverlay;
 import snownee.jade.api.ui.Color;
 import snownee.jade.api.ui.Direction2D;
@@ -18,7 +13,7 @@ import snownee.jade.overlay.OverlayRenderer;
 
 public class SimpleProgressStyle extends ProgressStyle {
 
-	public boolean autoTextColor = true; // TODO
+	public boolean autoTextColor = true;
 	public int color;
 	public int color2;
 	public int textColor;
@@ -28,33 +23,11 @@ public class SimpleProgressStyle extends ProgressStyle {
 		color(0xFFFFFFFF);
 	}
 
-	private static Vector3f RGBtoHSV(int rgb) {
+	private static double brightness(int rgb) {
 		int r = (rgb >> 16) & 255;
 		int g = (rgb >> 8) & 255;
 		int b = rgb & 255;
-		int max = Math.max(r, Math.max(g, b));
-		int min = Math.min(r, Math.min(g, b));
-		float v = max;
-		float delta = max - min;
-		float h, s;
-		if (max != 0)
-			s = delta / max; // s
-		else {
-			// r = g = b = 0        // s = 0, v is undefined
-			s = 0;
-			h = -1;
-			return new Vector3f(h, s, 0 /*Float.NaN*/);
-		}
-		if (r == max)
-			h = (g - b) / delta; // between yellow & magenta
-		else if (g == max)
-			h = 2 + (b - r) / delta; // between cyan & yellow
-		else
-			h = 4 + (r - g) / delta; // between magenta & cyan
-		h /= 6; // degrees
-		if (h < 0)
-			h += 1;
-		return new Vector3f(h, s, v / 255);
+		return Math.max(r, Math.max(g, b)) / 255.0;
 	}
 
 	@Override
@@ -73,7 +46,7 @@ public class SimpleProgressStyle extends ProgressStyle {
 	}
 
 	@Override
-	public void render(GuiGraphics guiGraphics, float x, float y, float width, float height, float progress, Component text) {
+	public void render(float x, float y, float width, float height, float progress, Text text) {
 		progress *= choose(true, width, height);
 		float progressY = y;
 		if (vertical) {
@@ -81,50 +54,47 @@ public class SimpleProgressStyle extends ProgressStyle {
 		}
 		if (progress > 0) {
 			if (overlay != null) {
-				Vec2 size = new Vec2(choose(true, progress, width), choose(false, progress, height));
+				Vec2f size = new Vec2f(choose(true, progress, width), choose(false, progress, height));
 				overlay.size(size);
-				overlay.render(guiGraphics, x, progressY, size.x, size.y);
+				overlay.render(x, progressY, size.x, size.y);
 			} else {
 				Color color3 = Color.rgb(color);
 				int lighter = Color.hsl(color3.getHue(), color3.getSaturation(), color3.getLightness() * 0.7f, color3.getOpacity()).toInt();
 
 				float half = choose(true, height, width) / 2;
-				DisplayHelper.INSTANCE.drawGradientRect(guiGraphics, x, progressY, choose(true, progress, half), choose(false, progress, half), lighter, color, vertical);
-				DisplayHelper.INSTANCE.drawGradientRect(guiGraphics, x + choose(false, half, 0), progressY + choose(true, half, 0), choose(true, progress, half), choose(false, progress, half), color, lighter, vertical);
+				DisplayHelper.INSTANCE.drawGradientRect(x, progressY, choose(true, progress, half), choose(false, progress, half), lighter, color, vertical);
+				DisplayHelper.INSTANCE.drawGradientRect(x + choose(false, half, 0), progressY + choose(true, half, 0), choose(true, progress, half), choose(false, progress, half), color, lighter, vertical);
 				if (color != color2) {
 					if (vertical) {
 						for (float yy = y + height; yy > progressY; yy -= 2) {
 							float fy = Math.max(progressY, yy + 1);
-							DisplayHelper.fill(guiGraphics, x, yy, x + width, fy, color2);
+							DisplayHelper.fill(x, yy, x + width, fy, color2);
 						}
 					} else {
 						for (float xx = x + 1; xx < x + progress; xx += 2) {
 							float fx = Math.min(x + width, xx + 1);
-							DisplayHelper.fill(guiGraphics, xx, y, fx, y + height, color2);
+							DisplayHelper.fill(xx, y, fx, y + height, color2);
 						}
 					}
 				}
 			}
 		}
 		if (text != null) {
-			Font font = Minecraft.getInstance().font;
 			if (autoTextColor) {
 				autoTextColor = false;
-				if (overlay == null && RGBtoHSV(color2).z() > 0.75f) {
+				if (overlay == null && brightness(color2) > 0.75f) {
 					textColor = 0xFF000000;
 				} else {
 					textColor = 0xFFFFFFFF;
 				}
 			}
-			y += height - font.lineHeight;
-			if (vertical && font.lineHeight < progress) {
+			y += height - Minecraft.getInstance().textRenderer.fontHeight;
+			if (vertical && Minecraft.getInstance().textRenderer.fontHeight < progress) {
 				y -= progress;
-				y += font.lineHeight + 2;
+				y += Minecraft.getInstance().textRenderer.fontHeight + 2;
 			}
 			int color = IConfigOverlay.applyAlpha(textColor, OverlayRenderer.alpha);
-			DisplayHelper.setBetterTextShadow(true);
-			guiGraphics.drawString(font, text, (int) x + 1, (int) y, color);
-			DisplayHelper.setBetterTextShadow(false);
+			DisplayHelper.INSTANCE.drawText(text, (int) x + 1, (int) y, color);
 		}
 	}
 

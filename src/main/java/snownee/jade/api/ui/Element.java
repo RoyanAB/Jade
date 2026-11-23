@@ -1,11 +1,10 @@
 package snownee.jade.api.ui;
 
-import java.util.Objects;
-
+import net.minecraft.resource.Identifier;
+import net.minecraft.util.math.Vec2f;
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.phys.Vec2;
+import java.util.Objects;
 
 /**
  * A general implementation of {@link IElement}
@@ -15,20 +14,20 @@ import net.minecraft.world.phys.Vec2;
 public abstract class Element implements IElement {
 
 	protected Align align = Align.LEFT;
-	protected Vec2 translation = Vec2.ZERO;
-	protected ResourceLocation tag;
-	protected Vec2 size;
+	protected Vec2f translation = Vec2f.ZERO;
+	protected Identifier tag;
+	protected Vec2f size;
 	private static final String DEFAULT_MESSAGE = "";
 	protected String message = DEFAULT_MESSAGE;
 
 	@Override
-	public IElement size(@Nullable Vec2 size) {
+	public IElement size(@Nullable Vec2f size) {
 		this.size = size;
 		return this;
 	}
 
 	@Override
-	public Vec2 getCachedSize() {
+	public Vec2f getCachedSize() {
 		if (size == null)
 			size = getSize();
 		return size;
@@ -47,30 +46,31 @@ public abstract class Element implements IElement {
 	}
 
 	@Override
-	public IElement translate(Vec2 translation) {
+	public IElement translate(Vec2f translation) {
 		Objects.requireNonNull(translation);
 		this.translation = translation;
 		return this;
 	}
 
 	@Override
-	public Vec2 getTranslation() {
+	public Vec2f getTranslation() {
 		return translation;
 	}
 
 	@Override
-	public IElement tag(ResourceLocation tag) {
+	public IElement tag(Identifier tag) {
 		this.tag = tag;
 		return this;
 	}
 
 	@Override
-	public ResourceLocation getTag() {
+	public Identifier getTag() {
 		return tag;
 	}
 
 	@Override
-	public @Nullable String getCachedMessage() {
+	@Nullable
+	public String getCachedMessage() {
 		if (message == DEFAULT_MESSAGE) {
 			message = getMessage();
 		}

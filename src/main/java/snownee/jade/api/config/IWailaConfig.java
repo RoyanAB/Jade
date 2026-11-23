@@ -1,16 +1,12 @@
 package snownee.jade.api.config;
 
-import org.jetbrains.annotations.ApiStatus.NonExtendable;
-
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
-import net.minecraft.world.level.ClipContext;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.MathHelper;
 import snownee.jade.Internals;
 import snownee.jade.api.theme.Theme;
 
-@NonExtendable
 public interface IWailaConfig {
 
 	static IWailaConfig get() {
@@ -37,21 +33,10 @@ public interface IWailaConfig {
 		HOLD_KEY, TOGGLE, LITE
 	}
 
-	enum FluidMode {
-		NONE(ClipContext.Fluid.NONE), ANY(ClipContext.Fluid.ANY), SOURCE_ONLY(ClipContext.Fluid.SOURCE_ONLY);
-
-		public final ClipContext.Fluid ctx;
-
-		FluidMode(ClipContext.Fluid ctx) {
-			this.ctx = ctx;
-		}
-	}
-
 	enum BossBarOverlapMode {
 		NO_OPERATION, HIDE_BOSS_BAR, HIDE_TOOLTIP, PUSH_DOWN
 	}
 
-	@NonExtendable
 	interface IConfigGeneral {
 
 		void setDisplayTooltip(boolean displayTooltip);
@@ -94,11 +79,7 @@ public interface IWailaConfig {
 
 		boolean shouldDisplayFluids();
 
-		FluidMode getDisplayFluids();
-
 		void setDisplayFluids(boolean displayFluids);
-
-		void setDisplayFluids(FluidMode displayFluids);
 
 		boolean showItemModNameTooltip();
 
@@ -113,20 +94,18 @@ public interface IWailaConfig {
 		boolean isDebug();
 
 		void setDebug(boolean debug);
-
-		boolean getBuiltinCamouflage();
-
-		void setBuiltinCamouflage(boolean builtinCamouflage);
 	}
 
-	@NonExtendable
 	interface IConfigOverlay {
 
 		static int applyAlpha(int color, float alpha) {
+			if (alpha == 0) {
+				return -1;
+			}
 			int prevAlphaChannel = (color >> 24) & 0xFF;
 			if (prevAlphaChannel > 0)
 				alpha *= prevAlphaChannel / 256f;
-			int alphaChannel = Mth.clamp((int) (0xFF * alpha), 4, 255);
+			int alphaChannel = MathHelper.clamp((int) (0xFF * alpha), 4, 255);
 			return (color & 0xFFFFFF) | alphaChannel << 24;
 		}
 
@@ -168,7 +147,7 @@ public interface IWailaConfig {
 
 		Theme getTheme();
 
-		void applyTheme(ResourceLocation id);
+		void applyTheme(Identifier id);
 
 		boolean shouldShowIcon();
 
@@ -185,13 +164,12 @@ public interface IWailaConfig {
 		void setDisappearingDelay(float delay);
 	}
 
-	@NonExtendable
 	interface IConfigFormatting {
 
 		Style getItemModNameStyle();
 
 		void setItemModNameStyle(Style itemModNameStyle);
 
-		Component registryName(String name);
+		Text registryName(String name);
 	}
 }

@@ -1,40 +1,43 @@
 package snownee.jade.api.view;
 
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
+import snownee.jade.api.ITooltip;
+import snownee.jade.api.ui.*;
+import snownee.jade.impl.ui.HorizontalLineElement;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-
-import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.ui.BoxStyle;
-import snownee.jade.api.ui.Direction2D;
-import snownee.jade.api.ui.IBoxElement;
-import snownee.jade.api.ui.IElementHelper;
-import snownee.jade.api.ui.MessageType;
-import snownee.jade.impl.ui.HorizontalLineElement;
 
 public class ClientViewGroup<T> {
 
 	public final List<T> views;
 	@Nullable
-	public Component title;
+	public Text title;
 	public MessageType messageType = MessageType.NORMAL;
 	public float boxProgress;
 	@Nullable
-	public CompoundTag extraData;
+	public NbtCompound extraData;
 
 	public ClientViewGroup(List<T> views) {
 		this.views = views;
 	}
 
 	public static <IN, OUT> List<ClientViewGroup<OUT>> map(List<ViewGroup<IN>> groups, Function<IN, OUT> itemFactory, @Nullable BiConsumer<ViewGroup<IN>, ClientViewGroup<OUT>> clientGroupDecorator) {
-		return groups.stream().map($ -> {
-			var group = new ClientViewGroup<>($.views.stream().map(itemFactory).filter(Objects::nonNull).toList());
-			CompoundTag data = $.extraData;
+		List<ClientViewGroup<OUT>> result = new ArrayList<>(groups.size());
+		for (ViewGroup<IN> in : groups) {
+			List<OUT> views = new ArrayList<>(in.views.size());
+			for (IN view : in.views) {
+				OUT out = itemFactory.apply(view);
+				if (out != null) {
+					views.add(out);
+				}
+			}
+			ClientViewGroup<OUT> group = new ClientViewGroup<>(views);
+			NbtCompound data = in.extraData;
 			if (data != null) {
 				if (data.contains("Progress")) {
 					group.boxProgress = data.getFloat("Progress");
@@ -44,15 +47,16 @@ public class ClientViewGroup<T> {
 				}
 			}
 			if (clientGroupDecorator != null) {
-				clientGroupDecorator.accept($, group);
+				clientGroupDecorator.accept(in, group);
 			}
 			group.extraData = data;
-			return group;
-		}).toList();
+			result.add(group);
+		}
+		return result;
 	}
 
 	public static <T> void tooltip(ITooltip tooltip, List<ClientViewGroup<T>> groups, boolean renderGroup, BiConsumer<ITooltip, ClientViewGroup<T>> consumer) {
-		for (var group : groups) {
+		for (ClientViewGroup<T> group : groups) {
 			ITooltip theTooltip = renderGroup ? IElementHelper.get().tooltip() : tooltip;
 			consumer.accept(theTooltip, group);
 			if (renderGroup) {
@@ -82,8 +86,5 @@ public class ClientViewGroup<T> {
 			tooltip.append(IElementHelper.get().text(title).scale(0.5F));
 			tooltip.append(new HorizontalLineElement());
 		}
-//		else if (bgColor == 0) {
-//			tooltip.add(new HorizontalLineElement());
-//		}
 	}
 }

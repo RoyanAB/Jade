@@ -1,17 +1,10 @@
 package snownee.jade.addon.debug;
 
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.language.I18n;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.material.FluidState;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IEntityComponentProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
-import snownee.jade.api.TooltipPosition;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.resource.Identifier;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.util.CommonProxy;
@@ -23,23 +16,19 @@ public enum RegistryNameProvider implements IBlockComponentProvider, IEntityComp
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
 		if (append(tooltip, CommonProxy.getId(accessor.getBlock()).toString(), config) && config.get(Identifiers.DEBUG_SPECIAL_REGISTRY_NAME)) {
-			if (accessor.getBlockEntity() != null) {
-				ResourceLocation id = CommonProxy.getId(accessor.getBlockEntity().getType());
-				String s = I18n.get("config.jade.plugin_jade.registry_name.special.block_entity_type", id);
+			BlockEntity blockEntity = accessor.getBlockEntity();
+			if (blockEntity != null) {
+				Identifier id = CommonProxy.getId(blockEntity);
+				String s = I18n.translate("config.jade.plugin_jade.registry_name.special.block_entity_type", id.toString());
 				tooltip.add(IWailaConfig.get().getFormatting().registryName(s), Identifiers.DEBUG_SPECIAL_REGISTRY_NAME);
 			}
-			FluidState fluidState = accessor.getBlockState().getFluidState();
-			if (!fluidState.isEmpty()) {
-				ResourceLocation id = BuiltInRegistries.FLUID.getKey(fluidState.getType());
-				String s = I18n.get("config.jade.plugin_jade.registry_name.special.fluid", id);
-				tooltip.add(IWailaConfig.get().getFormatting().registryName(s), Identifiers.DEBUG_SPECIAL_REGISTRY_NAME);
-			}
+			// 1.12.2 has no vanilla FluidState registry; the fluid special id line is 1.13+ only
 		}
 	}
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, EntityAccessor accessor, IPluginConfig config) {
-		append(tooltip, CommonProxy.getId(accessor.getEntity().getType()).toString(), config);
+		append(tooltip, CommonProxy.getId(accessor.getEntity()).toString(), config);
 	}
 
 	public boolean append(ITooltip tooltip, String id, IPluginConfig config) {
@@ -53,7 +42,7 @@ public enum RegistryNameProvider implements IBlockComponentProvider, IEntityComp
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.DEBUG_REGISTRY_NAME;
 	}
 
@@ -70,5 +59,4 @@ public enum RegistryNameProvider implements IBlockComponentProvider, IEntityComp
 	public enum Mode {
 		ON, OFF, ADVANCED_TOOLTIPS
 	}
-
 }

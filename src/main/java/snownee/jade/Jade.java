@@ -1,23 +1,19 @@
 package snownee.jade;
 
-import org.slf4j.Logger;
-
-import com.mojang.logging.LogUtils;
-
-import snownee.jade.api.IWailaPlugin;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.impl.WailaClientRegistration;
 import snownee.jade.impl.WailaCommonRegistration;
 import snownee.jade.impl.config.PluginConfig;
 import snownee.jade.impl.config.WailaConfig;
 import snownee.jade.impl.config.WailaConfig.ConfigGeneral;
-import snownee.jade.test.ExamplePlugin;
 import snownee.jade.util.CommonProxy;
 import snownee.jade.util.JsonConfig;
 
 public class Jade {
 	public static final String MODID = "jade";
-	public static final Logger LOGGER = LogUtils.getLogger();
+	public static final Logger LOGGER = LogManager.getLogger("Jade");
 	/**
 	 * addons: Use {@link IWailaConfig#get()}
 	 */
@@ -30,17 +26,6 @@ public class Jade {
 			return;
 		}
 		FROZEN = true;
-		if (CommonProxy.isDevEnv()) {
-			try {
-				IWailaPlugin plugin = new ExamplePlugin();
-				plugin.register(WailaCommonRegistration.instance());
-				if (CommonProxy.isPhysicallyClient()) {
-					plugin.registerClient(WailaClientRegistration.instance());
-				}
-			} catch (Throwable e) {
-				// NO-OP
-			}
-		}
 
 		WailaCommonRegistration.instance().priorities.sort(PluginConfig.INSTANCE.getKeys());
 		WailaCommonRegistration.instance().loadComplete();

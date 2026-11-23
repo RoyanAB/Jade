@@ -1,8 +1,8 @@
 package snownee.jade.api;
 
-import java.util.function.Function;
-
 import snownee.jade.api.ui.IElement;
+
+import java.util.function.Function;
 
 public interface AccessorClientHandler<T extends Accessor<?>> {
 

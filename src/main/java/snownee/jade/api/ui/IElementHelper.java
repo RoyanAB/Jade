@@ -1,13 +1,11 @@
 package snownee.jade.api.ui;
 
+import net.minecraft.item.ItemStack;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
 import snownee.jade.Internals;
 import snownee.jade.api.ITooltip;
-import snownee.jade.api.fluid.JadeFluidObject;
 
 public interface IElementHelper {
 
@@ -15,7 +13,7 @@ public interface IElementHelper {
 		return Internals.getElementHelper();
 	}
 
-	ITextElement text(Component component);
+	ITextElement text(Text text);
 
 	IElement spacer(int x, int y);
 
@@ -27,13 +25,11 @@ public interface IElementHelper {
 
 	IElement smallItem(ItemStack itemStack);
 
-	IElement fluid(JadeFluidObject fluid);
-
-	IElement progress(float progress, @Nullable Component text, ProgressStyle style, BoxStyle boxStyle, boolean canDecrease);
+	IElement progress(float progress, @Nullable Text text, ProgressStyle style, BoxStyle boxStyle, boolean canDecrease);
 
 	IElement progress(float progress);
 
-	IElement progress(float progress, ResourceLocation baseSprite, ResourceLocation progressSprite, int width, int height, boolean canDecrease);
+	IElement progress(float progress, Identifier baseSprite, Identifier progressSprite, int width, int height, boolean canDecrease);
 
 	/**
 	 * Display a nested tooltip
@@ -47,5 +43,5 @@ public interface IElementHelper {
 
 	ProgressStyle progressStyle();
 
-	IElement sprite(ResourceLocation sprite, int width, int height);
+	IElement sprite(Identifier sprite, int width, int height);
 }

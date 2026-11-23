@@ -19,40 +19,34 @@
     "issues": "https://github.com/Snownee/Jade/issues"
   },
   "license": "CC BY-NC-SA 4.0",
+  "environment": "*",
   "entrypoints": {
-    "main": [
+    "init": [
       "snownee.jade.util.CommonProxy"
     ],
-    "client": [
+    "client-init": [
       "snownee.jade.util.ClientProxy"
     ],
     "jade": [
       "snownee.jade.addon.core.CorePlugin",
+      "snownee.jade.addon.debug.DebugPlugin",
       "snownee.jade.addon.vanilla.VanillaPlugin",
-      "snownee.jade.addon.universal.UniversalPlugin",
-      "snownee.jade.addon.debug.DebugPlugin"
+      "snownee.jade.addon.universal.UniversalPlugin"
     ],
     "modmenu": [
       "snownee.jade.compat.ModMenuCompat"
-    ],
-    "jei_mod_plugin": [
-      "snownee.jade.compat.JEICompat"
     ]
   },
   "mixins": [
     "jade.mixins.json"
   ],
-  "accessWidener": "jade.accesswidener",
   "depends": {
-    "fabricloader": ">=0.14",
-    "minecraft": ">=1.20.3",
-    "java": ">=17"
-  },
-  "custom": {
-    "modmenu": {
-      "links": {
-        "modmenu.discord": "https://discord.gg/KzGQW7a"
-      }
-    }
+    "fabricloader": ">=0.17.3",
+    "minecraft": "1.12.2",
+    "osl-entrypoints": ">=0.4.0",
+    "osl-lifecycle-events": ">=0.5.0",
+    "osl-keybinds": ">=0.1.0",
+    "osl-networking": ">=0.8.0",
+    "osl-resource-loader": ">=0.5.0"
   }
 }

@@ -1,12 +1,12 @@
 package snownee.jade.api.platform;
 
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 
 @FunctionalInterface
 public interface CustomEnchantPower {
 
-	float getEnchantPowerBonus(BlockState state, Level world, BlockPos pos);
+	float getEnchantPowerBonus(BlockState state, World world, BlockPos pos);
 
 }

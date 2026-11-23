@@ -1,18 +1,12 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.core.NonNullList;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity;
-import net.minecraft.world.phys.Vec2;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
+import net.minecraft.block.entity.FurnaceBlockEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.resource.Identifier;
+import net.minecraft.util.math.Vec2f;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.ui.IElementHelper;
 
@@ -22,46 +16,43 @@ public enum FurnaceProvider implements IBlockComponentProvider, IServerDataProvi
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
-		CompoundTag data = accessor.getServerData();
+		NbtCompound data = accessor.getServerData();
 		if (!data.contains("progress")) {
 			return;
 		}
 		int progress = data.getInt("progress");
-
-		ListTag furnaceItems = data.getList("furnace", Tag.TAG_COMPOUND);
-		NonNullList<ItemStack> inventory = NonNullList.withSize(3, ItemStack.EMPTY);
-		for (int i = 0; i < furnaceItems.size(); i++)
-			inventory.set(i, ItemStack.of(furnaceItems.getCompound(i)));
-
+		NbtList furnaceItems = data.getList("furnace", 10);
+		ItemStack[] inventory = new ItemStack[]{ItemStack.EMPTY, ItemStack.EMPTY, ItemStack.EMPTY};
+		for (int i = 0; i < furnaceItems.size() && i < 3; i++) {
+			inventory[i] = new ItemStack(furnaceItems.getCompound(i));
+		}
 		IElementHelper helper = IElementHelper.get();
-		int total = data.getInt("total");
-
-		tooltip.add(helper.item(inventory.get(0)));
-		tooltip.append(helper.item(inventory.get(1)));
+		int total = Math.max(1, data.getInt("total"));
+		tooltip.add(helper.item(inventory[0]));
+		tooltip.append(helper.item(inventory[1]));
 		tooltip.append(helper.spacer(4, 0));
-		tooltip.append(helper.progress((float) progress / total).translate(new Vec2(-2, 0)));
-		tooltip.append(helper.item(inventory.get(2)));
+		tooltip.append(helper.progress((float) progress / total).translate(new Vec2f(-2, 0)));
+		tooltip.append(helper.item(inventory[2]));
 	}
 
 	@Override
-	public void appendServerData(CompoundTag data, BlockAccessor accessor) {
-		AbstractFurnaceBlockEntity furnace = (AbstractFurnaceBlockEntity) accessor.getBlockEntity();
+	public void appendServerData(NbtCompound data, BlockAccessor accessor) {
+		FurnaceBlockEntity furnace = (FurnaceBlockEntity) accessor.getBlockEntity();
 		if (furnace.isEmpty()) {
 			return;
 		}
-		ListTag items = new ListTag();
+		NbtList items = new NbtList();
 		for (int i = 0; i < 3; i++) {
-			items.add(furnace.getItem(i).save(new CompoundTag()));
+			items.addElement(furnace.getItem(i).writeNbt(new NbtCompound()));
 		}
 		data.put("furnace", items);
-		CompoundTag furnaceTag = furnace.saveWithoutMetadata();
+		NbtCompound furnaceTag = furnace.writeNbt(new NbtCompound());
 		data.putInt("progress", furnaceTag.getInt("CookTime"));
 		data.putInt("total", furnaceTag.getInt("CookTimeTotal"));
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_FURNACE;
 	}
-
 }

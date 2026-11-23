@@ -1,16 +1,16 @@
 package snownee.jade.addon.harvest;
 
-import java.util.List;
-
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import snownee.jade.api.IJadeProvider;
+
+import java.util.List;
 
 public interface ToolHandler extends IJadeProvider {
 
-	ItemStack test(BlockState state, Level world, BlockPos pos);
+	ItemStack test(BlockState state, World world, BlockPos pos);
 
 	List<ItemStack> getTools();
 

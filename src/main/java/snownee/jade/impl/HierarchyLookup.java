@@ -1,24 +1,17 @@
 package snownee.jade.impl;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.*;
+import net.minecraft.resource.Identifier;
+import snownee.jade.Jade;
+import snownee.jade.api.IJadeProvider;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
-
-import net.minecraft.resources.ResourceLocation;
-import snownee.jade.Jade;
-import snownee.jade.api.IJadeProvider;
 
 public class HierarchyLookup<T extends IJadeProvider> {
 
@@ -45,7 +38,7 @@ public class HierarchyLookup<T extends IJadeProvider> {
 
 	public List<T> get(Object obj) {
 		if (obj == null) {
-			return List.of();
+			return ImmutableList.of();
 		}
 		return get(obj.getClass());
 	}
@@ -63,10 +56,13 @@ public class HierarchyLookup<T extends IJadeProvider> {
 		} catch (ExecutionException e) {
 			Jade.LOGGER.error("", e);
 		}
-		return List.of();
+		return ImmutableList.of();
 	}
 
 	private void getInternal(Class<?> clazz, List<T> list) {
+		if (clazz == null) {
+			return;
+		}
 		if (clazz != baseClass && clazz != Object.class) {
 			getInternal(clazz.getSuperclass(), list);
 		}
@@ -81,19 +77,15 @@ public class HierarchyLookup<T extends IJadeProvider> {
 		resultCache.invalidateAll();
 	}
 
-	public void loadComplete(PriorityStore<ResourceLocation, IJadeProvider> priorityStore) {
+	public void loadComplete(PriorityStore<Identifier, IJadeProvider> priorityStore) {
 		objects.asMap().forEach((clazz, list) -> {
 			if (list.size() < 2) {
 				return;
 			}
-			Set<ResourceLocation> set = Sets.newHashSetWithExpectedSize(list.size());
+			Set<Identifier> set = Sets.newHashSetWithExpectedSize(list.size());
 			for (T provider : list) {
 				if (set.contains(provider.getUid())) {
-					throw new IllegalStateException("Duplicate UID: %s for %s".formatted(provider.getUid(), list.stream()
-							.filter(p -> p.getUid().equals(provider.getUid()))
-							.map(p -> p.getClass().getName())
-							.toList()
-					));
+					throw new IllegalStateException("Duplicate UID: " + provider.getUid());
 				}
 				set.add(provider.getUid());
 			}

@@ -1,16 +1,12 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.CropBlock;
-import net.minecraft.world.level.block.NetherWartBlock;
-import net.minecraft.world.level.block.SweetBerryBushBlock;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.block.*;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -26,12 +22,12 @@ public enum CropProgressProvider implements IBlockComponentProvider {
 
 	@Override
 	public IElement getIcon(BlockAccessor accessor, IPluginConfig config, IElement currentIcon) {
-		if (accessor.getBlock() == Blocks.WHEAT)
+		if (accessor.getBlock() == Blocks.WHEAT) {
 			return IElementHelper.get().item(new ItemStack(Items.WHEAT));
-
-		if (accessor.getBlock() == Blocks.BEETROOTS)
+		}
+		if (accessor.getBlock() == Blocks.BEETROOTS) {
 			return IElementHelper.get().item(new ItemStack(Items.BEETROOT));
-
+		}
 		return null;
 	}
 
@@ -39,31 +35,34 @@ public enum CropProgressProvider implements IBlockComponentProvider {
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
 		BlockState state = accessor.getBlockState();
 		Block block = state.getBlock();
-
-		if (block instanceof CropBlock crop) {
-			addMaturityTooltip(tooltip, crop.getAge(state) / (float) crop.getMaxAge());
-		} else if (state.hasProperty(BlockStateProperties.AGE_7)) {
-			addMaturityTooltip(tooltip, state.getValue(BlockStateProperties.AGE_7) / 7F);
-		} else if (state.hasProperty(BlockStateProperties.AGE_2)) {
-			addMaturityTooltip(tooltip, state.getValue(BlockStateProperties.AGE_2) / 2F);
-		} else if (state.hasProperty(BlockStateProperties.AGE_3)) {
-			if (block instanceof SweetBerryBushBlock || block instanceof NetherWartBlock) {
-				addMaturityTooltip(tooltip, state.getValue(BlockStateProperties.AGE_3) / 3F);
-			}
+		//port: 1.12 has no CropBlock base class, each crop exposes its own AGE property
+		if (block instanceof WheatBlock) {
+			addMaturityTooltip(tooltip, state.get(WheatBlock.AGE) / 7F);
+		} else if (block instanceof CarrotsBlock) {
+			addMaturityTooltip(tooltip, state.get(CarrotsBlock.AGE) / 7F);
+		} else if (block instanceof PotatoesBlock) {
+			addMaturityTooltip(tooltip, state.get(PotatoesBlock.AGE) / 7F);
+		} else if (block instanceof BeetrootsBlock) {
+			addMaturityTooltip(tooltip, state.get(BeetrootsBlock.AGE) / 3F);
+		} else if (block instanceof NetherWartBlock) {
+			addMaturityTooltip(tooltip, state.get(NetherWartBlock.AGE) / 3F);
+		} else if (block instanceof CocoaBlock) {
+			addMaturityTooltip(tooltip, state.get(CocoaBlock.AGE) / 2F);
 		}
 	}
 
 	private static void addMaturityTooltip(ITooltip tooltip, float growthValue) {
 		growthValue *= 100.0F;
-		if (growthValue < 100.0F)
-			tooltip.add(Component.translatable("tooltip.jade.crop_growth", IThemeHelper.get().info(String.format("%.0f%%", growthValue))));
-		else
-			tooltip.add(Component.translatable("tooltip.jade.crop_growth", IThemeHelper.get().success(Component.translatable("tooltip.jade.crop_mature"))));
+		if (growthValue < 100.0F) {
+			tooltip.add(new TranslatableText("tooltip.jade.crop_growth", IThemeHelper.get().info(String.format("%.0f%%", growthValue))));
+		} else {
+			Text mature = IThemeHelper.get().success(new TranslatableText("tooltip.jade.crop_mature"));
+			tooltip.add(new TranslatableText("tooltip.jade.crop_growth", mature));
+		}
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_CROP_PROGRESS;
 	}
-
 }

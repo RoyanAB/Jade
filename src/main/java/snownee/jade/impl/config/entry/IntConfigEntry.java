@@ -1,7 +1,7 @@
 package snownee.jade.impl.config.entry;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
+import net.minecraft.resource.Identifier;
+import net.minecraft.util.math.MathHelper;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.gui.config.value.InputOptionValue;
 import snownee.jade.gui.config.value.OptionValue;
@@ -9,11 +9,11 @@ import snownee.jade.impl.config.PluginConfig;
 
 public class IntConfigEntry extends ConfigEntry<Integer> {
 
-	private boolean slider;
-	private int min;
-	private int max;
+	private final boolean slider;
+	private final int min;
+	private final int max;
 
-	public IntConfigEntry(ResourceLocation id, int defaultValue, int min, int max, boolean slider) {
+	public IntConfigEntry(Identifier id, int defaultValue, int min, int max, boolean slider) {
 		super(id, defaultValue);
 		this.slider = slider;
 		this.min = min;
@@ -35,7 +35,13 @@ public class IntConfigEntry extends ConfigEntry<Integer> {
 		if (slider) {
 			return options.slider(optionName, getValue(), f -> PluginConfig.INSTANCE.set(id, (int) (float) f), min, max, f -> (float) Math.round(f));
 		} else {
-			return options.input(optionName, getValue(), i -> PluginConfig.INSTANCE.set(id, Mth.clamp(i, min, max)), InputOptionValue.INTEGER.and($ -> isValidValue(Integer.valueOf($))));
+			return options.input(optionName, getValue(), i -> PluginConfig.INSTANCE.set(id, MathHelper.clamp(i, min, max)), InputOptionValue.INTEGER.and($ -> {
+				try {
+					return isValidValue(Integer.valueOf($));
+				} catch (NumberFormatException e) {
+					return false;
+				}
+			}));
 		}
 	}
 

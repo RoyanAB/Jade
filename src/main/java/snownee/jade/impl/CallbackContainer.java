@@ -1,8 +1,8 @@
 package snownee.jade.impl;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -16,7 +16,7 @@ public class CallbackContainer<T> {
 	}
 
 	public void sort() {
-		priorities.sort(Set.of());
+		priorities.sort(Collections.emptySet());
 	}
 
 	public List<T> callbacks() {

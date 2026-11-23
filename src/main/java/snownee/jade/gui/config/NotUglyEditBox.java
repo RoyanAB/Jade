@@ -1,547 +1,265 @@
 package snownee.jade.gui.config;
 
-import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-
-import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.SharedConstants;
-import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.ComponentPath;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.Renderable;
-import net.minecraft.client.gui.narration.NarratedElementType;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.navigation.FocusNavigationEvent;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.sounds.SoundManager;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.util.Mth;
+import net.minecraft.client.gui.GuiElement;
+import net.minecraft.client.gui.widget.TextFieldWidget;
+import net.minecraft.client.render.TextRenderer;
+import net.minecraft.client.sound.instance.SimpleSoundInstance;
+import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.MathHelper;
+import org.jetbrains.annotations.Nullable;
+import snownee.jade.gui.config.widget.JadeWidget;
 
-public class NotUglyEditBox extends AbstractWidget implements Renderable {
-	private final Font font;
+import java.util.function.Consumer;
+
+public class NotUglyEditBox extends TextFieldWidget implements JadeWidget {
+
+	private final TextRenderer textRenderer;
+	private final int width;
+	private final int height;
 	public int paddingLeft;
 	public int paddingRight;
 	public int paddingTop;
 	@Nullable
 	public Consumer<String> responder;
-	private String value = "";
-	private int maxLength = 32;
-	private boolean bordered = true;
-	private boolean canLoseFocus = true;
-	private boolean isEditable = true;
-	private boolean shiftPressed;
-	private int displayPos;
-	private int cursorPos;
-	private int highlightPos;
+	@Nullable
+	private Text hint;
+	private boolean bordered = false;
+	private boolean editable = true;
 	private int textColor = 0xE0E0E0;
 	private int textColorUneditable = 0x707070;
-	@Nullable
-	private String suggestion;
-	private Predicate<String> filter = Objects::nonNull;
-	private BiFunction<String, Integer, FormattedCharSequence> formatter = (string, integer) -> FormattedCharSequence.forward(string, Style.EMPTY);
-	@Nullable
-	private Component hint;
-	private long focusedTime = Util.getMillis();
-	private boolean isMouseOverCross;
+	private long focusedTime;
+	private boolean mouseOverCross;
+	private int displayPos;
+	private boolean visible = true;
 
-	public NotUglyEditBox(Font font, int i, int j, int k, int l, Component component) {
-		this(font, i, j, k, l, null, component);
-	}
-
-	public NotUglyEditBox(Font font, int i, int j, int k, int l, @Nullable NotUglyEditBox editBox, Component component) {
-		super(i, j, k, l, component);
-		this.font = font;
-		if (editBox != null) {
-			this.setValue(editBox.getValue());
+	public NotUglyEditBox(TextRenderer textRenderer, int x, int y, int width, int height, @Nullable NotUglyEditBox previous, Text hint) {
+		super(0, textRenderer, x, y, width, height);
+		this.textRenderer = textRenderer;
+		this.width = width;
+		this.height = height;
+		this.hint = hint;
+		setHasBorder(false);
+		setMaxLength(32);
+		if (previous != null) {
+			setText(previous.getText());
 		}
-	}
-
-	public void setFormatter(BiFunction<String, Integer, FormattedCharSequence> biFunction) {
-		this.formatter = biFunction;
 	}
 
 	@Override
-	protected MutableComponent createNarrationMessage() {
-		Component component = this.getMessage();
-		String value = isMouseOverCross ? "" : this.value;
-		return Component.translatable("gui.narrate.editBox", component, value);
-	}
-
-	public String getValue() {
-		return this.value;
-	}
-
-	public void setValue(String string) {
-		if (!this.filter.test(string)) {
-			return;
+	public void setText(String text) {
+		super.setText(text);
+		if (responder != null) {
+			responder.accept(getText());
 		}
-		this.value = string.length() > this.maxLength ? string.substring(0, this.maxLength) : string;
-		this.moveCursorToEnd();
-		this.setHighlightPos(this.cursorPos);
-		this.onValueChange(string);
-	}
-
-	public String getHighlighted() {
-		int i = Math.min(this.cursorPos, this.highlightPos);
-		int j = Math.max(this.cursorPos, this.highlightPos);
-		return this.value.substring(i, j);
-	}
-
-	public void setFilter(Predicate<String> predicate) {
-		this.filter = predicate;
-	}
-
-	public void insertText(String string) {
-		String string3;
-		String string2;
-		int l;
-		int i = Math.min(this.cursorPos, this.highlightPos);
-		int j = Math.max(this.cursorPos, this.highlightPos);
-		int k = this.maxLength - this.value.length() - (i - j);
-		if (k < (l = (string2 = SharedConstants.filterText(string)).length())) {
-			string2 = string2.substring(0, k);
-			l = k;
-		}
-		if (!this.filter.test(string3 = new StringBuilder(this.value).replace(i, j, string2).toString())) {
-			return;
-		}
-		this.value = string3;
-		this.setCursorPosition(i + l);
-		this.setHighlightPos(this.cursorPos);
-		this.onValueChange(this.value);
-	}
-
-	private void onValueChange(String string) {
-		if (this.responder != null) {
-			this.responder.accept(string);
-		}
-	}
-
-	private void deleteText(int i) {
-		if (Screen.hasControlDown()) {
-			this.deleteWords(i);
-		} else {
-			this.deleteChars(i);
-		}
-	}
-
-	public void deleteWords(int i) {
-		if (this.value.isEmpty()) {
-			return;
-		}
-		if (this.highlightPos != this.cursorPos) {
-			this.insertText("");
-			return;
-		}
-		this.deleteChars(this.getWordPosition(i) - this.cursorPos);
-	}
-
-	public void deleteChars(int i) {
-		int l;
-		if (this.value.isEmpty()) {
-			return;
-		}
-		if (this.highlightPos != this.cursorPos) {
-			this.insertText("");
-			return;
-		}
-		int j = this.getCursorPos(i);
-		int k = Math.min(j, this.cursorPos);
-		if (k == (l = Math.max(j, this.cursorPos))) {
-			return;
-		}
-		String string = new StringBuilder(this.value).delete(k, l).toString();
-		if (!this.filter.test(string)) {
-			return;
-		}
-		this.value = string;
-		this.moveCursorTo(k);
-	}
-
-	public int getWordPosition(int i) {
-		return this.getWordPosition(i, this.getCursorPosition());
-	}
-
-	private int getWordPosition(int i, int j) {
-		return this.getWordPosition(i, j, true);
-	}
-
-	private int getWordPosition(int i, int j, boolean bl) {
-		int k = j;
-		boolean bl2 = i < 0;
-		int l = Math.abs(i);
-		for (int m = 0; m < l; ++m) {
-			if (bl2) {
-				while (bl && k > 0 && this.value.charAt(k - 1) == ' ') {
-					--k;
-				}
-				while (k > 0 && this.value.charAt(k - 1) != ' ') {
-					--k;
-				}
-				continue;
-			}
-			int n = this.value.length();
-			if ((k = this.value.indexOf(32, k)) == -1) {
-				k = n;
-				continue;
-			}
-			while (bl && k < n && this.value.charAt(k) == ' ') {
-				++k;
-			}
-		}
-		return k;
-	}
-
-	public void moveCursor(int i) {
-		this.moveCursorTo(this.getCursorPos(i));
-	}
-
-	private int getCursorPos(int i) {
-		return Util.offsetByCodepoints(this.value, this.cursorPos, i);
-	}
-
-	public void moveCursorTo(int i) {
-		this.setCursorPosition(i);
-		if (!this.shiftPressed) {
-			this.setHighlightPos(this.cursorPos);
-		}
-		this.onValueChange(this.value);
-	}
-
-	public void moveCursorToStart() {
-		this.moveCursorTo(0);
-	}
-
-	public void moveCursorToEnd() {
-		this.moveCursorTo(this.value.length());
 	}
 
 	@Override
-	public boolean keyPressed(int i, int j, int k) {
-		if (!this.canConsumeInput()) {
-			return false;
+	public void onTextChanged(int id, String text) {
+		super.onTextChanged(id, text);
+		if (responder != null) {
+			responder.accept(text);
 		}
-		this.shiftPressed = Screen.hasShiftDown();
-		if (Screen.isSelectAll(i)) {
-			this.moveCursorToEnd();
-			this.setHighlightPos(0);
-			return true;
-		}
-		if (Screen.isCopy(i)) {
-			Minecraft.getInstance().keyboardHandler.setClipboard(this.getHighlighted());
-			return true;
-		}
-		if (Screen.isPaste(i)) {
-			if (this.isEditable) {
-				this.insertText(Minecraft.getInstance().keyboardHandler.getClipboard());
-			}
-			return true;
-		}
-		if (Screen.isCut(i)) {
-			Minecraft.getInstance().keyboardHandler.setClipboard(this.getHighlighted());
-			if (this.isEditable) {
-				this.insertText("");
-			}
-			return true;
-		}
-		switch (i) {
-		case 263 -> {
-			if (Screen.hasControlDown()) {
-				this.moveCursorTo(this.getWordPosition(-1));
-			} else {
-				this.moveCursor(-1);
-			}
-			return true;
-		}
-		case 262 -> {
-			if (Screen.hasControlDown()) {
-				this.moveCursorTo(this.getWordPosition(1));
-			} else {
-				this.moveCursor(1);
-			}
-			return true;
-		}
-		case 259 -> {
-			if (this.isEditable) {
-				this.shiftPressed = false;
-				this.deleteText(-1);
-				this.shiftPressed = Screen.hasShiftDown();
-			}
-			return true;
-		}
-		case 261 -> {
-			if (this.isEditable) {
-				this.shiftPressed = false;
-				this.deleteText(1);
-				this.shiftPressed = Screen.hasShiftDown();
-			}
-			return true;
-		}
-		case 268 -> {
-			this.moveCursorToStart();
-			return true;
-		}
-		case 269 -> {
-			this.moveCursorToEnd();
-			return true;
-		}
-		}
-		return false;
 	}
 
-	public boolean canConsumeInput() {
-		return this.isVisible() && this.isFocused() && this.isEditable();
+	public void setHint(Text hint) {
+		this.hint = hint;
+	}
+
+	public void setBordered(boolean bordered) {
+		this.bordered = bordered;
+		setHasBorder(bordered);
+	}
+
+	public void setTextColor(int color) {
+		this.textColor = color;
+	}
+
+	public void setTextColorUneditable(int color) {
+		this.textColorUneditable = color;
 	}
 
 	@Override
-	public boolean charTyped(char c, int i) {
-		if (!this.canConsumeInput()) {
-			return false;
-		}
-		if (SharedConstants.isAllowedChatCharacter(c)) {
-			if (this.isEditable) {
-				this.insertText(Character.toString(c));
-			}
-			return true;
-		}
-		return false;
+	public void setEditable(boolean editable) {
+		super.setEditable(editable);
+		this.editable = editable;
 	}
 
 	@Override
-	public void onClick(double x, double y) {
-		if (isMouseOverCross) {
-			setValue("");
-			super.playDownSound(Minecraft.getInstance().getSoundManager());
-			return;
+	public void setFocused(boolean focused) {
+		boolean wasFocused = isFocused();
+		super.setFocused(focused);
+		if (focused && !wasFocused) {
+			focusedTime = Minecraft.getTime();
 		}
-		int i = Mth.floor(x) - this.getX() - paddingLeft;
-		String string = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), this.getInnerWidth());
-		this.moveCursorTo(this.font.plainSubstrByWidth(string, i).length() + this.displayPos);
 	}
 
 	@Override
-	public void playDownSound(SoundManager soundManager) {
+	public void setPos(int x, int y) {
+		this.x = x;
+		this.y = y;
 	}
 
 	@Override
-	public void renderWidget(GuiGraphics guiGraphics, int i, int j, float f) {
-		isMouseOverCross = false;
-		if (!this.isVisible()) {
-			return;
-		}
-		if (this.isBordered()) {
-			ResourceLocation resourceLocation = EditBox.SPRITES.get(this.isActive(), this.isFocused());
-			guiGraphics.blitSprite(resourceLocation, this.getX(), this.getY(), this.getWidth(), this.getHeight());
-		} else {
-			guiGraphics.fill(this.getX(), this.getY(), this.getX() + this.getWidth(), this.getY() + this.getHeight(), 0xC0000000);
-		}
-		if (isEditable && !value.isEmpty()) {
-			isMouseOverCross = isHovered && i > width - paddingRight + 4;
-			int c = isMouseOverCross ? textColor : textColorUneditable;
-			guiGraphics.drawString(font, "×", getX() + width - 10, getY() + paddingTop + 1, c);
-		}
-		int k = this.isEditable ? this.textColor : this.textColorUneditable;
-		int l = this.cursorPos - this.displayPos;
-		int m = this.highlightPos - this.displayPos;
-		String string = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), this.getInnerWidth());
-		boolean bl = l >= 0 && l <= string.length();
-        boolean bl2 = this.isFocused() && (Util.getMillis() - this.focusedTime) / 300L % 2L == 0L && bl;
-		int n = getX() + paddingLeft;
-		int o = getY() + paddingTop;
-		int p = n;
-		if (m > string.length()) {
-			m = string.length();
-		}
-		if (!string.isEmpty()) {
-			String string2 = bl ? string.substring(0, l) : string;
-			p = guiGraphics.drawString(this.font, this.formatter.apply(string2, this.displayPos), p, o, k);
-		}
-		boolean bl3 = this.cursorPos < this.value.length() || this.value.length() >= this.getMaxLength();
-		int q = p;
-		if (!bl) {
-			q = l > 0 ? n + this.width : n;
-		} else if (bl3) {
-			--q;
-			--p;
-		}
-		if (!string.isEmpty() && bl && l < string.length()) {
-			guiGraphics.drawString(this.font, this.formatter.apply(string.substring(l), this.cursorPos), p, o, k);
-		}
-		if (this.hint != null && string.isEmpty() && !this.isFocused()) {
-			guiGraphics.drawString(this.font, this.hint, p, o, 0x808080);
-		}
-		if (!bl3 && this.suggestion != null) {
-			guiGraphics.drawString(this.font, this.suggestion, q - 1, o, -8355712);
-		}
-		if (bl2) {
-			guiGraphics.fill(RenderType.guiOverlay(), q, o - 1, q + 1, o + 1 + this.font.lineHeight, -3092272);
-		}
-		if (m != l) {
-			int r = n + this.font.width(string.substring(0, m));
-			this.renderHighlight(guiGraphics, q, o - 1, r - 1, o + 1 + this.font.lineHeight);
-		}
-	}
-
-	private void renderHighlight(GuiGraphics guiGraphics, int i, int j, int k, int l) {
-		int m;
-		if (i < k) {
-			m = i;
-			i = k;
-			k = m;
-		}
-		if (j < l) {
-			m = j;
-			j = l;
-			l = m;
-		}
-		if (k > this.getX() + this.width) {
-			k = this.getX() + this.width;
-		}
-		if (i > this.getX() + this.width) {
-			i = this.getX() + this.width;
-		}
-		guiGraphics.fill(RenderType.guiTextHighlight(), i, j, k, l, -16776961);
-	}
-
-	private int getMaxLength() {
-		return this.maxLength;
-	}
-
-	public void setMaxLength(int i) {
-		this.maxLength = i;
-		if (this.value.length() > i) {
-			this.value = this.value.substring(0, i);
-			this.onValueChange(this.value);
-		}
-	}
-
-	public int getCursorPosition() {
-		return this.cursorPos;
-	}
-
-	public void setCursorPosition(int i) {
-		this.cursorPos = Mth.clamp(i, 0, this.value.length());
-	}
-
-	public boolean isBordered() {
-		return this.bordered;
-	}
-
-	public void setBordered(boolean bl) {
-		this.bordered = bl;
-	}
-
-	public void setTextColor(int i) {
-		this.textColor = i;
-	}
-
-	public void setTextColorUneditable(int i) {
-		this.textColorUneditable = i;
+	public int getX() {
+		return x;
 	}
 
 	@Override
-	@Nullable
-	public ComponentPath nextFocusPath(FocusNavigationEvent focusNavigationEvent) {
-		if (!this.visible || !this.isEditable) {
-			return null;
-		}
-		return super.nextFocusPath(focusNavigationEvent);
+	public int getY() {
+		return y;
 	}
 
 	@Override
-	public boolean isMouseOver(double d, double e) {
-		return this.visible && d >= (double) this.getX() && d < (double) (this.getX() + this.width) && e >= (double) this.getY() && e < (double) (this.getY() + this.height);
+	public int getWidth() {
+		return width;
 	}
 
 	@Override
-	public void setFocused(boolean bl) {
-		if (!this.canLoseFocus && !bl) {
-			return;
-		}
-		super.setFocused(bl);
-		if (bl) {
-            this.focusedTime = Util.getMillis();
-		}
+	public int getHeight() {
+		return height;
 	}
 
-	private boolean isEditable() {
-		return this.isEditable;
+	@Override
+	public void setWidth(int width) {
 	}
 
-	public void setEditable(boolean bl) {
-		this.isEditable = bl;
-	}
-
-	public int getInnerWidth() {
+	private int innerWidth() {
 		return width - paddingLeft - paddingRight;
 	}
 
-	public void setHighlightPos(int i) {
-		int j = this.value.length();
-		this.highlightPos = Mth.clamp(i, 0, j);
-		if (this.font != null) {
-			if (this.displayPos > j) {
-				this.displayPos = j;
-			}
-			int k = this.getInnerWidth();
-			String string = this.font.plainSubstrByWidth(this.value.substring(this.displayPos), k);
-			int l = string.length() + this.displayPos;
-			if (this.highlightPos == this.displayPos) {
-				this.displayPos -= this.font.plainSubstrByWidth(this.value, k, true).length();
-			}
-			if (this.highlightPos > l) {
-				this.displayPos += this.highlightPos - l;
-			} else if (this.highlightPos <= this.displayPos) {
-				this.displayPos -= this.displayPos - this.highlightPos;
-			}
-			this.displayPos = Mth.clamp(this.displayPos, 0, j);
+	@Override
+	public void render(int mouseX, int mouseY, float tickDelta) {
+		if (!isVisible()) {
+			return;
 		}
-	}
-
-	public void setCanLoseFocus(boolean bl) {
-		this.canLoseFocus = bl;
-	}
-
-	public boolean isVisible() {
-		return this.visible;
-	}
-
-	public void setVisible(boolean bl) {
-		this.visible = bl;
-	}
-
-	public void setSuggestion(@Nullable String string) {
-		this.suggestion = string;
-	}
-
-	public int getScreenX(int i) {
-		if (i > this.value.length()) {
-			return this.getX();
+		mouseOverCross = false;
+		if (bordered) {
+			GuiElement.fill(x - 1, y - 1, x + width + 1, y + height + 1, -6250336);
+			GuiElement.fill(x, y, x + width, y + height, -16777216);
+		} else {
+			GuiElement.fill(x, y, x + width, y + height, 0xC0000000);
 		}
-		return this.getX() + this.font.width(this.value.substring(0, i));
+		String text = getText();
+		int color = editable ? textColor : textColorUneditable;
+		int length = text.length();
+		int cursor = MathHelper.clamp(getCursor(), 0, length);
+		int selectionEnd = MathHelper.clamp(getSelectionEnd(), 0, length);
+		int inner = innerWidth();
+		if (displayPos > length) {
+			displayPos = length;
+		}
+		if (cursor < displayPos) {
+			displayPos = cursor;
+		}
+		while (displayPos > 0 && textRenderer.getWidth(text.substring(displayPos - 1)) <= inner) {
+			displayPos--;
+		}
+		while (displayPos < cursor && textRenderer.getWidth(text.substring(displayPos, cursor)) > inner) {
+			displayPos++;
+		}
+		String shown = textRenderer.trim(text.substring(displayPos), inner);
+		int shownEnd = displayPos + shown.length();
+		while (cursor > shownEnd && displayPos < cursor) {
+			displayPos++;
+			shown = textRenderer.trim(text.substring(displayPos), inner);
+			shownEnd = displayPos + shown.length();
+		}
+		int textX = x + paddingLeft;
+		int textY = y + paddingTop;
+		if (!shown.isEmpty()) {
+			textRenderer.draw(shown, textX, textY, color, true);
+		}
+		boolean focused = isFocused();
+		int cursorIndex = MathHelper.clamp(cursor, displayPos, shownEnd);
+		int cursorX = textX + textRenderer.getWidth(shown.substring(0, Math.max(0, Math.min(cursorIndex - displayPos, shown.length()))));
+		if (selectionEnd != cursor) {
+			int start = Math.max(Math.min(cursor, selectionEnd), displayPos);
+			int end = Math.min(Math.max(cursor, selectionEnd), shownEnd);
+			if (start < end) {
+				int x1 = textX + textRenderer.getWidth(shown.substring(0, start - displayPos));
+				int x2 = textX + textRenderer.getWidth(shown.substring(0, end - displayPos));
+				GuiElement.fill(x1, textY - 1, x2, textY + textRenderer.fontHeight, 0xFF0000FF);
+			}
+		}
+		if (focused && (Minecraft.getTime() - focusedTime) / 300L % 2L == 0L) {
+			GuiElement.fill(cursorX, textY - 1, cursorX + 1, textY + textRenderer.fontHeight, 0xFFD0D0D0);
+		}
+		if (hint != null && text.isEmpty() && !focused) {
+			textRenderer.draw(hint.getString(), textX, textY, 0x808080, true);
+		}
+		if (editable && !text.isEmpty()) {
+			mouseOverCross = mouseX >= x + width - 14 && mouseX < x + width - 2 && mouseY >= y + paddingTop && mouseY < y + paddingTop + 10;
+			int crossColor = mouseOverCross ? textColor : textColorUneditable;
+			textRenderer.draw("×", x + width - 10, y + paddingTop + 1, crossColor, true);
+		}
 	}
 
 	@Override
-	public void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
-		narrationElementOutput.add(NarratedElementType.TITLE, this.createNarrationMessage());
-		if (isMouseOverCross) {
-			narrationElementOutput.add(NarratedElementType.USAGE, Component.translatable("narration.jade.clear_content.usage"));
+	public boolean mouseClicked(int mouseX, int mouseY, int button) {
+		if (!isVisible() || !editable || button != 0) {
+			return false;
 		}
+		if (mouseX < x || mouseX >= x + width || mouseY < y || mouseY >= y + height) {
+			return false;
+		}
+		if (mouseOverCross) {
+			setText("");
+			setFocused(true);
+			Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.of(SoundEvents.UI_BUTTON_CLICK, 1.0F));
+			return true;
+		}
+		setFocused(true);
+		int relative = mouseX - x - paddingLeft;
+		String text = getText();
+		String shown = textRenderer.trim(text.substring(displayPos), innerWidth());
+		int cursor = 0;
+		for (int i = 1; i <= shown.length(); i++) {
+			if (textRenderer.getWidth(shown.substring(0, i)) > relative) {
+				break;
+			}
+			cursor = i;
+		}
+		setCursor(displayPos + cursor);
+		setSelectionEnd(displayPos + cursor);
+		return true;
 	}
 
-	public void setHint(Component component) {
-		this.hint = component;
+	@Override
+	public boolean keyPressed(char chr, int keyCode) {
+		if (!isFocused()) {
+			return false;
+		}
+		boolean handled = super.keyPressed(chr, keyCode);
+		if (handled) {
+			focusedTime = Minecraft.getTime();
+		}
+		return handled;
+	}
+
+	@Override
+	public boolean mouseDragged(int mouseX, int mouseY) {
+		return false;
+	}
+
+	@Override
+	public void setActive(boolean active) {
+		setEditable(active);
+	}
+
+	@Override
+	public boolean isActive() {
+		return editable;
+	}
+
+	@Override
+	public void setVisible(boolean visible) {
+		this.visible = visible;
+	}
+
+	@Override
+	public boolean isVisible() {
+		return visible;
 	}
 }

@@ -1,29 +1,28 @@
 package snownee.jade.impl.config.entry;
 
+import net.minecraft.resource.Identifier;
+import snownee.jade.gui.config.OptionsList;
+import snownee.jade.gui.config.value.OptionValue;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import com.google.common.collect.Lists;
-
-import net.minecraft.resources.ResourceLocation;
-import snownee.jade.gui.config.OptionsList;
-import snownee.jade.gui.config.value.OptionValue;
-
 public abstract class ConfigEntry<T> {
 
-	public final ResourceLocation id;
+	public final Identifier id;
 	private final T defaultValue;
 	private boolean synced;
 	protected T value;
-	private List<Consumer<ResourceLocation>> listeners = List.of();
+	private final List<Consumer<Identifier>> listeners = new ArrayList<>();
 
-	public ConfigEntry(ResourceLocation id, T defaultValue) {
+	public ConfigEntry(Identifier id, T defaultValue) {
 		this.id = id;
-		value = this.defaultValue = defaultValue;
+		this.value = this.defaultValue = defaultValue;
 	}
 
-	public ResourceLocation getId() {
+	public Identifier getId() {
 		return id;
 	}
 
@@ -43,6 +42,7 @@ public abstract class ConfigEntry<T> {
 		return value;
 	}
 
+	@SuppressWarnings("unchecked")
 	public void setValue(Object value) {
 		if (!Objects.equals(this.value, value)) {
 			this.value = (T) value;
@@ -50,19 +50,21 @@ public abstract class ConfigEntry<T> {
 		}
 	}
 
-	abstract public boolean isValidValue(Object value);
+	@SuppressWarnings("unchecked")
+	public T convertValue(Object value) {
+		return (T) value;
+	}
 
-	abstract public OptionValue<?> createUI(OptionsList options, String optionName);
+	public abstract boolean isValidValue(Object value);
 
-	public void addListener(Consumer<ResourceLocation> listener) {
-		if (listeners.isEmpty()) {
-			listeners = Lists.newArrayList();
-		}
+	public abstract OptionValue<?> createUI(OptionsList options, String optionName);
+
+	public void addListener(Consumer<Identifier> listener) {
 		listeners.add(listener);
 	}
 
 	public void notifyChange() {
-		for (Consumer<ResourceLocation> listener : listeners) {
+		for (Consumer<Identifier> listener : listeners) {
 			listener.accept(id);
 		}
 	}

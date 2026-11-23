@@ -1,10 +1,11 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.client.resources.language.I18n;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.item.FallingBlockEntity;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.entity.FallingBlockEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Text;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.IEntityComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -21,14 +22,16 @@ public enum FallingBlockProvider implements IEntityComponentProvider {
 	@Override
 	public void appendTooltip(ITooltip tooltip, EntityAccessor accessor, IPluginConfig config) {
 		FallingBlockEntity entity = (FallingBlockEntity) accessor.getEntity();
-		MutableComponent title = IThemeHelper.get().title(I18n.get(entity.getBlockState().getBlock().getDescriptionId()));
+		Text title = IThemeHelper.get().title(I18n.translate(entity.getBlock().getBlock().getTranslationKey()));
 		tooltip.replace(Identifiers.CORE_OBJECT_NAME, title);
 	}
 
 	@Override
 	public IElement getIcon(EntityAccessor accessor, IPluginConfig config, IElement currentIcon) {
 		FallingBlockEntity entity = (FallingBlockEntity) accessor.getEntity();
-		ItemStack stack = new ItemStack(entity.getBlockState().getBlock());
+		//port: keep the metadata, otherwise every falling log would look like oak
+		BlockState state = entity.getBlock();
+		ItemStack stack = new ItemStack(state.getBlock(), 1, state.getBlock().getMetadataFromState(state));
 		if (stack.isEmpty()) {
 			return currentIcon;
 		}
@@ -36,7 +39,7 @@ public enum FallingBlockProvider implements IEntityComponentProvider {
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_FALLING_BLOCK;
 	}
 
@@ -44,5 +47,4 @@ public enum FallingBlockProvider implements IEntityComponentProvider {
 	public boolean isRequired() {
 		return true;
 	}
-
 }

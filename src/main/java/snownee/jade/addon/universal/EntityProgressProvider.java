@@ -1,7 +1,7 @@
 package snownee.jade.addon.universal;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.resource.Identifier;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.IEntityComponentProvider;
 import snownee.jade.api.IServerDataProvider;
@@ -17,12 +17,12 @@ public enum EntityProgressProvider implements IEntityComponentProvider, IServerD
 	}
 
 	@Override
-	public void appendServerData(CompoundTag tag, EntityAccessor accessor) {
+	public void appendServerData(NbtCompound tag, EntityAccessor accessor) {
 		ProgressProvider.putData(accessor);
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return ProgressProvider.INSTANCE.getUid();
 	}
 

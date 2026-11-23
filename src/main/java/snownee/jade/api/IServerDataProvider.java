@@ -1,6 +1,6 @@
 package snownee.jade.api;
 
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 
 public interface IServerDataProvider<T extends Accessor<?>> extends IJadeProvider {
 
@@ -11,5 +11,5 @@ public interface IServerDataProvider<T extends Accessor<?>> extends IJadeProvide
 	 * @param data     Current synchronization tag (might have been processed by other providers and might be processed by other providers).
 	 * @param accessor Contains the relevant information about the current environment.
 	 */
-	void appendServerData(CompoundTag data, T accessor);
+	void appendServerData(NbtCompound data, T accessor);
 }

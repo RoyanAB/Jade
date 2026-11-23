@@ -1,35 +1,26 @@
 package snownee.jade.impl.ui;
 
-import java.util.Objects;
-
+import net.minecraft.item.ItemStack;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.Vec2f;
 import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.Vec2;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
-import snownee.jade.api.fluid.JadeFluidObject;
-import snownee.jade.api.ui.BoxStyle;
-import snownee.jade.api.ui.IBoxElement;
-import snownee.jade.api.ui.IElement;
-import snownee.jade.api.ui.IElementHelper;
-import snownee.jade.api.ui.ITextElement;
-import snownee.jade.api.ui.ProgressStyle;
+import snownee.jade.api.ui.*;
 import snownee.jade.impl.Tooltip;
 
 public class ElementHelper implements IElementHelper {
 	public static final ElementHelper INSTANCE = new ElementHelper();
-	public static final ResourceLocation DEFAULT_PROGRESS = Identifiers.JADE("progress");
-	public static final ResourceLocation DEFAULT_PROGRESS_BASE = Identifiers.JADE("progress_base");
-	public static final Vec2 SMALL_ITEM_SIZE = new Vec2(10, 10);
-	public static final Vec2 SMALL_ITEM_OFFSET = new Vec2(0, -1); //Vec2.NEG_UNIT_Y nullified by Saturn mod
-	private ResourceLocation uid;
+	public static final Identifier DEFAULT_PROGRESS = Identifiers.JADE("progress");
+	public static final Identifier DEFAULT_PROGRESS_BASE = Identifiers.JADE("progress_base");
+	public static final Vec2f SMALL_ITEM_SIZE = new Vec2f(10, 10);
+	public static final Vec2f SMALL_ITEM_OFFSET = new Vec2f(0, -1);
+	private Identifier uid;
 
 	@Override
-	public ITextElement text(Component component) {
-		return new TextElement(component);
+	public ITextElement text(Text text) {
+		return new TextElement(text);
 	}
 
 	@Override
@@ -53,19 +44,12 @@ public class ElementHelper implements IElementHelper {
 	}
 
 	@Override
-	public IElement fluid(JadeFluidObject fluid) {
-		return new FluidStackElement(fluid);
-	}
-
-	@Override
 	public IElement spacer(int width, int height) {
-		return new SpacerElement(new Vec2(width, height));
+		return new SpacerElement(new Vec2f(width, height));
 	}
 
 	@Override
-	public IElement progress(float progress, @Nullable Component text, ProgressStyle style, BoxStyle boxStyle, boolean canDecrease) {
-		Objects.requireNonNull(style);
-		Objects.requireNonNull(boxStyle);
+	public IElement progress(float progress, @Nullable Text text, ProgressStyle style, BoxStyle boxStyle, boolean canDecrease) {
 		return new ProgressElement(progress, text, style, boxStyle, canDecrease);
 	}
 
@@ -75,10 +59,10 @@ public class ElementHelper implements IElementHelper {
 	}
 
 	@Override
-	public IElement progress(float progress, ResourceLocation baseSprite, ResourceLocation progressSprite, int width, int height, boolean canDecrease) {
+	public IElement progress(float progress, Identifier baseSprite, Identifier progressSprite, int width, int height, boolean canDecrease) {
 		ProgressStyle style = progressStyle().fitContentX(false).overlay(sprite(progressSprite, width, height));
 		BoxStyle boxStyle = BoxStyle.getSprite(baseSprite, null);
-		return progress(progress, null, style, boxStyle, canDecrease).size(new Vec2(width, height));
+		return progress(progress, null, style, boxStyle, canDecrease).size(new Vec2f(width, height));
 	}
 
 	@Override
@@ -97,23 +81,17 @@ public class ElementHelper implements IElementHelper {
 	}
 
 	@Override
-	public IElement sprite(ResourceLocation sprite, int width, int height) {
+	public IElement sprite(Identifier sprite, int width, int height) {
 		return new SpriteElement(sprite, width, height);
 	}
 
 	@Nullable
-	public ResourceLocation currentUid() {
+	public Identifier currentUid() {
 		return uid;
 	}
 
-	public void setCurrentUid(ResourceLocation uid) {
+	public void setCurrentUid(Identifier uid) {
 		this.uid = uid;
 	}
-
-	//    public static IElement sub(String text) {
-	//        CompoundTag tag = new CompoundTag();
-	//        tag.putString("text", text);
-	//        return new RenderableTextComponent(SUB, tag);
-	//    }
 
 }

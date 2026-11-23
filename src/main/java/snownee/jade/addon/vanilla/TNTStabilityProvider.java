@@ -1,9 +1,9 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.block.TntBlock;
-import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.block.TntBlock;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.resource.Identifier;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -18,14 +18,13 @@ public enum TNTStabilityProvider implements IBlockComponentProvider {
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
 		BlockState state = accessor.getBlockState();
-		if (state.getValue(TntBlock.UNSTABLE)) {
-			tooltip.add(IThemeHelper.get().danger(Component.translatable("jade.tnt.unstable")));
+		if (state.get(TntBlock.EXPLODE)) {
+			tooltip.add(IThemeHelper.get().danger(I18n.translate("jade.tnt.unstable")));
 		}
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_TNT_STABILITY;
 	}
-
 }

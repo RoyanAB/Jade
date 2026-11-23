@@ -1,8 +1,7 @@
 package snownee.jade.api;
 
+import net.minecraft.nbt.NbtCompound;
 import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.nbt.CompoundTag;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.ui.IElement;
 
@@ -21,8 +20,8 @@ public interface IBlockComponentProvider extends IToggleableProvider {
 	 * Will only be called if the implementing class is registered via {@link IWailaClientRegistration#registerBlockIcon}.</br>
 	 * <p>
 	 * This method is only called on the client side. If you require data from the server, you should also implement
-	 * {@link IServerDataProvider#appendServerData(CompoundTag, Accessor)}
-	 * and add the data to the {@link CompoundTag} there, which can then be read back using {@link Accessor#getServerData()}.
+	 * {@link IServerDataProvider#appendServerData(NbtCompound, Accessor)}
+	 * and add the data to the {@link NbtCompound} there, which can then be read back using {@link Accessor#getServerData()}.
 	 * If you rely on the client knowing the data you need, you are not guaranteed to have the proper values.
 	 *
 	 * @param accessor    Contains most of the relevant information about the current environment.
@@ -40,8 +39,8 @@ public interface IBlockComponentProvider extends IToggleableProvider {
 	 * Will only be called if the implementing class is registered via {@link IWailaClientRegistration#registerBlockComponent(IBlockComponentProvider, Class)}.</br>
 	 * <p>
 	 * This method is only called on the client side. If you require data from the server, you should also implement
-	 * {@link IServerDataProvider#appendServerData(CompoundTag, Accessor)}
-	 * and add the data to the {@link CompoundTag} there, which can then be read back using {@link Accessor#getServerData()}.
+	 * {@link IServerDataProvider#appendServerData(NbtCompound, Accessor)}
+	 * and add the data to the {@link NbtCompound} there, which can then be read back using {@link Accessor#getServerData()}.
 	 * If you rely on the client knowing the data you need, you are not guaranteed to have the proper values.
 	 *
 	 * @param tooltip  Current list of tooltip lines (might have been processed by other providers and might be processed

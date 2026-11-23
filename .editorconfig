@@ -1,21 +1,33 @@
-# http://editorconfig.org
 root = true
 
 [*]
-indent_style = space
-end_of_line = lf
 charset = utf-8
-trim_trailing_whitespace = true
+end_of_line = lf
 insert_final_newline = true
+tab_width = 4
+trim_trailing_whitespace = true
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.gradle]
+indent_style = tab
+
+[*.java]
+indent_style = tab
 
 [*.json]
 indent_style = space
 indent_size = 2
 
-[*.java]
+[quilt.mod.json]
 indent_style = tab
-indent_size = 4
-continuation_indent_size = 8
-ij_java_class_count_to_use_import_on_demand = 99
-ij_java_names_count_to_use_import_on_demand = 99
-ij_java_imports_layout = $*,|,java.**,|,javax.**,|,org.**,|,com.**,|,*
+tab_width = 2
+
+[*.toml]
+indent_style = tab
+tab_width = 2
+
+[*.properties]
+indent_style = space
+indent_size = 2

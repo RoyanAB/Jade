@@ -1,13 +1,12 @@
 package snownee.jade.util;
 
-import java.util.Comparator;
-
 import com.google.common.collect.Multimap;
-
 import snownee.jade.api.IJadeProvider;
 import snownee.jade.impl.HierarchyLookup;
 import snownee.jade.impl.WailaClientRegistration;
 import snownee.jade.impl.WailaCommonRegistration;
+
+import java.util.Comparator;
 
 public class DumpGenerator {
 
@@ -31,8 +30,9 @@ public class DumpGenerator {
 
 	private static void createSection(StringBuilder builder, String subsection, HierarchyLookup<? extends IJadeProvider> lookup) {
 		Multimap<Class<?>, ? extends IJadeProvider> multimap = lookup.getObjects();
-		if (multimap.isEmpty())
+		if (multimap.isEmpty()) {
 			return;
+		}
 
 		builder.append("\n### ").append(subsection);
 		multimap.asMap().forEach((k, v) -> {
@@ -43,4 +43,5 @@ public class DumpGenerator {
 		});
 		builder.append("\n\n");
 	}
+
 }

@@ -1,11 +1,12 @@
 package snownee.jade.api.ui;
 
+import java.util.Arrays;
 import java.util.List;
 
 public enum Direction2D {
 	UP, RIGHT, DOWN, LEFT;
 
-	public static final List<Direction2D> VALUES = List.of(values());
+	public static final List<Direction2D> VALUES = Arrays.asList(values());
 
 	public static Direction2D fromIndex(int index) {
 		return VALUES.get(index);

@@ -1,25 +1,24 @@
 package snownee.jade.api;
 
+import net.minecraft.entity.living.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.world.HitResult;
+import net.minecraft.world.World;
+import net.ornithemc.osl.networking.api.PacketBuffer;
 import org.jetbrains.annotations.NotNull;
-
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.HitResult;
 
 /**
  * A generic class to get basic information of target and context.
  */
 public interface Accessor<T extends HitResult> {
 
-	Level getLevel();
+	World getLevel();
 
-	Player getPlayer();
+	PlayerEntity getPlayer();
 
 	@NotNull
-	CompoundTag getServerData();
+	NbtCompound getServerData();
 
 	T getHitResult();
 
@@ -37,8 +36,8 @@ public interface Accessor<T extends HitResult> {
 	Class<? extends Accessor<?>> getAccessorType();
 
 	@Deprecated
-	void toNetwork(FriendlyByteBuf buf);
+	void toNetwork(PacketBuffer buf);
 
-	boolean verifyData(CompoundTag data);
+	boolean verifyData(NbtCompound data);
 
 }

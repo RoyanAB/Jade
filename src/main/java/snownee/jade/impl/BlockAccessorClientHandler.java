@@ -1,18 +1,11 @@
 package snownee.jade.impl;
 
-import java.util.List;
-import java.util.function.Function;
-
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.LiquidBlock;
-import net.minecraft.world.level.block.state.BlockState;
-import snownee.jade.api.AccessorClientHandler;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IJadeProvider;
-import snownee.jade.api.ITooltip;
+import net.minecraft.block.Block;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.state.BlockState;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.impl.config.PluginConfig;
@@ -21,6 +14,9 @@ import snownee.jade.impl.ui.ItemStackElement;
 import snownee.jade.overlay.RayTracing;
 import snownee.jade.util.ClientProxy;
 import snownee.jade.util.WailaExceptionHandler;
+
+import java.util.List;
+import java.util.function.Function;
 
 public class BlockAccessorClientHandler implements AccessorClientHandler<BlockAccessor> {
 
@@ -45,24 +41,16 @@ public class BlockAccessorClientHandler implements AccessorClientHandler<BlockAc
 	public IElement getIcon(BlockAccessor accessor) {
 		BlockState blockState = accessor.getBlockState();
 		Block block = blockState.getBlock();
-		if (blockState.isAir())
+		if (block == Blocks.AIR)
 			return null;
 		IElement icon = null;
 
-		if (accessor.isFakeBlock()) {
-			icon = ItemStackElement.of(accessor.getFakeBlock());
-		} else {
-			ItemStack pick = accessor.getPickedResult();
-			if (!pick.isEmpty())
-				icon = ItemStackElement.of(pick);
-		}
+		ItemStack pick = accessor.getPickedResult();
+		if (!pick.isEmpty())
+			icon = ItemStackElement.of(pick);
 
-		if (RayTracing.isEmptyElement(icon) && block.asItem() != Items.AIR) {
-			icon = ItemStackElement.of(new ItemStack(block));
-		}
-
-		if (RayTracing.isEmptyElement(icon) && block instanceof LiquidBlock) {
-			icon = ClientProxy.elementFromLiquid((LiquidBlock) block);
+		if (RayTracing.isEmptyElement(icon) && Item.byBlock(block) != Item.byBlock(Blocks.AIR)) {
+			icon = ItemStackElement.of(new ItemStack(Item.byBlock(block), 1, block.getMetadataFromState(blockState)));
 		}
 
 		for (IBlockComponentProvider provider : WailaClientRegistration.instance().getBlockIconProviders(block, PluginConfig.INSTANCE::get)) {

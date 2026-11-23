@@ -1,19 +1,29 @@
 package snownee.jade.impl.config.entry;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resource.Identifier;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.gui.config.value.OptionValue;
 import snownee.jade.impl.config.PluginConfig;
 
 public class BooleanConfigEntry extends ConfigEntry<Boolean> {
 
-	public BooleanConfigEntry(ResourceLocation id, boolean defaultValue) {
+	public BooleanConfigEntry(Identifier id, boolean defaultValue) {
 		super(id, defaultValue);
 	}
 
 	@Override
 	public boolean isValidValue(Object value) {
 		return value.getClass() == Boolean.class;
+	}
+
+	@Override
+	public Boolean convertValue(Object value) {
+		if (value.getClass() == String.class) {
+			return Boolean.valueOf((String) value);
+		} else if (value instanceof Number) {
+			return ((Number) value).intValue() != 0;
+		}
+		return (Boolean) value;
 	}
 
 	@Override

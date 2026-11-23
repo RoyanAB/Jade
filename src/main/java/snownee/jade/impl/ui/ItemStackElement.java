@@ -1,11 +1,9 @@
 package snownee.jade.impl.ui;
 
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec2f;
 import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.util.Mth;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.Vec2;
 import snownee.jade.api.ui.Element;
 import snownee.jade.overlay.DisplayHelper;
 
@@ -38,23 +36,24 @@ public class ItemStackElement extends Element {
 	}
 
 	@Override
-	public Vec2 getSize() {
-		int size = Mth.floor(18 * scale);
-		return new Vec2(size, size);
+	public Vec2f getSize() {
+		int size = MathHelper.floor(18 * scale);
+		return new Vec2f(size, size);
 	}
 
 	@Override
-	public void render(GuiGraphics guiGraphics, float x, float y, float maxX, float maxY) {
+	public void render(float x, float y, float maxX, float maxY) {
 		if (stack.isEmpty())
 			return;
-		DisplayHelper.INSTANCE.drawItem(guiGraphics, x + 1, y + 1, stack, scale, text);
+		DisplayHelper.INSTANCE.drawItem(x + 1, y + 1, stack, scale, text);
 	}
 
 	@Override
-	public @Nullable String getMessage() {
+	@Nullable
+	public String getMessage() {
 		if (stack.isEmpty())
 			return null;
-		return "%s %s".formatted(stack.getCount(), stack.getHoverName().getString());
+		return stack.getSize() + " " + stack.getHoverName();
 	}
 
 }

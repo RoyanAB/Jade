@@ -1,14 +1,10 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.animal.Chicken;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IEntityComponentProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
+import net.minecraft.entity.living.mob.passive.animal.ChickenEntity;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.TranslatableText;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
 
@@ -21,18 +17,17 @@ public enum ChickenEggProvider implements IEntityComponentProvider, IServerDataP
 		if (!accessor.getServerData().contains("NextEggIn")) {
 			return;
 		}
-		tooltip.add(Component.translatable("jade.nextEgg", IThemeHelper.get().seconds(accessor.getServerData().getInt("NextEggIn"))));
+		tooltip.add(new TranslatableText("jade.nextEgg", IThemeHelper.get().seconds(accessor.getServerData().getInt("NextEggIn"))));
 	}
 
 	@Override
-	public void appendServerData(CompoundTag tag, EntityAccessor accessor) {
-		Chicken chicken = (Chicken) accessor.getEntity();
-		tag.putInt("NextEggIn", chicken.eggTime);
+	public void appendServerData(NbtCompound tag, EntityAccessor accessor) {
+		ChickenEntity chicken = (ChickenEntity) accessor.getEntity();
+		tag.putInt("NextEggIn", chicken.layEggCooldown);
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_CHICKEN_EGG;
 	}
-
 }

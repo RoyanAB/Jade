@@ -3,19 +3,9 @@ package snownee.jade.api.ui;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.DataResult;
 
 // Modified from: https://github.com/silentsoft/csscolor4j/blob/main/src/main/java/org/silentsoft/csscolor4j/Color.java
 public class Color {
-
-	public static final Codec<Integer> CODEC = Codec.STRING.comapFlatMap($ -> {
-		try {
-			return DataResult.success(Color.valueOf($).toInt());
-		} catch (IllegalArgumentException e) {
-			return DataResult.error(() -> "Invalid color: " + $);
-		}
-	}, $ -> Color.rgb($).getHex());
 
 	private int red;
 	private int green;
@@ -378,6 +368,13 @@ public class Color {
 		return parseDouble(value, 360);
 	}
 
+	/**
+	 * @param red   0 to 255.
+	 * @param green 0 to 255.
+	 * @param blue  0 to 255.
+	 * @return a <code>Color</code> object that contains color information such as red, green, blue, cyan, magenta, yellow, black, hue, saturation, lightness, opacity, and hexadecimal numbers
+	 * @see #valueOf(String)
+	 */
 	public static Color rgb(int color) {
 		double a = (color >> 24 & 255) / 255D;
 		if (a == 0)

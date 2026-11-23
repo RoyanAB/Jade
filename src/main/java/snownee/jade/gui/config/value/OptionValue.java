@@ -1,23 +1,20 @@
 package snownee.jade.gui.config.value;
 
-import java.util.function.Consumer;
-
-import com.google.common.base.Strings;
-
-import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.narration.NarratedElementType;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.resources.language.I18n;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.text.Formatting;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
 import snownee.jade.gui.config.OptionsList;
+import snownee.jade.gui.config.widget.JadeWidget;
+
+import java.util.function.Consumer;
 
 public abstract class OptionValue<T> extends OptionsList.Entry {
 
-	private static final Component SERVER_FEATURE = Component.literal("*").withStyle(ChatFormatting.GRAY);
+	private static final Text SERVER_FEATURE = new LiteralText("*").setStyle(new Style().setColor(Formatting.GRAY));
 	protected final Consumer<T> setter;
-	private final Component title;
+	private final Text title;
 	public boolean serverFeature;
 	protected T value;
 	protected int indent;
@@ -29,21 +26,26 @@ public abstract class OptionValue<T> extends OptionsList.Entry {
 		addMessage(title.getString());
 		addMessageKey(optionName);
 		String key = makeKey(optionName + "_desc");
-		if (I18n.exists(key))
-			appendDescription(I18n.get(key));
+		if (I18n.hasTranslation(key)) {
+			appendDescription(I18n.translate(key));
+		}
 	}
 
 	@Override
-	public final void render(GuiGraphics guiGraphics, int index, int rowTop, int rowLeft, int width, int height, int mouseX, int mouseY, boolean hovered, float deltaTime) {
-		AbstractWidget widget = getFirstWidget();
-		Component title0 = widget.active ? title : title.copy().withStyle(ChatFormatting.STRIKETHROUGH, ChatFormatting.GRAY);
+	public void render(int index, int rowTop, int rowLeft, int width, int height, int mouseX, int mouseY, float deltaTime) {
+		JadeWidget widget = getFirstWidget();
+		boolean active = widget == null || widget.isActive();
 		int left = rowLeft + indent + 10;
-		int top = rowTop + (height / 2) - (client.font.lineHeight / 2);
-		guiGraphics.drawString(client.font, title0, left, top, 16777215);
-		if (serverFeature) {
-			guiGraphics.drawString(client.font, SERVER_FEATURE, left + getTextWidth() + 1, top, 16777215);
+		int top = rowTop + (height / 2) - (client.textRenderer.fontHeight / 2);
+		String titleText = title.getFormattedString();
+		if (!active) {
+			titleText = Formatting.STRIKETHROUGH.toString() + Formatting.GRAY + titleText;
 		}
-		super.render(guiGraphics, index, rowTop, rowLeft, width, height, mouseX, mouseY, hovered, deltaTime);
+		client.textRenderer.draw(titleText, left, top, 16777215, true);
+		if (serverFeature) {
+			client.textRenderer.draw(SERVER_FEATURE.getFormattedString(), left + getTextWidth() + 1, top, 16777215, true);
+		}
+		super.render(index, rowTop, rowLeft, width, height, mouseX, mouseY, deltaTime);
 		this.x = rowLeft;
 	}
 
@@ -51,15 +53,16 @@ public abstract class OptionValue<T> extends OptionsList.Entry {
 		setter.accept(value);
 	}
 
-	public Component getTitle() {
+	public Text getTitle() {
 		return title;
 	}
 
 	public void appendDescription(String description) {
-		if (this.description == null)
+		if (this.description == null) {
 			this.description = description;
-		else
+		} else {
 			this.description += '\n' + description;
+		}
 		addMessage(description);
 	}
 
@@ -74,15 +77,7 @@ public abstract class OptionValue<T> extends OptionsList.Entry {
 
 	@Override
 	public int getTextWidth() {
-		return client.font.width(getTitle());
-	}
-
-	@Override
-	public void updateNarration(NarrationElementOutput output) {
-		super.updateNarration(output);
-		if (!Strings.isNullOrEmpty(getDescription())) {
-			output.add(NarratedElementType.HINT, Component.translatable(getDescription()));
-		}
+		return client.textRenderer.getWidth(getTitle().getString());
 	}
 
 	public boolean isValidValue() {

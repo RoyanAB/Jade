@@ -1,20 +1,24 @@
 {
   "required": true,
   "package": "snownee.jade.mixin",
-  "compatibilityLevel": "JAVA_16",
-  "refmap": "jade.refmap.json",
+  "compatibilityLevel": "JAVA_8",
   "mixins": [
-    "AbstractHorseAccess",
-    "HarvestToolProviderMixin"
+    "HorseBaseEntityAccess",
+    "SpawnerMinecartEntityAccess",
+    "ZombieVillagerEntityAccess"
   ],
   "client": [
+    "BossEventOverlayAccess",
     "BossHealthOverlayMixin",
+    "ChatScreenMixin",
     "ClientLevelMixin",
-    "FontMixin",
-    "FullTextSearchTreeMixin",
-    "KeyAccess",
-    "StringRenderOutputMixin",
-    "ThemeHelperMixin"
+    "ClientPlayerInteractionManagerAccess",
+    "GameGuiMixin",
+    "ItemStackMixin",
+    "LocalClientPlayerEntityMixin",
+    "PlayerTabOverlayAccess",
+    "ReloadableIdSearchTreeMixin",
+    "TextRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

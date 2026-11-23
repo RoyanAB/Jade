@@ -1,8 +1,7 @@
 package snownee.jade.impl;
 
+import net.minecraft.nbt.NbtCompound;
 import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.nbt.CompoundTag;
 import snownee.jade.api.Accessor;
 import snownee.jade.api.AccessorClientHandler;
 import snownee.jade.api.ui.IElement;
@@ -15,7 +14,7 @@ public final class ObjectDataCenter {
 	public static boolean serverConnected;
 	private static Accessor<?> accessor;
 	private static AccessorClientHandler<Accessor<?>> clientHandler;
-	private static CompoundTag serverData;
+	private static NbtCompound serverData;
 	private static Object lastObject;
 
 	private ObjectDataCenter() {
@@ -46,7 +45,7 @@ public final class ObjectDataCenter {
 		return accessor;
 	}
 
-	public static CompoundTag getServerData() {
+	public static NbtCompound getServerData() {
 		if (accessor == null || clientHandler == null || serverData == null)
 			return null;
 		if (accessor.verifyData(serverData))
@@ -55,10 +54,10 @@ public final class ObjectDataCenter {
 		return null;
 	}
 
-	public static void setServerData(CompoundTag tag) {
+	public static void setServerData(NbtCompound tag) {
 		serverData = tag;
 		if (accessor != null && accessor.verifyData(serverData)) {
-			accessor.getServerData().getAllKeys().clear();
+			accessor.getServerData().getKeys().clear();
 			accessor.getServerData().merge(tag);
 		}
 	}

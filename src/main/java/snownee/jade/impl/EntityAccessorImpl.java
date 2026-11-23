@@ -1,20 +1,17 @@
 package snownee.jade.impl;
 
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
 import com.google.common.base.Suppliers;
-
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.living.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.entity.living.player.ServerPlayerEntity;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.HitResult;
+import net.minecraft.world.World;
+import net.ornithemc.osl.networking.api.PacketBuffer;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.AccessorImpl;
 import snownee.jade.api.EntityAccessor;
@@ -22,10 +19,14 @@ import snownee.jade.api.IServerDataProvider;
 import snownee.jade.util.CommonProxy;
 import snownee.jade.util.WailaExceptionHandler;
 
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 /**
  * Class to get information of entity target and context.
  */
-public class EntityAccessorImpl extends AccessorImpl<EntityHitResult> implements EntityAccessor {
+public class EntityAccessorImpl extends AccessorImpl<HitResult> implements EntityAccessor {
 
 	private final Supplier<Entity> entity;
 
@@ -34,19 +35,23 @@ public class EntityAccessorImpl extends AccessorImpl<EntityHitResult> implements
 		entity = builder.entity;
 	}
 
-	public static void handleRequest(SyncData data, ServerPlayer player, Consumer<Runnable> executor, Consumer<CompoundTag> responseSender) {
+	public static void handleRequest(SyncData data, ServerPlayerEntity player, Consumer<Runnable> executor, Consumer<NbtCompound> responseSender) {
 		executor.accept(() -> {
 			EntityAccessor accessor = data.unpack(player);
-			if (accessor == null)
+			if (accessor == null) {
 				return;
+			}
 			Entity entity = accessor.getEntity();
-			if (entity == null || player.distanceToSqr(entity) > Jade.MAX_DISTANCE_SQR)
+			if (entity == null || player.getSquaredDistanceTo(new BlockPos(entity.x, entity.y, entity.z)) > Jade.MAX_DISTANCE_SQR) {
 				return;
+			}
 			List<IServerDataProvider<EntityAccessor>> providers = WailaCommonRegistration.instance().getEntityNBTProviders(entity);
-			if (providers.isEmpty())
+			if (providers.isEmpty()) {
 				return;
+			}
 
-			CompoundTag tag = accessor.getServerData();
+			// the accessor owns the tag, providers write into it directly (same as the original)
+			NbtCompound tag = accessor.getServerData();
 			for (IServerDataProvider<EntityAccessor> provider : providers) {
 				try {
 					provider.appendServerData(tag, accessor);
@@ -55,26 +60,15 @@ public class EntityAccessorImpl extends AccessorImpl<EntityHitResult> implements
 				}
 			}
 
-			tag.putInt("WailaEntityID", entity.getId());
+			tag.putInt("WailaEntityID", entity.getNetworkId());
 			responseSender.accept(tag);
 		});
 	}
 
 	@Override
 	@Deprecated
-	public void toNetwork(FriendlyByteBuf buf) {
-		buf.writeBoolean(showDetails());
-		Entity entity = getEntity();
-		buf.writeVarInt(entity.getId());
-		if (CommonProxy.isMultipartEntity(entity)) {
-			buf.writeVarInt(CommonProxy.getPartEntityIndex(entity));
-		} else {
-			buf.writeVarInt(-1);
-		}
-		Vec3 hitVec = getHitResult().getLocation();
-		buf.writeFloat((float) hitVec.x);
-		buf.writeFloat((float) hitVec.y);
-		buf.writeFloat((float) hitVec.z);
+	public void toNetwork(PacketBuffer buf) {
+		new SyncData(this).write(buf);
 	}
 
 	@Override
@@ -98,39 +92,39 @@ public class EntityAccessorImpl extends AccessorImpl<EntityHitResult> implements
 	}
 
 	@Override
-	public boolean verifyData(CompoundTag data) {
+	public boolean verifyData(NbtCompound data) {
 		if (!verify)
 			return true;
 		if (!data.contains("WailaEntityID"))
 			return false;
-		return data.getInt("WailaEntityID") == getEntity().getId();
+		return data.getInt("WailaEntityID") == getEntity().getNetworkId();
 	}
 
 	public static class Builder implements EntityAccessor.Builder {
 
 		public boolean showDetails;
-		private Level level;
-		private Player player;
-		private CompoundTag serverData;
+		private World level;
+		private PlayerEntity player;
+		private NbtCompound serverData;
 		private boolean connected;
-		private Supplier<EntityHitResult> hit;
+		private Supplier<HitResult> hit;
 		private Supplier<Entity> entity;
 		private boolean verify;
 
 		@Override
-		public Builder level(Level level) {
+		public Builder level(World level) {
 			this.level = level;
 			return this;
 		}
 
 		@Override
-		public Builder player(Player player) {
+		public Builder player(PlayerEntity player) {
 			this.player = player;
 			return this;
 		}
 
 		@Override
-		public Builder serverData(CompoundTag serverData) {
+		public Builder serverData(NbtCompound serverData) {
 			this.serverData = serverData;
 			return this;
 		}
@@ -148,7 +142,7 @@ public class EntityAccessorImpl extends AccessorImpl<EntityHitResult> implements
 		}
 
 		@Override
-		public Builder hit(Supplier<EntityHitResult> hit) {
+		public Builder hit(Supplier<HitResult> hit) {
 			this.hit = hit;
 			return this;
 		}
@@ -187,16 +181,27 @@ public class EntityAccessorImpl extends AccessorImpl<EntityHitResult> implements
 		}
 	}
 
-	public record SyncData(boolean showDetails, int id, int partIndex, Vec3 hitVec) {
+	public static class SyncData {
+		public final boolean showDetails;
+		public final int id;
+		public final int partIndex;
+		public final Vec3d hitVec;
+
 		public SyncData(EntityAccessor accessor) {
-			this(accessor.showDetails(), accessor.getEntity().getId(), CommonProxy.getPartEntityIndex(accessor.getRawEntity()), accessor.getHitResult().getLocation());
+			showDetails = accessor.showDetails();
+			id = accessor.getEntity().getNetworkId();
+			partIndex = CommonProxy.getPartEntityIndex(accessor.getRawEntity());
+			hitVec = accessor.getHitResult().facePos;
 		}
 
-		public SyncData(FriendlyByteBuf buffer) {
-			this(buffer.readBoolean(), buffer.readVarInt(), buffer.readVarInt(), new Vec3(buffer.readFloat(), buffer.readFloat(), buffer.readFloat()));
+		public SyncData(PacketBuffer buffer) {
+			showDetails = buffer.readBoolean();
+			id = buffer.readVarInt();
+			partIndex = buffer.readVarInt();
+			hitVec = new Vec3d(buffer.readFloat(), buffer.readFloat(), buffer.readFloat());
 		}
 
-		public void write(FriendlyByteBuf buffer) {
+		public void write(PacketBuffer buffer) {
 			buffer.writeBoolean(showDetails);
 			buffer.writeVarInt(id);
 			buffer.writeVarInt(partIndex);
@@ -205,15 +210,16 @@ public class EntityAccessorImpl extends AccessorImpl<EntityHitResult> implements
 			buffer.writeFloat((float) hitVec.z);
 		}
 
-		public EntityAccessor unpack(ServerPlayer player) {
-			Supplier<Entity> entity = Suppliers.memoize(() -> CommonProxy.getPartEntity(player.level().getEntity(id), partIndex));
+		@Nullable
+		public EntityAccessor unpack(ServerPlayerEntity player) {
+			Supplier<Entity> entity = Suppliers.memoize(() -> CommonProxy.getPartEntity(player.world.getEntity(id), partIndex));
 			return new EntityAccessorImpl.Builder()
-					.level(player.level())
-					.player(player)
-					.showDetails(showDetails)
-					.entity(entity)
-					.hit(Suppliers.memoize(() -> new EntityHitResult(entity.get(), hitVec)))
-					.build();
+				.level(player.world)
+				.player(player)
+				.showDetails(showDetails)
+				.entity(entity)
+				.hit(Suppliers.memoize(() -> new HitResult(entity.get(), hitVec)))
+				.build();
 		}
 	}
 }

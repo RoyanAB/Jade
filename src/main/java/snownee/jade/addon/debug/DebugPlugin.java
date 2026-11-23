@@ -1,8 +1,9 @@
 package snownee.jade.addon.debug;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
+import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import snownee.jade.api.IWailaClientRegistration;
 import snownee.jade.api.IWailaPlugin;
 import snownee.jade.api.Identifiers;
@@ -10,6 +11,7 @@ import snownee.jade.api.WailaPlugin;
 
 @WailaPlugin
 public class DebugPlugin implements IWailaPlugin {
+
 	@Override
 	public void registerClient(IWailaClientRegistration registration) {
 		registration.addConfig(Identifiers.DEBUG_REGISTRY_NAME, RegistryNameProvider.Mode.OFF);
@@ -23,7 +25,7 @@ public class DebugPlugin implements IWailaPlugin {
 		registration.markAsClientFeature(Identifiers.DEBUG_REGISTRY_NAME);
 		registration.markAsClientFeature(Identifiers.DEBUG_SPECIAL_REGISTRY_NAME);
 
-		Component debug = Component.translatable("config.jade.plugin_jade.debug");
+		Text debug = new TranslatableText("config.jade.plugin_jade.debug");
 		registration.setConfigCategoryOverride(Identifiers.DEBUG_BLOCK_STATES, debug);
 		registration.setConfigCategoryOverride(Identifiers.DEBUG_REGISTRY_NAME, debug);
 	}

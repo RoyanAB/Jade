@@ -1,70 +1,76 @@
 package snownee.jade.addon.vanilla;
 
-import java.util.UUID;
-
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.living.mob.passive.animal.HorseBaseEntity;
+import net.minecraft.entity.living.mob.passive.animal.tameable.Tameable;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.resource.Identifier;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.OwnableEntity;
-import net.minecraft.world.entity.TamableAnimal;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IEntityComponentProvider;
-import snownee.jade.api.IServerDataProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
+import net.minecraft.text.TranslatableText;
+import org.jetbrains.annotations.Nullable;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
-import snownee.jade.util.CommonProxy;
+import snownee.jade.util.UsernameCache;
+
+import java.util.UUID;
 
 public enum AnimalOwnerProvider implements IEntityComponentProvider, IServerDataProvider<EntityAccessor> {
 
 	INSTANCE;
 
+	@Nullable
+	public static UUID getOwnerUUID(Entity entity) {
+		if (entity instanceof Tameable) {
+			return ((Tameable) entity).getOwnerUuid();
+		}
+		if (entity instanceof HorseBaseEntity) {
+			return ((HorseBaseEntity) entity).getOwnerUuid();
+		}
+		return null;
+	}
+
 	@Override
 	public void appendTooltip(ITooltip tooltip, EntityAccessor accessor, IPluginConfig config) {
-		String name;
 		if (accessor.getServerData().contains("OwnerName")) {
-			name = accessor.getServerData().getString("OwnerName");
-		} else {
-			Entity entity = accessor.getEntity();
-			UUID ownerUUID = null;
-			if (entity instanceof OwnableEntity) {
-				ownerUUID = ((OwnableEntity) entity).getOwnerUUID();
-			}
-			if (ownerUUID == null) {
-				return;
-			}
-			name = CommonProxy.getLastKnownUsername(ownerUUID);
-			if (name == null) {
-				name = "???";
-			}
-		}
-		tooltip.add(Component.translatable("jade.owner", name));
-	}
-
-	@Override
-	public void appendServerData(CompoundTag data, EntityAccessor accessor) {
-		MinecraftServer server = accessor.getLevel().getServer();
-		if (server != null && server.isSingleplayerOwner(accessor.getPlayer().getGameProfile()) && accessor.getEntity() instanceof TamableAnimal) {
+			tooltip.add(new TranslatableText("jade.owner", accessor.getServerData().getString("OwnerName")));
 			return;
 		}
-		Entity entity = accessor.getEntity();
-		UUID ownerUUID = null;
-		if (entity instanceof OwnableEntity) {
-			ownerUUID = ((OwnableEntity) entity).getOwnerUUID();
+		UUID ownerUUID = getOwnerUUID(accessor.getEntity());
+		if (ownerUUID == null) {
+			return;
 		}
-		if (ownerUUID != null) {
-			String name = CommonProxy.getLastKnownUsername(ownerUUID);
-			if (name != null) {
-				data.putString("OwnerName", name);
+		String name = UsernameCache.lookupUsername(ownerUUID);
+		if (name == null) {
+			return;
+		}
+		tooltip.add(new TranslatableText("jade.owner", name));
+	}
+
+	@Override
+	public void appendServerData(NbtCompound data, EntityAccessor accessor) {
+		UUID ownerUUID = getOwnerUUID(accessor.getEntity());
+		if (ownerUUID == null) {
+			return;
+		}
+		String name = UsernameCache.getLastKnownUsername(ownerUUID);
+		if (name == null) {
+			MinecraftServer server = accessor.getLevel().getServer();
+			if (server != null) {
+				GameProfile profile = server.getGameProfileCache().get(ownerUUID);
+				if (profile != null && profile.getName() != null && UsernameCache.isValidName(profile.getName())) {
+					name = profile.getName();
+					UsernameCache.setUsername(ownerUUID, name);
+				}
 			}
+		}
+		if (name != null) {
+			data.putString("OwnerName", name);
 		}
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_ANIMAL_OWNER;
 	}
-
 }

@@ -1,23 +1,20 @@
 package snownee.jade.api;
 
-import java.util.List;
-import java.util.function.UnaryOperator;
-
-import org.jetbrains.annotations.ApiStatus.NonExtendable;
-
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Text;
 import snownee.jade.api.ui.Direction2D;
 import snownee.jade.api.ui.IElement;
 import snownee.jade.api.ui.IElement.Align;
 import snownee.jade.api.ui.IElementHelper;
+
+import java.util.List;
+import java.util.function.UnaryOperator;
 
 /**
  * Tooltip that you can append text and other render-able stuffs to.
  *
  * @author Snownee
  */
-@NonExtendable
 public interface ITooltip {
 
 	void clear();
@@ -34,27 +31,33 @@ public interface ITooltip {
 	/**
 	 * Add a text to a new line
 	 */
-	default void add(Component component) {
-		add(component, null);
+	default void add(Text text) {
+		add(text, null);
 	}
 
 	/**
 	 * Add a tagged text to a new line
 	 */
-	default void add(Component component, ResourceLocation tag) {
-		add(size(), component, tag);
+	default void add(Text text, Identifier tag) {
+		add(size(), text, tag);
 	}
 
-	default void add(int index, Component component) {
-		add(index, component, null);
+	/**
+	 * Add a text to a new line
+	 */
+	default void add(int index, Text text) {
+		add(index, text, null);
 	}
 
-	default void add(int index, Component component, ResourceLocation tag) {
-		add(index, IElementHelper.get().text(component).tag(tag));
+	/**
+	 * Add a text to a new line
+	 */
+	default void add(int index, Text text, Identifier tag) {
+		add(index, IElementHelper.get().text(text).tag(tag));
 	}
 
-	default void addAll(List<Component> components) {
-		components.forEach(this::add);
+	default void addAll(List<Text> texts) {
+		texts.forEach(this::add);
 	}
 
 	/**
@@ -64,6 +67,9 @@ public interface ITooltip {
 		add(size(), element);
 	}
 
+	/**
+	 * Add a text to a new line
+	 */
 	default void add(int index, List<IElement> elements) {
 		boolean first = true;
 		for (IElement element : elements) {
@@ -76,10 +82,16 @@ public interface ITooltip {
 		}
 	}
 
+	/**
+	 * Add a text to a new line
+	 */
 	default void add(List<IElement> elements) {
 		add(size(), elements);
 	}
 
+	/**
+	 * Add a text to a new line
+	 */
 	void add(int index, IElement element);
 
 	/**
@@ -87,8 +99,8 @@ public interface ITooltip {
 	 * <p>
 	 * IMPORTANT: DO NOT use this to concat texts
 	 */
-	default void append(Component component) {
-		append(component, null);
+	default void append(Text text) {
+		append(text, null);
 	}
 
 	/**
@@ -96,8 +108,8 @@ public interface ITooltip {
 	 * <p>
 	 * IMPORTANT: DO NOT use this to concat texts
 	 */
-	default void append(Component component, ResourceLocation tag) {
-		append(IElementHelper.get().text(component).tag(tag));
+	default void append(Text text, Identifier tag) {
+		append(IElementHelper.get().text(text).tag(tag));
 	}
 
 	/**
@@ -116,6 +128,11 @@ public interface ITooltip {
 		}
 	}
 
+	/**
+	 * Append a text to the last line
+	 * <p>
+	 * IMPORTANT: DO NOT use this to concat texts
+	 */
 	void append(int index, IElement element);
 
 	/**
@@ -123,16 +140,21 @@ public interface ITooltip {
 	 *
 	 * @return true if any element is removed
 	 */
-	boolean remove(ResourceLocation tag);
+	boolean remove(Identifier tag);
 
 	/**
 	 * Replace all elements that are tagged with this tag at the position of the first found element
 	 *
 	 * @return true if any element is replaced
 	 */
-	boolean replace(ResourceLocation tag, UnaryOperator<List<List<IElement>>> elements);
+	boolean replace(Identifier tag, UnaryOperator<List<List<IElement>>> elements);
 
-	boolean replace(ResourceLocation tag, Component component);
+	/**
+	 * Replace all elements that are tagged with this tag at the position of the first found element
+	 *
+	 * @return true if any element is replaced
+	 */
+	boolean replace(Identifier tag, Text text);
 
 	@Deprecated
 	IElementHelper getElementHelper();
@@ -140,8 +162,11 @@ public interface ITooltip {
 	/**
 	 * Get all elements that are tagged with this tag
 	 */
-	List<IElement> get(ResourceLocation tag);
+	List<IElement> get(Identifier tag);
 
+	/**
+	 * Get all elements that are tagged with this tag
+	 */
 	List<IElement> get(int index, Align align);
 
 	String getMessage();

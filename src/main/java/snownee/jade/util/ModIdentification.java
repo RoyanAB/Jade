@@ -1,26 +1,22 @@
 package snownee.jade.util;
 
-import java.util.Map;
-import java.util.Optional;
-
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-
-import net.minecraft.client.resources.language.I18n;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.decoration.Painting;
-import net.minecraft.world.entity.decoration.PaintingVariant;
-import net.minecraft.world.entity.item.FallingBlockEntity;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Block;
+import net.minecraft.block.Block;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.entity.Entities;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.FallingBlockEntity;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.resource.Identifier;
 import snownee.jade.api.callback.JadeItemModNameCallback;
 import snownee.jade.impl.WailaClientRegistration;
 
-public class ModIdentification implements ResourceManagerReloadListener {
+import java.util.Map;
+import java.util.Optional;
+
+public class ModIdentification {
 
 	public static final ModIdentification INSTANCE = new ModIdentification();
 	private static final Map<String, Optional<String>> NAMES = Maps.newConcurrentMap();
@@ -30,17 +26,21 @@ public class ModIdentification implements ResourceManagerReloadListener {
 	}
 
 	public static Optional<String> getModName(String namespace) {
-		return NAMES.computeIfAbsent(namespace, $ -> ClientProxy.getModName(namespace).or(() -> {
+		return NAMES.computeIfAbsent(namespace, $ -> {
+			Optional<String> name = ClientProxy.getModName(namespace);
+			if (name.isPresent()) {
+				return name;
+			}
 			String key = "jade.modName." + namespace;
-			if (I18n.exists(key)) {
-				return Optional.of(I18n.get(key));
+			if (I18n.hasTranslation(key)) {
+				return Optional.of(I18n.translate(key));
 			} else {
 				return Optional.empty();
 			}
-		}));
+		});
 	}
 
-	public static String getModName(ResourceLocation id) {
+	public static String getModName(Identifier id) {
 		return getModName(id.getNamespace()).orElse(id.getNamespace());
 	}
 
@@ -60,21 +60,17 @@ public class ModIdentification implements ResourceManagerReloadListener {
 	}
 
 	public static String getModName(Entity entity) {
-		if (entity instanceof Painting) {
-			PaintingVariant motive = ((Painting) entity).getVariant().value();
-			return getModName(CommonProxy.getId(motive));
-		}
 		if (entity instanceof ItemEntity) {
 			return getModName(((ItemEntity) entity).getItem());
 		}
 		if (entity instanceof FallingBlockEntity) {
-			return getModName(((FallingBlockEntity) entity).getBlockState().getBlock());
+			return getModName(((FallingBlockEntity) entity).getBlock().getBlock());
 		}
-		return getModName(CommonProxy.getId(entity.getType()));
+		Identifier id = Entities.REGISTRY.getKey(entity.getClass());
+		return id == null ? "minecraft" : getModName(id.getNamespace()).orElse(id.getNamespace());
 	}
 
-	@Override
-	public void onResourceManagerReload(ResourceManager manager) {
+	public void onResourceManagerReload() {
 		invalidateCache();
 	}
 

@@ -1,68 +1,46 @@
 package snownee.jade.impl;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
+import net.minecraft.block.Block;
+import net.minecraft.block.state.BlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.core.BlockPos;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.state.BlockState;
-import snownee.jade.api.Accessor;
-import snownee.jade.api.AccessorClientHandler;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IEntityComponentProvider;
-import snownee.jade.api.IToggleableProvider;
-import snownee.jade.api.IWailaClientRegistration;
-import snownee.jade.api.callback.JadeAfterRenderCallback;
-import snownee.jade.api.callback.JadeBeforeRenderCallback;
-import snownee.jade.api.callback.JadeBeforeTooltipCollectCallback;
-import snownee.jade.api.callback.JadeItemModNameCallback;
-import snownee.jade.api.callback.JadeRayTraceCallback;
-import snownee.jade.api.callback.JadeTooltipCollectedCallback;
-import snownee.jade.api.config.IWailaConfig;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
+import org.jetbrains.annotations.Nullable;
+import snownee.jade.api.*;
+import snownee.jade.api.callback.*;
 import snownee.jade.api.platform.CustomEnchantPower;
-import snownee.jade.api.view.EnergyView;
-import snownee.jade.api.view.FluidView;
 import snownee.jade.api.view.IClientExtensionProvider;
 import snownee.jade.api.view.ItemView;
 import snownee.jade.api.view.ProgressView;
 import snownee.jade.gui.PluginsConfigScreen;
 import snownee.jade.gui.config.OptionsList;
 import snownee.jade.impl.config.PluginConfig;
-import snownee.jade.impl.config.entry.BooleanConfigEntry;
-import snownee.jade.impl.config.entry.EnumConfigEntry;
-import snownee.jade.impl.config.entry.FloatConfigEntry;
-import snownee.jade.impl.config.entry.IntConfigEntry;
-import snownee.jade.impl.config.entry.StringConfigEntry;
-import snownee.jade.overlay.DatapackBlockManager;
+import snownee.jade.impl.config.entry.*;
 import snownee.jade.util.ClientProxy;
 import snownee.jade.util.ModIdentification;
+
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class WailaClientRegistration implements IWailaClientRegistration {
 
 	private static final WailaClientRegistration INSTANCE = new WailaClientRegistration();
 
+	public final Map<Identifier, IClientExtensionProvider<ItemStack, ItemView>> itemStorageProviders = Maps.newHashMap();
+	public final Map<Identifier, IClientExtensionProvider<NbtCompound, ProgressView>> progressProviders = Maps.newHashMap();
 	public final HierarchyLookup<IBlockComponentProvider> blockIconProviders;
 	public final HierarchyLookup<IBlockComponentProvider> blockComponentProviders;
 
@@ -70,9 +48,9 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	public final HierarchyLookup<IEntityComponentProvider> entityComponentProviders;
 
 	public final Set<Block> hideBlocks = Sets.newHashSet();
-	public final Set<EntityType<?>> hideEntities = Sets.newHashSet();
+	public final Set<Class<? extends Entity>> hideEntities = Sets.newHashSet();
 	public final Set<Block> pickBlocks = Sets.newHashSet();
-	public final Set<EntityType<?>> pickEntities = Sets.newHashSet();
+	public final Set<Class<? extends Entity>> pickEntities = Sets.newHashSet();
 
 	public final CallbackContainer<JadeAfterRenderCallback> afterRenderCallback = new CallbackContainer<>();
 	public final CallbackContainer<JadeBeforeRenderCallback> beforeRenderCallback = new CallbackContainer<>();
@@ -82,14 +60,9 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	public final CallbackContainer<JadeBeforeTooltipCollectCallback> beforeTooltipCollectCallback = new CallbackContainer<>();
 
 	public final Map<Block, CustomEnchantPower> customEnchantPowers = Maps.newHashMap();
-	public final Map<ResourceLocation, IClientExtensionProvider<ItemStack, ItemView>> itemStorageProviders = Maps.newHashMap();
-	public final Map<ResourceLocation, IClientExtensionProvider<CompoundTag, FluidView>> fluidStorageProviders = Maps.newHashMap();
-	public final Map<ResourceLocation, IClientExtensionProvider<CompoundTag, EnergyView>> energyStorageProviders = Maps.newHashMap();
-	public final Map<ResourceLocation, IClientExtensionProvider<CompoundTag, ProgressView>> progressProviders = Maps.newHashMap();
+	public final Set<Identifier> clientFeatures = Sets.newHashSet();
 
-	public final Set<ResourceLocation> clientFeatures = Sets.newHashSet();
-
-	public final Map<Class<Accessor<?>>, AccessorClientHandler<Accessor<?>>> accessorHandlers = Maps.newIdentityHashMap();
+	public final Map<Class<Accessor<?>>, AccessorClientHandler<Accessor<?>>> accessorHandlers = new IdentityHashMap<>();
 
 	WailaClientRegistration() {
 		blockIconProviders = new HierarchyLookup<>(Block.class);
@@ -128,19 +101,19 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	}
 
 	public List<IBlockComponentProvider> getBlockProviders(Block block, Predicate<IBlockComponentProvider> filter) {
-		return blockComponentProviders.get(block).stream().filter(filter).toList();
+		return blockComponentProviders.get(block).stream().filter(filter).collect(Collectors.toList());
 	}
 
 	public List<IBlockComponentProvider> getBlockIconProviders(Block block, Predicate<IBlockComponentProvider> filter) {
-		return blockIconProviders.get(block).stream().filter(filter).toList();
+		return blockIconProviders.get(block).stream().filter(filter).collect(Collectors.toList());
 	}
 
 	public List<IEntityComponentProvider> getEntityProviders(Entity entity, Predicate<IEntityComponentProvider> filter) {
-		return entityComponentProviders.get(entity).stream().filter(filter).toList();
+		return entityComponentProviders.get(entity).stream().filter(filter).collect(Collectors.toList());
 	}
 
 	public List<IEntityComponentProvider> getEntityIconProviders(Entity entity, Predicate<IEntityComponentProvider> filter) {
-		return entityIconProviders.get(entity).stream().filter(filter).toList();
+		return entityIconProviders.get(entity).stream().filter(filter).collect(Collectors.toList());
 	}
 
 	@Override
@@ -150,7 +123,7 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	}
 
 	@Override
-	public void hideTarget(EntityType<?> entityType) {
+	public void hideTarget(Class<? extends Entity> entityType) {
 		Objects.requireNonNull(entityType);
 		hideEntities.add(entityType);
 	}
@@ -162,7 +135,7 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	}
 
 	@Override
-	public void usePickedResult(EntityType<?> entityType) {
+	public void usePickedResult(Class<? extends Entity> entityType) {
 		Objects.requireNonNull(entityType);
 		pickEntities.add(entityType);
 	}
@@ -179,55 +152,77 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 
 	@Override
 	public boolean shouldHide(Entity entity) {
-		return hideEntities.contains(entity.getType());
+		for (Class<? extends Entity> clazz : hideEntities) {
+			if (clazz.isInstance(entity)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
 	public boolean shouldPick(Entity entity) {
-		return pickEntities.contains(entity.getType());
+		for (Class<? extends Entity> clazz : pickEntities) {
+			if (clazz.isInstance(entity)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override
-	public void addConfig(ResourceLocation key, boolean defaultValue) {
+	public void addConfig(Identifier key, boolean defaultValue) {
 		PluginConfig.INSTANCE.addConfig(new BooleanConfigEntry(key, defaultValue));
 	}
 
-	@SuppressWarnings("rawtypes")
+	@SuppressWarnings({"rawtypes", "unchecked"})
 	@Override
-	public void addConfig(ResourceLocation key, Enum<?> defaultValue) {
+	public void addConfig(Identifier key, Enum<?> defaultValue) {
 		Objects.requireNonNull(defaultValue);
 		PluginConfig.INSTANCE.addConfig(new EnumConfigEntry(key, defaultValue));
 	}
 
 	@Override
-	public void addConfig(ResourceLocation key, String defaultValue, Predicate<String> validator) {
+	public void addConfig(Identifier key, String defaultValue, Predicate<String> validator) {
 		Objects.requireNonNull(defaultValue);
 		Objects.requireNonNull(validator);
 		PluginConfig.INSTANCE.addConfig(new StringConfigEntry(key, defaultValue, validator));
 	}
 
 	@Override
-	public void addConfig(ResourceLocation key, int defaultValue, int min, int max, boolean slider) {
+	public void addConfig(Identifier key, int defaultValue, int min, int max, boolean slider) {
 		PluginConfig.INSTANCE.addConfig(new IntConfigEntry(key, defaultValue, min, max, slider));
 	}
 
 	@Override
-	public void addConfig(ResourceLocation key, float defaultValue, float min, float max, boolean slider) {
+	public void addConfig(Identifier key, float defaultValue, float min, float max, boolean slider) {
 		PluginConfig.INSTANCE.addConfig(new FloatConfigEntry(key, defaultValue, min, max, slider));
 	}
 
 	@Override
-	public void addConfigListener(ResourceLocation key, Consumer<ResourceLocation> listener) {
+	public void addConfigListener(Identifier key, Consumer<Identifier> listener) {
 		PluginConfig.INSTANCE.addConfigListener(key, listener);
 	}
 
 	@Override
-	public void setConfigCategoryOverride(ResourceLocation key, Component override) {
+	public void registerItemStorageClient(IClientExtensionProvider<ItemStack, ItemView> provider) {
+		Objects.requireNonNull(provider.getUid());
+		itemStorageProviders.put(provider.getUid(), provider);
+	}
+
+	@Override
+	public void registerProgressClient(IClientExtensionProvider<NbtCompound, ProgressView> provider) {
+		Objects.requireNonNull(provider.getUid());
+		progressProviders.put(provider.getUid(), provider);
+	}
+
+	@Override
+	public void setConfigCategoryOverride(Identifier key, Text override) {
 		PluginConfig.INSTANCE.setCategoryOverride(key, override);
 	}
 
 	@Override
-	public void setConfigCategoryOverride(ResourceLocation key, List<Component> override) {
+	public void setConfigCategoryOverride(Identifier key, List<Text> override) {
 		PluginConfig.INSTANCE.setCategoryOverride(key, override);
 	}
 
@@ -238,7 +233,7 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	}
 
 	public void loadComplete() {
-		var priorities = WailaCommonRegistration.instance().priorities;
+		PriorityStore<Identifier, snownee.jade.api.IJadeProvider> priorities = WailaCommonRegistration.instance().priorities;
 		blockComponentProviders.loadComplete(priorities);
 		blockIconProviders.loadComplete(priorities);
 		entityComponentProviders.loadComplete(priorities);
@@ -279,27 +274,23 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	@Override
 	public BlockAccessor.Builder blockAccessor() {
 		Minecraft mc = Minecraft.getInstance();
-		/* off */
 		return new BlockAccessorImpl.Builder()
-				.level(mc.level)
-				.player(mc.player)
-				.serverConnected(isServerConnected())
-				.serverData(getServerData())
-				.showDetails(isShowDetailsPressed());
-		/* on */
+			.level(mc.world)
+			.player(mc.player)
+			.serverConnected(isServerConnected())
+			.serverData(getServerData())
+			.showDetails(isShowDetailsPressed());
 	}
 
 	@Override
 	public EntityAccessor.Builder entityAccessor() {
 		Minecraft mc = Minecraft.getInstance();
-		/* off */
 		return new EntityAccessorImpl.Builder()
-				.level(mc.level)
-				.player(mc.player)
-				.serverConnected(isServerConnected())
-				.serverData(getServerData())
-				.showDetails(isShowDetailsPressed());
-		/* on */
+			.level(mc.world)
+			.player(mc.player)
+			.serverConnected(isServerConnected())
+			.serverData(getServerData())
+			.showDetails(isShowDetailsPressed());
 	}
 
 	@Override
@@ -310,17 +301,17 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	@Deprecated
 	@Override
 	public Screen createPluginConfigScreen(@Nullable Screen parent, @Nullable String namespace) {
-		return createPluginConfigScreen(parent, ModIdentification.getModName(namespace).map(Component::literal).orElse(null));
+		return createPluginConfigScreen(parent, ModIdentification.getModName(namespace).map(LiteralText::new).orElse(null));
 	}
 
 	@Override
-	public Screen createPluginConfigScreen(@Nullable Screen parent, @Nullable Component jumpToCategory) {
+	public Screen createPluginConfigScreen(@Nullable Screen parent, @Nullable Text jumpToCategory) {
 		Function<OptionsList, OptionsList.Entry> jumpTo = null;
-		if (jumpToCategory != null){
+		if (jumpToCategory != null) {
 			String title = jumpToCategory.getString();
 			jumpTo = options -> {
 				for (OptionsList.Entry entry : options.children()) {
-					if (entry instanceof OptionsList.Title e && e.getTitle().getString().equals(title)) {
+					if (entry instanceof OptionsList.Title && ((OptionsList.Title) entry).getTitle().getString().equals(title)) {
 						return entry;
 					}
 				}
@@ -328,30 +319,6 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 			};
 		}
 		return PluginsConfigScreen.createPluginConfigScreen(parent, jumpTo, false);
-	}
-
-	@Override
-	public void registerItemStorageClient(IClientExtensionProvider<ItemStack, ItemView> provider) {
-		Objects.requireNonNull(provider.getUid());
-		itemStorageProviders.put(provider.getUid(), provider);
-	}
-
-	@Override
-	public void registerFluidStorageClient(IClientExtensionProvider<CompoundTag, FluidView> provider) {
-		Objects.requireNonNull(provider.getUid());
-		fluidStorageProviders.put(provider.getUid(), provider);
-	}
-
-	@Override
-	public void registerEnergyStorageClient(IClientExtensionProvider<CompoundTag, EnergyView> provider) {
-		Objects.requireNonNull(provider.getUid());
-		energyStorageProviders.put(provider.getUid(), provider);
-	}
-
-	@Override
-	public void registerProgressClient(IClientExtensionProvider<CompoundTag, ProgressView> provider) {
-		Objects.requireNonNull(provider.getUid());
-		progressProviders.put(provider.getUid(), provider);
 	}
 
 	@Override
@@ -365,32 +332,32 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	}
 
 	@Override
-	public CompoundTag getServerData() {
+	public NbtCompound getServerData() {
 		return ObjectDataCenter.getServerData();
 	}
 
 	@Override
-	public void setServerData(CompoundTag tag) {
+	public void setServerData(NbtCompound tag) {
 		ObjectDataCenter.setServerData(tag);
 	}
 
 	@Override
-	public ItemStack getBlockCamouflage(LevelAccessor level, BlockPos pos) {
-		return DatapackBlockManager.getFakeBlock(level, pos);
+	public ItemStack getBlockCamouflage(World level, BlockPos pos) {
+		return ItemStack.EMPTY;
 	}
 
 	@Override
-	public void markAsClientFeature(ResourceLocation uid) {
+	public void markAsClientFeature(Identifier uid) {
 		clientFeatures.add(uid);
 	}
 
 	@Override
-	public void markAsServerFeature(ResourceLocation uid) {
+	public void markAsServerFeature(Identifier uid) {
 		clientFeatures.remove(uid);
 	}
 
 	@Override
-	public boolean isClientFeature(ResourceLocation uid) {
+	public boolean isClientFeature(Identifier uid) {
 		return clientFeatures.contains(uid);
 	}
 
@@ -403,11 +370,6 @@ public class WailaClientRegistration implements IWailaClientRegistration {
 	@Override
 	public AccessorClientHandler<Accessor<?>> getAccessorHandler(Class<? extends Accessor<?>> clazz) {
 		return Objects.requireNonNull(accessorHandlers.get(clazz), () -> "No accessor handler for " + clazz);
-	}
-
-	@Override
-	public boolean maybeLowVisionUser() {
-		return ClientProxy.maybeLowVisionUser || IWailaConfig.get().getGeneral().shouldEnableTextToSpeech();
 	}
 
 }

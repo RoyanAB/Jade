@@ -1,49 +1,44 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.monster.ZombieVillager;
-import net.minecraft.world.entity.npc.Villager;
-import net.minecraft.world.entity.npc.VillagerData;
-import net.minecraft.world.entity.npc.VillagerProfession;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.entity.living.mob.monster.ZombieVillagerEntity;
+import net.minecraft.entity.living.mob.passive.VillagerEntity;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Text;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.IEntityComponentProvider;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.config.IPluginConfig;
-import snownee.jade.util.CommonProxy;
 
 // @MerchantScreen / Villager.getTypeName
 public enum VillagerProfessionProvider implements IEntityComponentProvider {
 
 	INSTANCE;
 
-	private static final Component LEVEL_SEPARATOR = Component.literal(" - ");
+	private static final String[] PROFESSIONS = {"farmer", "librarian", "priest", "smith", "butcher", "nitwit"};
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, EntityAccessor accessor, IPluginConfig config) {
-		VillagerData data = null;
-		if (accessor.getEntity() instanceof Villager) {
-			data = ((Villager) accessor.getEntity()).getVillagerData();
-		} else if (accessor.getEntity() instanceof ZombieVillager) {
-			data = ((ZombieVillager) accessor.getEntity()).getVillagerData();
-		}
-		if (data == null) {
+		int profession;
+		//port: 1.12 has no VillagerData, villagers and zombie villagers expose the profession separately
+		if (accessor.getEntity() instanceof VillagerEntity) {
+			profession = ((VillagerEntity) accessor.getEntity()).getProfession();
+		} else if (accessor.getEntity() instanceof ZombieVillagerEntity) {
+			profession = ((ZombieVillagerEntity) accessor.getEntity()).getProfession();
+		} else {
 			return;
 		}
-		int level = data.getLevel();
-		VillagerProfession profession = data.getProfession();
-		MutableComponent component = CommonProxy.getProfressionName(profession);
-		if (profession != VillagerProfession.NONE && profession != VillagerProfession.NITWIT && level > 0 && level <= 5) {
-			component.append(LEVEL_SEPARATOR).append(Component.translatable("merchant.level." + level));
-		}
-		tooltip.add(component);
+		String name = profession >= 0 && profession < PROFESSIONS.length ? PROFESSIONS[profession] : "farmer";
+		String key = "entity.Villager." + name;
+		Text text = new LiteralText(I18n.hasTranslation(key)
+			? I18n.translate(key) : name);
+		tooltip.add(text);
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_VILLAGER_PROFESSION;
 	}
-
 }

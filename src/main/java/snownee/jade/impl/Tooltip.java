@@ -1,22 +1,13 @@
 package snownee.jade.impl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.function.UnaryOperator;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.phys.Vec2;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Text;
+import net.minecraft.util.math.Vec2f;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
@@ -27,18 +18,21 @@ import snownee.jade.api.ui.IElementHelper;
 import snownee.jade.impl.ui.ElementHelper;
 import snownee.jade.overlay.DisplayHelper;
 
+import java.util.*;
+import java.util.function.UnaryOperator;
+
 public class Tooltip implements ITooltip {
 
 	public final List<Line> lines = new ArrayList<>();
 	public boolean sneakyDetails;
 
-	public static void drawDebugBorder(GuiGraphics guiGraphics, float x, float y, IElement element) {
-		if (Jade.CONFIG.get().getGeneral().isDebug() && Screen.hasControlDown()) {
-			Vec2 translate = element.getTranslation();
-			Vec2 size = element.getCachedSize();
-			DisplayHelper.INSTANCE.drawBorder(guiGraphics, x, y, x + size.x, y + size.y, 1, 0x88FF0000, true);
-			if (!Vec2.ZERO.equals(translate)) {
-				DisplayHelper.INSTANCE.drawBorder(guiGraphics, x + translate.x, y + translate.y, x + translate.x + size.x, y + translate.y + size.y, 1, 0x880000FF, true);
+	public static void drawDebugBorder(float x, float y, IElement element) {
+		if (Jade.CONFIG.get().getGeneral().isDebug() && Screen.isControlDown() && element.getCachedSize() != null) {
+			Vec2f translate = element.getTranslation();
+			Vec2f size = element.getCachedSize();
+			DisplayHelper.INSTANCE.drawBorder(x, y, x + size.x, y + size.y, 1, 0x88FF0000, true);
+			if (!Vec2f.ZERO.equals(translate)) {
+				DisplayHelper.INSTANCE.drawBorder(x + translate.x, y + translate.y, x + translate.x + size.x, y + translate.y + size.y, 1, 0x880000FF, true);
 			}
 		}
 	}
@@ -84,10 +78,14 @@ public class Tooltip implements ITooltip {
 	}
 
 	@Override
-	public List<IElement> get(ResourceLocation tag) {
+	public List<IElement> get(Identifier tag) {
 		List<IElement> elements = Lists.newArrayList();
 		for (Line line : lines) {
-			line.sortedElements().stream().filter(e -> Objects.equal(tag, e.getTag())).forEach(elements::add);
+			for (IElement e : line.sortedElements()) {
+				if (Objects.equal(tag, e.getTag())) {
+					elements.add(e);
+				}
+			}
 		}
 		return elements;
 	}
@@ -99,24 +97,27 @@ public class Tooltip implements ITooltip {
 	}
 
 	@Override
-	public boolean remove(ResourceLocation tag) {
+	public boolean remove(Identifier tag) {
 		return removeInternal(tag, true, null);
 	}
 
-	private boolean removeInternal(ResourceLocation tag, boolean removeFirstLineIfEmpty, @Nullable List<List<IElement>> collector) {
+	private boolean removeInternal(Identifier tag, boolean removeFirstLineIfEmpty, @Nullable List<List<IElement>> collector) {
 		boolean removed = false;
 		List<IElement> collected = collector == null ? null : Lists.newArrayList();
 		for (Iterator<Line> iterator = lines.iterator(); iterator.hasNext(); ) {
 			Line line = iterator.next();
-			if (line.elements.removeIf(e -> {
+			boolean changed = false;
+			for (Iterator<IElement> it = line.elements.iterator(); it.hasNext(); ) {
+				IElement e = it.next();
 				if (Objects.equal(tag, e.getTag())) {
+					it.remove();
+					changed = true;
 					if (collector != null) {
 						collected.add(e);
 					}
-					return true;
 				}
-				return false;
-			})) {
+			}
+			if (changed) {
 				line.markDirty();
 				if (line.elements.isEmpty() && (removed || removeFirstLineIfEmpty)) {
 					iterator.remove();
@@ -132,17 +133,18 @@ public class Tooltip implements ITooltip {
 	}
 
 	@Override
-	public boolean replace(ResourceLocation tag, Component component) {
-		return replace(tag, $ -> List.of(List.of(IElementHelper.get().text(component))));
+	public boolean replace(Identifier tag, Text text) {
+		return replace(tag, $ -> Collections.singletonList(Collections.singletonList(IElementHelper.get().text(text))));
 	}
 
 	@Override
-	public boolean replace(ResourceLocation tag, UnaryOperator<List<List<IElement>>> operator) {
+	public boolean replace(Identifier tag, UnaryOperator<List<List<IElement>>> operator) {
 		int firstX = -1, firstY = -1;
 		for (int y = 0; y < lines.size(); y++) {
 			Line line = lines.get(y);
-			for (int x = 0; x < line.sortedElements().size(); x++) {
-				IElement element = line.sortedElements().get(x);
+			List<IElement> sorted = line.sortedElements();
+			for (int x = 0; x < sorted.size(); x++) {
+				IElement element = sorted.get(x);
 				if (Objects.equal(tag, element.getTag())) {
 					if (firstX == -1) {
 						firstX = x;
@@ -180,16 +182,17 @@ public class Tooltip implements ITooltip {
 	public String getMessage() {
 		List<String> msgs = Lists.newArrayList();
 		for (Line line : lines) {
-			/* off */
-			msgs.add(Joiner.on(' ').join(
-							line.sortedElements().stream()
-									.filter(e -> !Identifiers.CORE_MOD_NAME.equals(e.getTag()))
-									.map(IElement::getCachedMessage)
-									.filter(java.util.Objects::nonNull)
-									.toList()
-					)
-			);
-			/* on */
+			List<String> parts = Lists.newArrayList();
+			for (IElement e : line.sortedElements()) {
+				if (Identifiers.CORE_MOD_NAME.equals(e.getTag())) {
+					continue;
+				}
+				String message = e.getCachedMessage();
+				if (message != null) {
+					parts.add(message);
+				}
+			}
+			msgs.add(Joiner.on(' ').join(parts));
 		}
 		return Joiner.on('\n').join(msgs);
 	}
@@ -201,19 +204,24 @@ public class Tooltip implements ITooltip {
 		}
 		Line line = lines.get(index);
 		switch (side) {
-			case UP -> line.marginTop = margin;
-			case DOWN -> line.marginBottom = margin;
-			default -> throw new IllegalArgumentException("Only TOP and BOTTOM are allowed.");
+			case UP:
+				line.marginTop = margin;
+				break;
+			case DOWN:
+				line.marginBottom = margin;
+				break;
+			default:
+				throw new IllegalArgumentException("Only TOP and BOTTOM are allowed.");
 		}
 	}
 
 	public static class Line {
 		private final List<IElement> elements = Lists.newArrayList();
-		private final int[] starts = new int[3 - 1];
+		private final int[] starts = new int[2];
 		private final float[] widths = new float[3];
 		public int marginTop = 0;
 		public int marginBottom = 2;
-		private Vec2 size;
+		private Vec2f size;
 		private boolean sorted;
 
 		public void sort() {
@@ -232,14 +240,14 @@ public class Tooltip implements ITooltip {
 				for (int i = index; i < starts.length; i++) {
 					starts[i]++;
 				}
-				Vec2 elementSize = element.getCachedSize();
+				Vec2f elementSize = element.getCachedSize();
 				widths[index] += elementSize.x;
 				width += elementSize.x;
 				height = Math.max(height, elementSize.y);
 			}
 			elements.clear();
 			elements.addAll(tempList);
-			size = new Vec2(width, height);
+			size = new Vec2f(width, height);
 		}
 
 		public void markDirty() {
@@ -260,37 +268,43 @@ public class Tooltip implements ITooltip {
 			return elements.subList(start, end);
 		}
 
-		public Vec2 size() {
+		public Vec2f size() {
 			sort();
 			return size;
 		}
 
-		public void render(GuiGraphics guiGraphics, float x, float y, float maxX, float maxY) {
+		public void render(float x, float y, float maxX, float maxY) {
 			sort();
 			for (Align align : Align.VALUES) {
-				renderAligned(guiGraphics, x, y, maxX, maxY, align);
+				renderAligned(x, y, maxX, maxY, align);
 			}
 		}
 
-		private void renderAligned(GuiGraphics guiGraphics, float x, float y, float maxX, float maxY, Align align) {
+		private void renderAligned(float x, float y, float maxX, float maxY, Align align) {
 			List<IElement> alignedElements = alignedElements(align);
-			float ox = switch (align) {
-				case LEFT -> x;
-				case RIGHT -> maxX - widths[1];
-				case CENTER -> {
+			float ox;
+			switch (align) {
+				case LEFT:
+					ox = x;
+					break;
+				case RIGHT:
+					ox = maxX - widths[1];
+					break;
+				case CENTER:
+				default:
 					float left = x + widths[0];
 					float right = maxX - widths[1];
-					yield left + (right - left - widths[2]) / 2;
-				}
-			};
+					ox = left + (right - left - widths[2]) / 2;
+					break;
+			}
 
 			boolean extendable = align == Align.LEFT && alignedElements.size() == elements.size();
 			IElement lastElement = alignedElements.isEmpty() ? null : alignedElements.get(alignedElements.size() - 1);
 			for (IElement element : alignedElements) {
-				Vec2 translate = element.getTranslation();
-				Vec2 size = element.getCachedSize();
-				drawDebugBorder(guiGraphics, ox, y, element);
-				element.render(guiGraphics, ox + translate.x, y + translate.y, (extendable && element == lastElement ? maxX : (ox + size.x)) + translate.x, maxY + translate.y);
+				Vec2f translate = element.getTranslation();
+				Vec2f size = element.getCachedSize();
+				drawDebugBorder(ox, y, element);
+				element.render(ox + translate.x, y + translate.y, (extendable && element == lastElement ? maxX : (ox + size.x)) + translate.x, maxY + translate.y);
 				ox += size.x;
 			}
 		}

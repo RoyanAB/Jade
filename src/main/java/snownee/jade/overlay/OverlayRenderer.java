@@ -1,16 +1,13 @@
 package snownee.jade.overlay;
 
-import org.apache.commons.lang3.mutable.MutableObject;
-
-import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-
+import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.util.Mth;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.math.MathHelper;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.lwjgl.input.Mouse;
+import org.lwjgl.opengl.GL11;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
 import snownee.jade.api.Identifiers;
@@ -28,6 +25,7 @@ import snownee.jade.impl.config.WailaConfig.ConfigGeneral;
 import snownee.jade.impl.config.WailaConfig.ConfigOverlay;
 import snownee.jade.impl.ui.BoxElement;
 import snownee.jade.impl.ui.ItemStackElement;
+import snownee.jade.mixin.PlayerTabOverlayAccess;
 import snownee.jade.util.ClientProxy;
 import snownee.jade.util.ModIdentification;
 
@@ -41,6 +39,10 @@ public class OverlayRenderer {
 	private static BoxElement lingerTooltip;
 	private static float disappearTicks;
 
+	public static Theme theme() {
+		return theme.getValue();
+	}
+
 	public static boolean shouldShow() {
 		if (WailaTickHandler.instance().rootElement == null) {
 			return false;
@@ -50,21 +52,17 @@ public class OverlayRenderer {
 		if (!general.shouldDisplayTooltip())
 			return false;
 
-		if (general.getDisplayMode() == IWailaConfig.DisplayMode.HOLD_KEY && !JadeClient.showOverlay.isDown())
+		if (general.getDisplayMode() == IWailaConfig.DisplayMode.HOLD_KEY && (JadeClient.showOverlay == null || !JadeClient.showOverlay.isPressed()))
 			return false;
 
 		BossBarOverlapMode mode = Jade.CONFIG.get().getGeneral().getBossBarOverlapMode();
-		if (mode == BossBarOverlapMode.HIDE_TOOLTIP && ClientProxy.getBossBarRect() != null) {
-			return false;
-		}
-
-		return true;
+		return mode != BossBarOverlapMode.HIDE_TOOLTIP || ClientProxy.getBossBarRect() == null;
 	}
 
 	public static boolean shouldShowImmediately(BoxElement box) {
 		Minecraft mc = Minecraft.getInstance();
 
-		if (mc.level == null)
+		if (mc.world == null)
 			return false;
 
 		if (!ClientProxy.shouldShowWithOverlay(mc, mc.screen)) {
@@ -73,32 +71,28 @@ public class OverlayRenderer {
 
 		box.updateExpectedRect(rect);
 		ConfigGeneral general = Jade.CONFIG.get().getGeneral();
-		if (mc.screen instanceof PreviewOptionsScreen optionsScreen) {
+		if (mc.screen instanceof PreviewOptionsScreen) {
+			PreviewOptionsScreen optionsScreen = (PreviewOptionsScreen) mc.screen;
 			if (optionsScreen.forcePreviewOverlay()) {
 				return true;
 			}
 			if (!general.previewOverlay) {
 				return false;
 			}
-			Window window = mc.getWindow();
-			double x = mc.mouseHandler.xpos() * window.getGuiScaledWidth() / window.getScreenWidth();
-			double y = mc.mouseHandler.ypos() * window.getGuiScaledHeight() / window.getScreenHeight();
-			if (rect.expectedRect.contains((int) x, (int) y)) {
+			int x = Mouse.getX() * DisplayHelper.guiWidth() / mc.width;
+			int y = DisplayHelper.guiHeight() - Mouse.getY() * DisplayHelper.guiHeight() / mc.height - 1;
+			if (rect.expectedRect.contains(x, y)) {
 				return false;
 			}
 		}
 
-		if (mc.gui.getDebugOverlay().showDebugScreen() && general.shouldHideFromDebug())
+		if (mc.options.hideGui)
 			return false;
 
-		if (mc.getOverlay() != null || mc.options.hideGui)
+		if (mc.options.debugEnabled && general.shouldHideFromDebug())
 			return false;
 
-		if (mc.gui.getTabList().visible && general.shouldHideFromTabList()) {
-			return false;
-		}
-
-		return true;
+		return !(mc.gui.getPlayerTabOverlay() instanceof PlayerTabOverlayAccess) || !((PlayerTabOverlayAccess) mc.gui.getPlayerTabOverlay()).isVisible() || !general.shouldHideFromTabList();
 	}
 
 	/**
@@ -111,19 +105,19 @@ public class OverlayRenderer {
 	 * Secondly, please notice the license that Jade is using.
 	 * I don't think it is compatible with some open-source licenses.
 	 */
-	public static void renderOverlay478757(GuiGraphics guiGraphics) {
-		float delta = Minecraft.getInstance().getDeltaFrameTime();
+	public static void renderOverlay478757() {
+		float delta = Minecraft.getInstance().getTickDelta();
 		ticks += delta;
 		shown = false;
 		BoxElement root = WailaTickHandler.instance().rootElement;
 		boolean show;
 		if (root == null && PreviewOptionsScreen.isAdjustingPosition()) {
 			Tooltip tooltip = new Tooltip();
-			tooltip.add(IThemeHelper.get().title(Blocks.GRASS_BLOCK.getName()));
-			tooltip.add(IThemeHelper.get().modName(ModIdentification.getModName(Blocks.GRASS_BLOCK)));
+			tooltip.add(IThemeHelper.get().title(new ItemStack(Blocks.GRASS).getHoverName()));
+			tooltip.add(IThemeHelper.get().modName(ModIdentification.getModName(Blocks.GRASS)));
 			root = new BoxElement(tooltip, IThemeHelper.get().theme().tooltipStyle);
 			root.tag(Identifiers.ROOT);
-			root.setThemeIcon(ItemStackElement.of(new ItemStack(Blocks.GRASS_BLOCK)), IThemeHelper.get().theme());
+			root.setThemeIcon(ItemStackElement.of(new ItemStack(Blocks.GRASS)), IThemeHelper.get().theme());
 			root.updateExpectedRect(rect);
 			show = true;
 		} else {
@@ -147,7 +141,7 @@ public class OverlayRenderer {
 			root = lingerTooltip;
 			float speed = general.isDebug() ? 0.1F : 0.6F;
 			alpha += (show ? speed : -speed) * delta;
-			alpha = Mth.clamp(alpha, 0, 1);
+			alpha = MathHelper.clamp(alpha, 0, 1);
 		} else {
 			alpha = show ? 1 : 0;
 		}
@@ -155,56 +149,68 @@ public class OverlayRenderer {
 		if (alpha < 0.1F || root == null || !shouldShowImmediately(root)) {
 			if (!PreviewOptionsScreen.isAdjustingPosition()) {
 				lingerTooltip = null;
-				rect.rect.setWidth(0); // mark dirty
+				rect.rect.width = 0;
 				WailaTickHandler.clearLastNarration();
 				return;
 			}
 		}
 
-		Minecraft.getInstance().getProfiler().push("Jade Overlay");
-		renderOverlay(root, guiGraphics);
-		Minecraft.getInstance().getProfiler().pop();
+		Minecraft.getInstance().profiler.push("Jade Overlay");
+		renderOverlay478757(root);
+		Minecraft.getInstance().profiler.pop();
 	}
 
-	public static void renderOverlay(BoxElement root, GuiGraphics guiGraphics) {
+	public static void renderOverlay478757(BoxElement root) {
 		root.updateRect(rect);
 
 		for (JadeBeforeRenderCallback callback : WailaClientRegistration.instance().beforeRenderCallback.callbacks()) {
-			if (callback.beforeRender(root, rect, guiGraphics, ObjectDataCenter.get())) {
+			if (callback.beforeRender(root, rect, ObjectDataCenter.get())) {
 				return;
 			}
 		}
 
-		PoseStack matrixStack = guiGraphics.pose();
-		matrixStack.pushPose();
+		boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+		boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+
+		GlStateManager.disableDepthTest();
+		GlStateManager.pushMatrix();
 		float z = Minecraft.getInstance().screen == null ? 1 : 100;
-		matrixStack.translate(rect.rect.getX(), rect.rect.getY(), z);
+		GlStateManager.translatef(rect.rect.getX(), rect.rect.getY(), z);
 
 		float scale = rect.scale;
 		if (scale != 1) {
-			matrixStack.scale(scale, scale, 1.0F);
+			GlStateManager.scalef(scale, scale, 1.0F);
 		}
 
-		RenderSystem.enableBlend();
+		GlStateManager.enableBlend();
 		{
 			float maxWidth = rect.rect.getWidth();
 			float maxHeight = rect.rect.getHeight();
+			maxWidth = maxWidth / scale;
+			maxHeight = maxHeight / scale;
 			if (root.getStyle().hasRoundCorner()) {
 				maxWidth -= 2;
 				maxHeight -= 2;
 			}
-			maxWidth = maxWidth / scale;
-			maxHeight = maxHeight / scale;
-			root.render(guiGraphics, 0, 0, maxWidth, maxHeight);
+			root.render(0, 0, maxWidth, maxHeight);
 		}
 
 		WailaClientRegistration.instance().afterRenderCallback.call(callback -> {
-			callback.afterRender(root, rect, guiGraphics, ObjectDataCenter.get());
+			callback.afterRender(root, rect, ObjectDataCenter.get());
 		});
 
-		RenderSystem.enableBlend();
-		RenderSystem.enableDepthTest();
-		matrixStack.popPose();
+		GlStateManager.popMatrix();
+
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+
+		if (blend)
+			GlStateManager.enableBlend();
+		else
+			GlStateManager.disableBlend();
+		if (depth)
+			GlStateManager.enableDepthTest();
+		else
+			GlStateManager.disableDepthTest();
 
 		if (Jade.CONFIG.get().getGeneral().shouldEnableTextToSpeech()) {
 			WailaTickHandler.narrate(root.getTooltip(), true);

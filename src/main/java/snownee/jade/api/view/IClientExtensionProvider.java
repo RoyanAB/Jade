@@ -1,9 +1,9 @@
 package snownee.jade.api.view;
 
-import java.util.List;
-
 import snownee.jade.api.Accessor;
 import snownee.jade.api.IJadeProvider;
+
+import java.util.List;
 
 public interface IClientExtensionProvider<IN, OUT> extends IJadeProvider {
 

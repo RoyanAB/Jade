@@ -1,8 +1,9 @@
 package snownee.jade.addon.vanilla;
 
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.entity.decoration.ArmorStand;
-import net.minecraft.world.item.ItemStack;
+import net.minecraft.entity.living.ArmorStandEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.LiteralText;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.IEntityComponentProvider;
 import snownee.jade.api.ITooltip;
@@ -18,13 +19,14 @@ public enum ArmorStandProvider implements IEntityComponentProvider {
 
 	@Override
 	public void appendTooltip(ITooltip tooltip, EntityAccessor accessor, IPluginConfig config) {
-		ArmorStand entity = (ArmorStand) accessor.getEntity();
+		ArmorStandEntity entity = (ArmorStandEntity) accessor.getEntity();
 		boolean empty = true;
-		for (ItemStack stack : entity.getArmorSlots()) {
-			if (stack.isEmpty())
+		for (ItemStack stack : entity.getArmor()) {
+			if (stack.isEmpty()) {
 				continue;
+			}
 			tooltip.add(IElementHelper.get().smallItem(stack));
-			tooltip.append(IDisplayHelper.get().stripColor(stack.getHoverName()));
+			tooltip.append(IDisplayHelper.get().stripColor(new LiteralText(stack.getHoverName())));
 			tooltip.setLineMargin(-1, Direction2D.DOWN, -1);
 			empty = false;
 		}
@@ -34,8 +36,7 @@ public enum ArmorStandProvider implements IEntityComponentProvider {
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.MC_ARMOR_STAND;
 	}
-
 }

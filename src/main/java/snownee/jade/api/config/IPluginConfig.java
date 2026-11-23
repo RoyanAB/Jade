@@ -1,11 +1,9 @@
 package snownee.jade.api.config;
 
-import java.util.Set;
-
-import org.jetbrains.annotations.ApiStatus.NonExtendable;
-
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resource.Identifier;
 import snownee.jade.api.IToggleableProvider;
+
+import java.util.Set;
 
 /**
  * Read-only interface for Waila internal config storage.<br>
@@ -13,7 +11,6 @@ import snownee.jade.api.IToggleableProvider;
  *
  * @author ProfMobius
  */
-@NonExtendable
 public interface IPluginConfig {
 
 	/**
@@ -22,25 +19,25 @@ public interface IPluginConfig {
 	 * @param namespace The namespace to get keys from
 	 * @return all the keys for a given namespace.
 	 */
-	Set<ResourceLocation> getKeys(String namespace);
+	Set<Identifier> getKeys(String namespace);
 
 	/**
 	 * Gets a collection of all keys.
 	 *
 	 * @return all registered keys.
 	 */
-	Set<ResourceLocation> getKeys();
+	Set<Identifier> getKeys();
 
 	boolean get(IToggleableProvider provider);
 
-	boolean get(ResourceLocation key);
+	boolean get(Identifier key);
 
-	<T extends Enum<T>> T getEnum(ResourceLocation key);
+	<T extends Enum<T>> T getEnum(Identifier key);
 
-	int getInt(ResourceLocation key);
+	int getInt(Identifier key);
 
-	float getFloat(ResourceLocation key);
+	float getFloat(Identifier key);
 
-	String getString(ResourceLocation key);
+	String getString(Identifier key);
 
 }

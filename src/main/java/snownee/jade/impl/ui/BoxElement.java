@@ -1,23 +1,8 @@
 package snownee.jade.impl.ui;
 
-import java.util.Arrays;
-import java.util.Objects;
-import java.util.function.IntConsumer;
-import java.util.function.ToIntFunction;
-
-import org.jetbrains.annotations.Nullable;
-
-import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.systems.RenderSystem;
-
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.GuiSpriteManager;
-import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.metadata.gui.GuiSpriteScaling;
-import net.minecraft.util.Mth;
-import net.minecraft.world.phys.Vec2;
+import net.minecraft.util.math.Vec2f;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
@@ -25,14 +10,7 @@ import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.config.IWailaConfig.IConfigOverlay;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.theme.Theme;
-import snownee.jade.api.ui.BoxStyle;
-import snownee.jade.api.ui.Direction2D;
-import snownee.jade.api.ui.Element;
-import snownee.jade.api.ui.IBoxElement;
-import snownee.jade.api.ui.IDisplayHelper;
-import snownee.jade.api.ui.IElement;
-import snownee.jade.api.ui.MessageType;
-import snownee.jade.api.ui.TooltipRect;
+import snownee.jade.api.ui.*;
 import snownee.jade.gui.PreviewOptionsScreen;
 import snownee.jade.impl.Tooltip;
 import snownee.jade.overlay.DisplayHelper;
@@ -40,6 +18,8 @@ import snownee.jade.overlay.OverlayRenderer;
 import snownee.jade.overlay.ProgressTracker;
 import snownee.jade.overlay.WailaTickHandler;
 import snownee.jade.util.ClientProxy;
+
+import java.util.Arrays;
 
 public class BoxElement extends Element implements IBoxElement {
 	private final Tooltip tooltip;
@@ -49,31 +29,11 @@ public class BoxElement extends Element implements IBoxElement {
 	private float boxProgress;
 	private MessageType boxProgressType;
 	private ProgressTracker.TrackInfo track;
-	private Vec2 contentSize = Vec2.ZERO;
+	private Vec2f contentSize = Vec2f.ZERO;
 
 	public BoxElement(Tooltip tooltip, BoxStyle style) {
-		this.tooltip = Objects.requireNonNull(tooltip);
-		this.style = Objects.requireNonNull(style);
-	}
-
-	private static void chase(TooltipRect rect, ToIntFunction<Rect2i> getter, IntConsumer setter) {
-		if (Jade.CONFIG.get().getOverlay().getAnimation()) {
-			int source = getter.applyAsInt(rect.rect);
-			int target = getter.applyAsInt(rect.expectedRect);
-			float diff = target - source;
-			if (diff == 0) {
-				return;
-			}
-			float delta = Minecraft.getInstance().getDeltaFrameTime() * 2;
-			if (delta < 1)
-				diff *= delta;
-			if (Mth.abs(diff) < 1) {
-				diff = diff > 0 ? 1 : -1;
-			}
-			setter.accept((int) (source + diff));
-		} else {
-			setter.accept(getter.applyAsInt(rect.expectedRect));
-		}
+		this.tooltip = tooltip;
+		this.style = style;
 	}
 
 	private static int calculateMargin(int margin1, int margin2) {
@@ -87,15 +47,15 @@ public class BoxElement extends Element implements IBoxElement {
 	}
 
 	@Override
-	public Vec2 getSize() {
+	public Vec2f getSize() {
 		if (tooltip.isEmpty()) {
-			return Vec2.ZERO;
+			return Vec2f.ZERO;
 		}
 		float width = 0, height = 0;
 		int lineCount = tooltip.lines.size();
 		Tooltip.Line line = tooltip.lines.get(0);
 		for (int i = 0; i < lineCount; i++) {
-			Vec2 size = line.size();
+			Vec2f size = line.size();
 			width = Math.max(width, size.x);
 			height += size.y;
 			if (i < lineCount - 1) {
@@ -104,15 +64,14 @@ public class BoxElement extends Element implements IBoxElement {
 				height += calculateMargin(marginBottom, line.marginTop);
 			}
 		}
-		contentSize = new Vec2(width, height);
+		contentSize = new Vec2f(width, height);
 		if (icon != null) {
-			Vec2 size = icon.getCachedSize();
+			Vec2f size = icon.getCachedSize();
 			width += size.x + 3;
 			height = Math.max(height, size.y);
 		}
 		width += padding(Direction2D.LEFT) + padding(Direction2D.RIGHT);
 		height += padding(Direction2D.UP) + padding(Direction2D.DOWN);
-		// our limited negative-padding support:
 		width = Math.max(width, 0);
 		height = Math.max(height, 0);
 
@@ -120,69 +79,63 @@ public class BoxElement extends Element implements IBoxElement {
 			setPadding(Direction2D.UP, padding(Direction2D.UP) + (int) (icon.getCachedSize().y - contentSize.y) / 2);
 		}
 
-		return new Vec2(width, height);
+		return new Vec2f(width, height);
 	}
 
 	@Override
-	public void render(GuiGraphics guiGraphics, final float x, final float y, final float maxX, final float maxY) {
+	public void render(float x, float y, float maxX, float maxY) {
 		if (tooltip.isEmpty()) {
 			return;
 		}
-		RenderSystem.enableBlend();
-		guiGraphics.pose().pushPose();
-		guiGraphics.pose().translate(x, y, 0);
-
-		// render background
 		float alpha = IDisplayHelper.get().opacity();
 		if (Identifiers.ROOT.equals(getTag())) {
 			alpha *= IWailaConfig.get().getOverlay().getAlpha();
 		}
-		style.render(guiGraphics, this, 0, 0, maxX - x, maxY - y, alpha);
+		if (alpha > 0) {
+			style.render(this, x, y, maxX - x, maxY - y, alpha);
+		}
 
-		// render box progress
 		if (boxProgressType != null) {
 			float left = style.boxProgressOffset(Direction2D.LEFT);
 			float width = maxX - x - left;
 			float top = maxY - y - 1 + style.boxProgressOffset(Direction2D.UP) + style.borderWidth();
 			float height = 1 + style.boxProgressOffset(Direction2D.DOWN);
 			float progress = boxProgress;
-			if (track == null && tag != null) {
-				track = WailaTickHandler.instance().progressTracker.createInfo(tag, progress, false, 0);
+			if (track == null && getTag() != null) {
+				track = WailaTickHandler.instance().progressTracker.createInfo(getTag(), progress, false, 0);
 			}
 			if (track != null) {
-				progress = track.tick(Minecraft.getInstance().getDeltaFrameTime());
+				progress = track.tick(Minecraft.getInstance().getTickDelta());
 			}
-			((DisplayHelper) IDisplayHelper.get()).drawGradientProgress(guiGraphics, left, top, width, height, progress, style.boxProgressColors.get(boxProgressType));
+			IDisplayHelper.get().drawGradientProgress(x + left, y + top, width, height, progress, style.boxProgressColors.get(boxProgressType));
 		}
 
-		float contentLeft = padding(Direction2D.LEFT);
-		float contentTop = padding(Direction2D.UP);
+		float contentLeft = x + padding(Direction2D.LEFT);
+		float contentTop = y + padding(Direction2D.UP);
 
-		// render icon
 		if (icon != null) {
-			Vec2 iconSize = icon.getCachedSize();
-			Vec2 offset = icon.getTranslation();
+			Vec2f iconSize = icon.getCachedSize();
+			Vec2f offset = icon.getTranslation();
 			float offsetY = offset.y;
 			float min = contentTop + padding(Direction2D.DOWN) + iconSize.y;
-			if (IWailaConfig.get().getOverlay().getIconMode() == IWailaConfig.IconMode.TOP && min < getCachedSize().y) {
+			if (IWailaConfig.get().getOverlay().getIconMode() == IWailaConfig.IconMode.TOP && min < y + getCachedSize().y) {
 				offsetY += contentTop;
 			} else {
-				offsetY += (size.y - iconSize.y) / 2;
+				offsetY += (getCachedSize().y - iconSize.y) / 2;
 			}
 			float offsetX = contentLeft + offset.x;
-			Tooltip.drawDebugBorder(guiGraphics, offsetX, offsetY, icon);
-			icon.render(guiGraphics, offsetX, offsetY, offsetX + iconSize.x, offsetY + iconSize.y);
+			Tooltip.drawDebugBorder(offsetX, offsetY, icon);
+			icon.render(offsetX, offsetY, offsetX + iconSize.x, offsetY + iconSize.y);
 			contentLeft += iconSize.x + 3;
 		}
 
-		// render elements
 		{
 			float lineTop = contentTop;
 			int lineCount = tooltip.lines.size();
 			Tooltip.Line line = tooltip.lines.get(0);
 			for (int i = 0; i < lineCount; i++) {
-				Vec2 lineSize = line.size();
-				line.render(guiGraphics, contentLeft, lineTop, maxX - x - padding(Direction2D.RIGHT), lineTop + lineSize.y);
+				Vec2f lineSize = line.size();
+				line.render(contentLeft, lineTop, maxX - padding(Direction2D.RIGHT), lineTop + lineSize.y);
 				if (i < lineCount - 1) {
 					int marginBottom = line.marginBottom;
 					line = tooltip.lines.get(i + 1);
@@ -191,30 +144,25 @@ public class BoxElement extends Element implements IBoxElement {
 			}
 		}
 
-		// render down arrow
 		if (tooltip.sneakyDetails) {
 			float arrowTop = (OverlayRenderer.ticks / 5) % 8 - 2;
 			if (arrowTop <= 4) {
 				alpha = 1 - Math.abs(arrowTop) / 2;
 				if (alpha > 0.016) {
-					guiGraphics.pose().pushPose();
-					arrowTop += size.y - 6;
-					Minecraft mc = Minecraft.getInstance();
-					float arrowLeft = contentLeft + (contentSize.x - mc.font.width("▾") + 1) / 2f;
-					guiGraphics.pose().translate(arrowLeft, arrowTop, 0);
+					arrowTop += getCachedSize().y - 6;
+					float arrowLeft = contentLeft + (contentSize.x - Minecraft.getInstance().textRenderer.getWidth("▾") + 1) / 2f;
 					int color = IConfigOverlay.applyAlpha(IThemeHelper.get().theme().text.colors().info(), alpha);
-					DisplayHelper.INSTANCE.drawText(guiGraphics, "▾", 0, 0, color);
-					guiGraphics.pose().popPose();
+					DisplayHelper.INSTANCE.drawText("▾", arrowLeft, y + arrowTop, color);
 				}
 			}
 		}
 
-		Tooltip.drawDebugBorder(guiGraphics, 0, 0, this);
-		guiGraphics.pose().popPose();
+		Tooltip.drawDebugBorder(0, 0, this);
 	}
 
 	@Override
-	public @Nullable String getMessage() {
+	@Nullable
+	public String getMessage() {
 		return tooltip.isEmpty() ? null : tooltip.getMessage();
 	}
 
@@ -257,18 +205,8 @@ public class BoxElement extends Element implements IBoxElement {
 		}
 		if (icon != null && theme.iconSlotSprite != null) {
 			if (theme.iconSlotSpriteCache == null) {
-				GuiSpriteManager guiSprites = Minecraft.getInstance().getGuiSprites();
-				TextureAtlasSprite textureAtlasSprite = guiSprites.getSprite(theme.iconSlotSprite);
-				GuiSpriteScaling scaling = guiSprites.getSpriteScaling(textureAtlasSprite);
 				int[] padding = new int[4];
 				Arrays.fill(padding, theme.iconSlotInflation);
-				if (scaling instanceof GuiSpriteScaling.NineSlice nineSlice) {
-					GuiSpriteScaling.NineSlice.Border border = nineSlice.border();
-					padding[0] += border.top();
-					padding[1] += border.right();
-					padding[2] += border.bottom();
-					padding[3] += border.left();
-				}
 				theme.iconSlotSpriteCache = new BoxElement(new Tooltip(), BoxStyle.getSprite(theme.iconSlotSprite, padding));
 			}
 			ITooltip tooltip1 = theme.iconSlotSpriteCache.getTooltip();
@@ -280,11 +218,10 @@ public class BoxElement extends Element implements IBoxElement {
 	}
 
 	public void updateExpectedRect(TooltipRect rect) {
-		Window window = Minecraft.getInstance().getWindow();
 		IWailaConfig.IConfigOverlay overlay = Jade.CONFIG.get().getOverlay();
-		Vec2 size = getCachedSize();
-		float x = window.getGuiScaledWidth() * overlay.tryFlip(overlay.getOverlayPosX());
-		float y = window.getGuiScaledHeight() * (1.0F - overlay.getOverlayPosY());
+		Vec2f size = getCachedSize();
+		float x = DisplayHelper.guiWidth() * overlay.tryFlip(overlay.getOverlayPosX());
+		float y = DisplayHelper.guiHeight() * (1.0F - overlay.getOverlayPosY());
 		float width = size.x;
 		float height = size.y;
 
@@ -296,16 +233,13 @@ public class BoxElement extends Element implements IBoxElement {
 		}
 
 		rect.scale = overlay.getOverlayScale();
-		float thresholdHeight = window.getGuiScaledHeight() * overlay.getAutoScaleThreshold();
+		float thresholdHeight = DisplayHelper.guiHeight() * overlay.getAutoScaleThreshold();
 		if (size.y * rect.scale > thresholdHeight) {
 			rect.scale = Math.max(rect.scale * 0.5f, thresholdHeight / size.y);
 		}
 
 		Rect2i expectedRect = rect.expectedRect;
-		expectedRect.setWidth((int) (width * rect.scale));
-		expectedRect.setHeight((int) (height * rect.scale));
-		expectedRect.setX((int) (x - expectedRect.getWidth() * overlay.tryFlip(overlay.getAnchorX())));
-		expectedRect.setY((int) (y - expectedRect.getHeight() * overlay.getAnchorY()));
+		expectedRect.set((int) (x - width * rect.scale * overlay.tryFlip(overlay.getAnchorX())), (int) (y - height * rect.scale * overlay.getAnchorY()), (int) (width * rect.scale), (int) (height * rect.scale));
 
 		if (PreviewOptionsScreen.isAdjustingPosition()) {
 			return;
@@ -315,21 +249,20 @@ public class BoxElement extends Element implements IBoxElement {
 		if (mode == IWailaConfig.BossBarOverlapMode.PUSH_DOWN) {
 			Rect2i bossBarRect = ClientProxy.getBossBarRect();
 			if (bossBarRect != null) {
-				width = expectedRect.getWidth();
-				height = expectedRect.getHeight();
 				int rw = bossBarRect.getWidth();
 				int rh = bossBarRect.getHeight();
-				x = expectedRect.getX();
-				y = expectedRect.getY();
 				int rx = bossBarRect.getX();
 				int ry = bossBarRect.getY();
 				rw += rx;
 				rh += ry;
+				width = expectedRect.getWidth();
+				height = expectedRect.getHeight();
+				x = expectedRect.getX();
+				y = expectedRect.getY();
 				width += x;
 				height += y;
-				// check if tooltip intersects with boss bar
 				if (rw > x && rh > y && width > rx && height > ry) {
-					expectedRect.setY(bossBarRect.getHeight());
+					expectedRect.y = bossBarRect.getHeight();
 				}
 			}
 		}
@@ -338,16 +271,32 @@ public class BoxElement extends Element implements IBoxElement {
 	public void updateRect(TooltipRect rect) {
 		Rect2i src = rect.rect;
 		if (src.getWidth() == 0) {
-			src.setX(rect.expectedRect.getX());
-			src.setY(rect.expectedRect.getY());
-			src.setWidth(rect.expectedRect.getWidth());
-			src.setHeight(rect.expectedRect.getHeight());
-		} else {
-			chase(rect, Rect2i::getX, src::setX);
-			chase(rect, Rect2i::getY, src::setY);
-			chase(rect, Rect2i::getWidth, src::setWidth);
-			chase(rect, Rect2i::getHeight, src::setHeight);
+			src.set(rect.expectedRect.getX(), rect.expectedRect.getY(), rect.expectedRect.getWidth(), rect.expectedRect.getHeight());
+			return;
 		}
+		if (!Jade.CONFIG.get().getOverlay().getAnimation()) {
+			src.set(rect.expectedRect.getX(), rect.expectedRect.getY(), rect.expectedRect.getWidth(), rect.expectedRect.getHeight());
+			return;
+		}
+		float delta = Minecraft.getInstance().getTickDelta() * 2;
+		src.x = chase(src.x, rect.expectedRect.x, delta);
+		src.y = chase(src.y, rect.expectedRect.y, delta);
+		src.width = chase(src.width, rect.expectedRect.width, delta);
+		src.height = chase(src.height, rect.expectedRect.height, delta);
+	}
+
+	private static int chase(int source, int target, float delta) {
+		if (source == target) {
+			return source;
+		}
+		float diff = target - source;
+		if (delta < 1) {
+			diff *= delta;
+		}
+		if (Math.abs(diff) < 1) {
+			diff = diff > 0 ? 1 : -1;
+		}
+		return (int) (source + diff);
 	}
 
 	@Override

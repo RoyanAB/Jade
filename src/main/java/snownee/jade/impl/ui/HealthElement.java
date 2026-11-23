@@ -1,14 +1,16 @@
 package snownee.jade.impl.ui;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.resources.language.I18n;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
-import net.minecraft.world.phys.Vec2;
+import net.minecraft.client.gui.GuiElement;
+import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.vertex.BufferBuilder;
+import net.minecraft.client.render.vertex.DefaultVertexFormat;
+import net.minecraft.client.render.vertex.Tesselator;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec2f;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL11;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.ui.Element;
@@ -18,9 +20,7 @@ import snownee.jade.overlay.DisplayHelper;
 
 public class HealthElement extends Element {
 
-	public static final ResourceLocation HEART = new ResourceLocation("hud/heart/full");
-	public static final ResourceLocation HALF_HEART = new ResourceLocation("hud/heart/half");
-	public static final ResourceLocation EMPTY_HEART = new ResourceLocation("hud/heart/container");
+	private static final int ICON_SIZE = 9;
 
 	private final float maxHealth;
 	private final float health;
@@ -28,8 +28,8 @@ public class HealthElement extends Element {
 
 	public HealthElement(float maxHealth, float health) {
 		if (!PluginConfig.INSTANCE.get(Identifiers.MC_ENTITY_HEALTH_SHOW_FRACTIONS)) {
-			maxHealth = Mth.ceil(maxHealth);
-			health = Mth.ceil(health);
+			maxHealth = MathHelper.ceil(maxHealth);
+			health = MathHelper.ceil(health);
 		}
 		this.maxHealth = maxHealth;
 		this.health = health;
@@ -37,45 +37,37 @@ public class HealthElement extends Element {
 	}
 
 	@Override
-	public Vec2 getSize() {
+	public Vec2f getSize() {
 		if (maxHealth > PluginConfig.INSTANCE.getInt(Identifiers.MC_ENTITY_HEALTH_MAX_FOR_RENDER)) {
-			Font font = Minecraft.getInstance().font;
-			return new Vec2(9 + font.width(text), 10);
-		} else {
-			float maxHearts = PluginConfig.INSTANCE.getInt(Identifiers.MC_ENTITY_HEALTH_ICONS_PER_LINE);
-
-			float maxHealth = this.maxHealth * 0.5F;
-			int heartsPerLine = (int) (Math.min(maxHearts, Math.ceil(maxHealth)));
-			int lineCount = (int) (Math.ceil(maxHealth / maxHearts));
-
-			return new Vec2(9 * heartsPerLine, 10 * lineCount);
+			int width = Minecraft.getInstance().textRenderer.getWidth(text);
+			return new Vec2f(ICON_SIZE + width, 10);
 		}
+		float maxHearts = PluginConfig.INSTANCE.getInt(Identifiers.MC_ENTITY_HEALTH_ICONS_PER_LINE);
+		float healthHearts = this.maxHealth * 0.5F;
+		int heartsPerLine = (int) Math.min(maxHearts, Math.ceil(healthHearts));
+		int lineCount = (int) Math.ceil(healthHearts / maxHearts);
+		return new Vec2f(ICON_SIZE * heartsPerLine, 10 * lineCount);
 	}
 
 	@Override
-	public void render(GuiGraphics guiGraphics, float x, float y, float maxX, float maxY) {
+	public void render(float x, float y, float maxX, float maxY) {
 		float maxHearts = PluginConfig.INSTANCE.getInt(Identifiers.MC_ENTITY_HEALTH_ICONS_PER_LINE);
 		int maxHeartsForRender = PluginConfig.INSTANCE.getInt(Identifiers.MC_ENTITY_HEALTH_MAX_FOR_RENDER);
 		boolean showNumbers = maxHealth > maxHeartsForRender;
+		int heartCount = showNumbers ? 1 : MathHelper.ceil(maxHealth * 0.5F);
+		float health = showNumbers ? 1 : this.health * 0.5F;
+		int heartsPerLine = (int) Math.min(maxHearts, Math.ceil(maxHealth));
 
-		int heartCount = showNumbers ? 1 : Mth.ceil(maxHealth * 0.5F);
-		float health = showNumbers ? 1 : (this.health * 0.5F);
-		int heartsPerLine = (int) (Math.min(maxHearts, Math.ceil(maxHealth)));
-
-		IDisplayHelper helper = IDisplayHelper.get();
 		int xOffset = 0;
 		for (int i = 1; i <= heartCount; i++) {
-			helper.blitSprite(guiGraphics, EMPTY_HEART, (int) (x + xOffset), (int) y, 9, 9);
-
-			if (i <= Mth.floor(health)) {
-				helper.blitSprite(guiGraphics, HEART, (int) (x + xOffset), (int) y, 9, 9);
+			drawIcon(x + xOffset, y, 16, 0);
+			if (i <= MathHelper.floor(health)) {
+				drawIcon(x + xOffset, y, 52, 0);
 			}
-
-			if ((i > health) && (i < health + 1)) {
-				helper.blitSprite(guiGraphics, HALF_HEART, (int) (x + xOffset), (int) y, 9, 9);
+			if (i > health && i < health + 1) {
+				drawIcon(x + xOffset, y, 61, 0);
 			}
-
-			xOffset += 9;
+			xOffset += ICON_SIZE;
 			if (!showNumbers && i % heartsPerLine == 0) {
 				y += 10;
 				xOffset = 0;
@@ -83,12 +75,28 @@ public class HealthElement extends Element {
 		}
 
 		if (showNumbers) {
-			helper.drawText(guiGraphics, text, x + 8, y, IThemeHelper.get().getNormalColor());
+			IDisplayHelper.get().drawText(text, x + ICON_SIZE - 1, y, IThemeHelper.get().getNormalColor());
 		}
+	}
+
+	private static void drawIcon(float x, float y, int u, int v) {
+		Minecraft.getInstance().getTextureManager().bind(GuiElement.ICONS_LOCATION);
+		GlStateManager.enableBlend();
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder buffer = tesselator.getBuffer();
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
+		float f = 1 / 256F;
+		buffer.vertex(x, y + ICON_SIZE, 0).texture(u * f, (v + ICON_SIZE) * f).nextVertex();
+		buffer.vertex(x + ICON_SIZE, y + ICON_SIZE, 0).texture((u + ICON_SIZE) * f, (v + ICON_SIZE) * f).nextVertex();
+		buffer.vertex(x + ICON_SIZE, y, 0).texture((u + ICON_SIZE) * f, v * f).nextVertex();
+		buffer.vertex(x, y, 0).texture(u * f, v * f).nextVertex();
+		tesselator.end();
 	}
 
 	@Override
 	public @Nullable String getMessage() {
-		return I18n.get("narration.jade.health", DisplayHelper.dfCommas.format(health));
+		return I18n.translate("narration.jade.health", DisplayHelper.dfCommas.format(health));
 	}
 }

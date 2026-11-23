@@ -1,23 +1,22 @@
 package snownee.jade.impl.ui;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.world.phys.Vec2;
+import net.minecraft.util.math.Vec2f;
 import snownee.jade.api.ui.Element;
 
 public class SpacerElement extends Element {
 
-	private final Vec2 dimension;
+	private final Vec2f dimension;
 
-	public SpacerElement(Vec2 dimension) {
+	public SpacerElement(Vec2f dimension) {
 		this.dimension = dimension;
 	}
 
 	@Override
-	public Vec2 getSize() {
+	public Vec2f getSize() {
 		return dimension;
 	}
 
 	@Override
-	public void render(GuiGraphics guiGraphics, float x, float y, float maxX, float maxY) {
+	public void render(float x, float y, float maxX, float maxY) {
 	}
 }

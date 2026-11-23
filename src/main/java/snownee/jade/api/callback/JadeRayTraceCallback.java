@@ -1,8 +1,7 @@
 package snownee.jade.api.callback;
 
+import net.minecraft.world.HitResult;
 import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.world.phys.HitResult;
 import snownee.jade.api.Accessor;
 
 @FunctionalInterface

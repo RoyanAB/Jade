@@ -1,16 +1,39 @@
 package snownee.jade.api.theme;
 
-import java.util.Optional;
-
+import net.minecraft.text.Style;
 import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.network.chat.Style;
 import snownee.jade.api.ui.ColorPalette;
 
-public record TextSetting(ColorPalette colors, boolean shadow, @Nullable Style modNameStyle, int itemAmountColor) {
-	public static final TextSetting DEFAULT = new TextSetting(ColorPalette.DEFAULT, true, Optional.empty(), 0xFFFFFFFF);
+public class TextSetting {
+	public static final TextSetting DEFAULT = new TextSetting(ColorPalette.DEFAULT, true, null, 0xFFFFFFFF);
 
-	public TextSetting(ColorPalette colors, boolean shadow, Optional<Style> modNameStyle, int itemAmountColor) {
-		this(colors, shadow, modNameStyle.orElse(null), itemAmountColor);
+	private final ColorPalette colors;
+	private final boolean shadow;
+	@Nullable
+	private final Style modNameStyle;
+	private final int itemAmountColor;
+
+	public TextSetting(ColorPalette colors, boolean shadow, @Nullable Style modNameStyle, int itemAmountColor) {
+		this.colors = colors;
+		this.shadow = shadow;
+		this.modNameStyle = modNameStyle;
+		this.itemAmountColor = itemAmountColor;
+	}
+
+	public ColorPalette colors() {
+		return colors;
+	}
+
+	public boolean shadow() {
+		return shadow;
+	}
+
+	@Nullable
+	public Style modNameStyle() {
+		return modNameStyle;
+	}
+
+	public int itemAmountColor() {
+		return itemAmountColor;
 	}
 }

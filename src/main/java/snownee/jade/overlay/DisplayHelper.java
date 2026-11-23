@@ -1,60 +1,57 @@
 package snownee.jade.overlay;
 
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.TextRenderer;
+import net.minecraft.client.render.Window;
+import net.minecraft.client.render.platform.GlStateManager;
+import net.minecraft.client.render.platform.Lighting;
+import net.minecraft.client.render.vertex.BufferBuilder;
+import net.minecraft.client.render.vertex.DefaultVertexFormat;
+import net.minecraft.client.render.vertex.Tesselator;
+import net.minecraft.item.ItemStack;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Formatting;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.opengl.GL11;
+import snownee.jade.Jade;
+import snownee.jade.api.config.IWailaConfig.IConfigOverlay;
+import snownee.jade.api.ui.Color;
+import snownee.jade.api.ui.IDisplayHelper;
+import snownee.jade.api.ui.TrueColorText;
+
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.Format;
 import java.text.NumberFormat;
-import java.util.Optional;
-import java.util.regex.Pattern;
-
-import org.apache.commons.lang3.mutable.MutableFloat;
-import org.jetbrains.annotations.Nullable;
-import org.joml.Matrix4f;
-
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat.Mode;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.locale.Language;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.FormattedText;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.TextColor;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraft.world.item.ItemStack;
-import snownee.jade.Jade;
-import snownee.jade.api.config.IWailaConfig;
-import snownee.jade.api.config.IWailaConfig.IConfigOverlay;
-import snownee.jade.api.fluid.JadeFluidObject;
-import snownee.jade.api.theme.IThemeHelper;
-import snownee.jade.api.ui.Color;
-import snownee.jade.api.ui.IDisplayHelper;
-import snownee.jade.util.ClientProxy;
 
 public class DisplayHelper implements IDisplayHelper {
 
 	public static final DisplayHelper INSTANCE = new DisplayHelper();
-	private static final Minecraft CLIENT = Minecraft.getInstance();
-	//https://github.com/mezz/JustEnoughItems/blob/1.16/src/main/java/mezz/jei/plugins/vanilla/ingredients/fluid/FluidStackRenderer.java
-	private static final int TEX_WIDTH = 16;
-	private static final int TEX_HEIGHT = 16;
-	private static final int MIN_FLUID_HEIGHT = 1; // ensure tiny amounts of fluid are still visible
-	private static final Pattern STRIP_COLOR = Pattern.compile("(?i)\u00a7[0-9A-F]");
+
+	public static int guiWidth() {
+		return new Window(Minecraft.getInstance()).getWidth();
+	}
+
+	public static void pushScissor(int x, int y, int width, int height) {
+		Minecraft mc = Minecraft.getInstance();
+		int scale = new Window(mc).getScale();
+		GL11.glEnable(GL11.GL_SCISSOR_TEST);
+		GL11.glScissor(x * scale, mc.height - (y + height) * scale, width * scale, height * scale);
+	}
+
+	public static void popScissor() {
+		GL11.glDisable(GL11.GL_SCISSOR_TEST);
+	}
+
+	public static int guiHeight() {
+		return new Window(Minecraft.getInstance()).getHeight();
+	}
+
 	public static DecimalFormat dfCommas = new DecimalFormat("0.##");
 	public static final DecimalFormat[] dfCommasArray = new DecimalFormat[]{dfCommas, new DecimalFormat("0.#"), new DecimalFormat("0")};
-	private static boolean betterTextShadow;
 
 	static {
 		for (DecimalFormat format : dfCommasArray) {
@@ -62,234 +59,146 @@ public class DisplayHelper implements IDisplayHelper {
 		}
 	}
 
-	private static void renderGuiItemDecorations(GuiGraphics guiGraphics, Font font, ItemStack stack, int i, int j, @Nullable String text) {
-		if (stack.isEmpty()) {
-			return;
-		}
-		guiGraphics.pose().pushPose();
-		if (stack.getCount() != 1 || text != null) {
-			String s = text == null ? INSTANCE.humanReadableNumber(stack.getCount(), "", false, null) : text;
-			boolean smaller = s.length() > 3;
-			float scale = smaller ? 0.5F : 0.75F;
-			int x = smaller ? 32 : 22;
-			int y = smaller ? 23 : 13;
-			guiGraphics.pose().pushPose();
-			guiGraphics.pose().translate(0.0f, 0.0f, 200.0f);
-			guiGraphics.pose().scale(scale, scale, 1f);
-			int color = IThemeHelper.get().theme().text.itemAmountColor();
-			guiGraphics.drawString(font, s, i + x - font.width(s), j + y, color, true);
-			guiGraphics.pose().popPose();
-		}
-
-		if (stack.isBarVisible()) {
-			RenderSystem.disableDepthTest();
-			int k = stack.getBarWidth();
-			int l = stack.getBarColor();
-			int m = i + 2;
-			int n = j + 13;
-			guiGraphics.fill(RenderType.guiOverlay(), m, n, m + 13, n + 2, -16777216);
-			guiGraphics.fill(RenderType.guiOverlay(), m, n, m + k, n + 1, l | 0xFF000000);
-		}
-		guiGraphics.pose().popPose();
-		ClientProxy.renderItemDecorationsExtra(guiGraphics, font, stack, i, j, text);
-	}
-
-	private static void setGLColorFromInt(int color) {
-		float red = (color >> 16 & 0xFF) / 255.0F;
-		float green = (color >> 8 & 0xFF) / 255.0F;
-		float blue = (color & 0xFF) / 255.0F;
-		float alpha = ((color >> 24) & 0xFF) / 255F;
-
-		RenderSystem.setShaderColor(red, green, blue, alpha);
-	}
-
-	private static void drawTextureWithMasking(Matrix4f matrix, float xCoord, float yCoord, TextureAtlasSprite textureSprite, float maskTop, float maskRight, float zLevel) {
-		float uMin = textureSprite.getU0();
-		float uMax = textureSprite.getU1();
-		float vMin = textureSprite.getV0();
-		float vMax = textureSprite.getV1();
-		uMax = uMax - (maskRight / 16F * (uMax - uMin));
-		vMax = vMax - (maskTop / 16F * (vMax - vMin));
-
-		Tesselator tessellator = Tesselator.getInstance();
-		BufferBuilder bufferBuilder = tessellator.getBuilder();
-		RenderSystem.setShader(GameRenderer::getPositionTexShader);
-		bufferBuilder.begin(Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-		bufferBuilder.vertex(matrix, xCoord, yCoord + 16, zLevel).uv(uMin, vMax).endVertex();
-		bufferBuilder.vertex(matrix, xCoord + 16 - maskRight, yCoord + 16, zLevel).uv(uMax, vMax).endVertex();
-		bufferBuilder.vertex(matrix, xCoord + 16 - maskRight, yCoord + maskTop, zLevel).uv(uMax, vMin).endVertex();
-		bufferBuilder.vertex(matrix, xCoord, yCoord + maskTop, zLevel).uv(uMin, vMin).endVertex();
-		BufferUploader.drawWithShader(bufferBuilder.end());
-	}
-
-	public static void fill(GuiGraphics guiGraphics, float minX, float minY, float maxX, float maxY, int color) {
-		fill(guiGraphics.pose().last().pose(), minX, minY, maxX, maxY, color);
-	}
-
-	private static void fill(Matrix4f matrix, float minX, float minY, float maxX, float maxY, int color) {
-		if (minX < maxX) {
+	public static void fill(float minX, float minY, float maxX, float maxY, int color) {
+		if (minX > maxX) {
 			float i = minX;
 			minX = maxX;
 			maxX = i;
 		}
-
-		if (minY < maxY) {
+		if (minY > maxY) {
 			float j = minY;
 			minY = maxY;
 			maxY = j;
 		}
 
-		float f3 = (color >> 24 & 255) / 255.0F * OverlayRenderer.alpha;
-		float f = (color >> 16 & 255) / 255.0F;
-		float f1 = (color >> 8 & 255) / 255.0F;
-		float f2 = (color & 255) / 255.0F;
-		BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		RenderSystem.setShader(GameRenderer::getPositionColorShader);
-		bufferbuilder.begin(Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-		bufferbuilder.vertex(matrix, minX, maxY, 0.0F).color(f, f1, f2, f3).endVertex();
-		bufferbuilder.vertex(matrix, maxX, maxY, 0.0F).color(f, f1, f2, f3).endVertex();
-		bufferbuilder.vertex(matrix, maxX, minY, 0.0F).color(f, f1, f2, f3).endVertex();
-		bufferbuilder.vertex(matrix, minX, minY, 0.0F).color(f, f1, f2, f3).endVertex();
-		BufferUploader.drawWithShader(bufferbuilder.end());
-		RenderSystem.disableBlend();
-	}
+		float a = (color >> 24 & 255) / 255.0F * OverlayRenderer.alpha;
+		float r = (color >> 16 & 255) / 255.0F;
+		float g = (color >> 8 & 255) / 255.0F;
+		float b = (color & 255) / 255.0F;
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder buffer = tesselator.getBuffer();
 
-	public static boolean enableBetterTextShadow() {
-		return betterTextShadow;
-	}
+		boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+		boolean texture = GL11.glIsEnabled(GL11.GL_TEXTURE_2D);
 
-	public static void setBetterTextShadow(boolean betterTextShadow) {
-		DisplayHelper.betterTextShadow = betterTextShadow;
+		GlStateManager.enableBlend();
+		GlStateManager.disableTexture();
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_COLOR);
+		buffer.vertex(minX, maxY, 0.0).color(r, g, b, a).nextVertex();
+		buffer.vertex(maxX, maxY, 0.0).color(r, g, b, a).nextVertex();
+		buffer.vertex(maxX, minY, 0.0).color(r, g, b, a).nextVertex();
+		buffer.vertex(minX, minY, 0.0).color(r, g, b, a).nextVertex();
+		tesselator.end();
+
+		if (texture)
+			GlStateManager.enableTexture();
+		else
+			GlStateManager.disableTexture();
+		if (blend)
+			GlStateManager.enableBlend();
+		else
+			GlStateManager.disableBlend();
 	}
 
 	@Override
-	public void drawItem(GuiGraphics guiGraphics, float x, float y, ItemStack stack, float scale, @Nullable String text) {
-		if (opacity() < 0.5F) {
+	public void drawItem(float x, float y, ItemStack stack, float scale, @Nullable String text) {
+		if (opacity() < 0.5F || stack.isEmpty()) {
 			return;
 		}
-		guiGraphics.pose().pushPose();
-		guiGraphics.pose().translate(x, y, 0);
-		guiGraphics.pose().scale(scale, scale, scale);
-		guiGraphics.renderFakeItem(stack, 0, 0);
-		renderGuiItemDecorations(guiGraphics, CLIENT.font, stack, 0, 0, text);
-		guiGraphics.pose().popPose();
+		Minecraft mc = Minecraft.getInstance();
+
+		boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+		boolean depth = GL11.glIsEnabled(GL11.GL_DEPTH_TEST);
+
+		GlStateManager.pushMatrix();
+		GlStateManager.translatef(x, y, 0);
+		GlStateManager.scalef(scale, scale, scale);
+		GlStateManager.enableBlend();
+		GlStateManager.enableTexture();
+		Lighting.turnOnGui();
+		GlStateManager.enableDepthTest();
+		mc.getItemRenderer().renderGuiItem(stack, 0, 0);
+		mc.getItemRenderer().renderGuiItemDecorations(mc.textRenderer, stack, 0, 0, text);
+		Lighting.turnOff();
+		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		GlStateManager.popMatrix();
+
+		if (depth)
+			GlStateManager.enableDepthTest();
+		else
+			GlStateManager.disableDepthTest();
+		if (blend)
+			GlStateManager.enableBlend();
+		else
+			GlStateManager.disableBlend();
 	}
 
 	@Override
-	public void drawGradientRect(GuiGraphics guiGraphics, float left, float top, float width, float height, int startColor, int endColor) {
-		drawGradientRect(guiGraphics, left, top, width, height, startColor, endColor, false);
+	public void drawGradientRect(float left, float top, float width, float height, int startColor, int endColor) {
+		drawGradientRect(left, top, width, height, startColor, endColor, false);
 	}
 
-	public void drawGradientRect(GuiGraphics guiGraphics, float left, float top, float width, float height, int startColor, int endColor, boolean horizontal) {
+	public void drawGradientRect(float left, float top, float width, float height, int startColor, int endColor, boolean horizontal) {
 		if (startColor == -1 && endColor == -1) {
 			return;
 		}
-		float zLevel = 0.0F;
-		Matrix4f matrix = guiGraphics.pose().last().pose();
 
-		float f = (startColor >> 24 & 255) / 255.0F * opacity();
-		float f1 = (startColor >> 16 & 255) / 255.0F;
-		float f2 = (startColor >> 8 & 255) / 255.0F;
-		float f3 = (startColor & 255) / 255.0F;
-		float f4 = (endColor >> 24 & 255) / 255.0F * opacity();
-		float f5 = (endColor >> 16 & 255) / 255.0F;
-		float f6 = (endColor >> 8 & 255) / 255.0F;
-		float f7 = (endColor & 255) / 255.0F;
-		RenderSystem.enableBlend();
-		RenderSystem.defaultBlendFunc();
-		RenderSystem.setShader(GameRenderer::getPositionColorShader);
-		Tesselator tessellator = Tesselator.getInstance();
-		BufferBuilder buffer = tessellator.getBuilder();
-		buffer.begin(Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+		float a1 = (startColor >> 24 & 255) / 255.0F * opacity();
+		float r1 = (startColor >> 16 & 255) / 255.0F;
+		float g1 = (startColor >> 8 & 255) / 255.0F;
+		float b1 = (startColor & 255) / 255.0F;
+		float a2 = (endColor >> 24 & 255) / 255.0F * opacity();
+		float r2 = (endColor >> 16 & 255) / 255.0F;
+		float g2 = (endColor >> 8 & 255) / 255.0F;
+		float b2 = (endColor & 255) / 255.0F;
+
+		boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+		boolean texture = GL11.glIsEnabled(GL11.GL_TEXTURE_2D);
+		int shadeModel = GL11.glGetInteger(GL11.GL_SHADE_MODEL);
+
+		GlStateManager.enableBlend();
+		GlStateManager.disableTexture();
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		GlStateManager.shadeModel(GL11.GL_SMOOTH);
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder buffer = tesselator.getBuffer();
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_COLOR);
 		if (horizontal) {
-			buffer.vertex(matrix, left + width, top, zLevel).color(f5, f6, f7, f4).endVertex();
-			buffer.vertex(matrix, left, top, zLevel).color(f1, f2, f3, f).endVertex();
-			buffer.vertex(matrix, left, top + height, zLevel).color(f1, f2, f3, f).endVertex();
-			buffer.vertex(matrix, left + width, top + height, zLevel).color(f5, f6, f7, f4).endVertex();
+			buffer.vertex(left + width, top, 0.0).color(r2, g2, b2, a2).nextVertex();
+			buffer.vertex(left, top, 0.0).color(r1, g1, b1, a1).nextVertex();
+			buffer.vertex(left, top + height, 0.0).color(r1, g1, b1, a1).nextVertex();
+			buffer.vertex(left + width, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
 		} else {
-			buffer.vertex(matrix, left + width, top, zLevel).color(f1, f2, f3, f).endVertex();
-			buffer.vertex(matrix, left, top, zLevel).color(f1, f2, f3, f).endVertex();
-			buffer.vertex(matrix, left, top + height, zLevel).color(f5, f6, f7, f4).endVertex();
-			buffer.vertex(matrix, left + width, top + height, zLevel).color(f5, f6, f7, f4).endVertex();
+			buffer.vertex(left + width, top, 0.0).color(r1, g1, b1, a1).nextVertex();
+			buffer.vertex(left, top, 0.0).color(r1, g1, b1, a1).nextVertex();
+			buffer.vertex(left, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
+			buffer.vertex(left + width, top + height, 0.0).color(r2, g2, b2, a2).nextVertex();
 		}
-		BufferUploader.drawWithShader(buffer.end());
-		RenderSystem.disableBlend();
+		tesselator.end();
+
+		GlStateManager.shadeModel(shadeModel);
+		if (texture)
+			GlStateManager.enableTexture();
+		else
+			GlStateManager.disableTexture();
+		if (blend)
+			GlStateManager.enableBlend();
+		else
+			GlStateManager.disableBlend();
 	}
 
 	@Override
-	public void drawBorder(GuiGraphics guiGraphics, float minX, float minY, float maxX, float maxY, float width, int color, boolean corner) {
-		fill(guiGraphics, minX + width, minY, maxX - width, minY + width, color);
-		fill(guiGraphics, minX + width, maxY - width, maxX - width, maxY, color);
+	public void drawBorder(float minX, float minY, float maxX, float maxY, float width, int color, boolean corner) {
+		fill(minX + width, minY, maxX - width, minY + width, color);
+		fill(minX + width, maxY - width, maxX - width, maxY, color);
 		if (corner) {
-			fill(guiGraphics, minX, minY, minX + width, maxY, color);
-			fill(guiGraphics, maxX - width, minY, maxX, maxY, color);
+			fill(minX, minY, minX + width, maxY, color);
+			fill(maxX - width, minY, maxX, maxY, color);
 		} else {
-			fill(guiGraphics, minX, minY + width, minX + width, maxY - width, color);
-			fill(guiGraphics, maxX - width, minY + width, maxX, maxY - width, color);
+			fill(minX, minY + width, minX + width, maxY - width, color);
+			fill(maxX - width, minY + width, maxX, maxY - width, color);
 		}
-	}
-
-	public void drawFluid(GuiGraphics guiGraphics, final float xPosition, final float yPosition, JadeFluidObject fluid, float width, float height, long capacityMb) {
-		if (fluid.isEmpty()) {
-			return;
-		}
-
-		long amount = JadeFluidObject.bucketVolume();
-		MutableFloat scaledAmount = new MutableFloat((amount * height) / capacityMb);
-		if (amount > 0 && scaledAmount.floatValue() < MIN_FLUID_HEIGHT) {
-			scaledAmount.setValue(MIN_FLUID_HEIGHT);
-		}
-		if (scaledAmount.floatValue() > height) {
-			scaledAmount.setValue(height);
-		}
-
-		ClientProxy.getFluidSpriteAndColor(fluid, (sprite, color) -> {
-			if (sprite == null) {
-				float maxY = yPosition + height;
-				if (color == -1) {
-					color = 0xAAAAAAAA;
-				}
-				fill(guiGraphics, xPosition, maxY - scaledAmount.floatValue(), xPosition + width, maxY, color);
-			} else {
-				if (opacity() != 1) {
-					color = IWailaConfig.IConfigOverlay.applyAlpha(color, opacity());
-				}
-				drawTiledSprite(guiGraphics, xPosition, yPosition, width, height, color, scaledAmount.floatValue(), sprite);
-			}
-		});
-	}
-
-	private void drawTiledSprite(GuiGraphics guiGraphics, final float xPosition, final float yPosition, final float tiledWidth, final float tiledHeight, int color, float scaledAmount, TextureAtlasSprite sprite) {
-		RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
-		Matrix4f matrix = guiGraphics.pose().last().pose();
-		setGLColorFromInt(color);
-		RenderSystem.enableBlend();
-
-		final int xTileCount = (int) (tiledWidth / TEX_WIDTH);
-		final float xRemainder = tiledWidth - (xTileCount * TEX_WIDTH);
-		final int yTileCount = (int) (scaledAmount / TEX_HEIGHT);
-		final float yRemainder = scaledAmount - (yTileCount * TEX_HEIGHT);
-
-		final float yStart = yPosition + tiledHeight;
-
-		for (int xTile = 0; xTile <= xTileCount; xTile++) {
-			for (int yTile = 0; yTile <= yTileCount; yTile++) {
-				float width = (xTile == xTileCount) ? xRemainder : TEX_WIDTH;
-				float height = (yTile == yTileCount) ? yRemainder : TEX_HEIGHT;
-				float x = xPosition + (xTile * TEX_WIDTH);
-				float y = yStart - ((yTile + 1) * TEX_HEIGHT);
-				if (width > 0 && height > 0) {
-					float maskTop = TEX_HEIGHT - height;
-					float maskRight = TEX_WIDTH - width;
-
-					drawTextureWithMasking(matrix, x, y, sprite, maskTop, maskRight, 0);
-				}
-			}
-		}
-		RenderSystem.setShaderColor(1, 1, 1, 1);
-		RenderSystem.disableBlend();
 	}
 
 	@Override
@@ -297,7 +206,6 @@ public class DisplayHelper implements IDisplayHelper {
 		return humanReadableNumber(number, unit, milli, dfCommas);
 	}
 
-	// https://programming.guide/worlds-most-copied-so-snippet.html
 	@Override
 	public String humanReadableNumber(double number, String unit, boolean milli, @Nullable Format formatter) {
 		StringBuilder sb = new StringBuilder();
@@ -329,8 +237,8 @@ public class DisplayHelper implements IDisplayHelper {
 				}
 			}
 		}
-		if (formatter instanceof NumberFormat numberFormat) {
-			sb.append(numberFormat.format(number));
+		if (formatter instanceof NumberFormat) {
+			sb.append(((NumberFormat) formatter).format(number));
 		} else {
 			sb.append(formatter.format(new Object[]{number}));
 		}
@@ -346,90 +254,133 @@ public class DisplayHelper implements IDisplayHelper {
 		return sb.toString();
 	}
 
-	@Override
-	public void drawText(GuiGraphics guiGraphics, String text, float x, float y, int color) {
-		drawText(guiGraphics, Component.literal(text), x, y, color);
-	}
-
-	@Override
-	public void drawText(GuiGraphics guiGraphics, FormattedText text, float x, float y, int color) {
-		FormattedCharSequence sequence;
-		if (text instanceof Component component) {
-			sequence = component.getVisualOrderText();
-		} else {
-			sequence = Language.getInstance().getVisualOrder(text);
+	private static String formatPrefix(Style style) {
+		StringBuilder builder = new StringBuilder(6);
+		if (style.isBold()) {
+			builder.append(Formatting.BOLD);
 		}
-		drawText(guiGraphics, sequence, x, y, color);
+		if (style.isItalic()) {
+			builder.append(Formatting.ITALIC);
+		}
+		if (style.isUnderlined()) {
+			builder.append(Formatting.UNDERLINE);
+		}
+		if (style.isObfuscated()) {
+			builder.append(Formatting.OBFUSCATED);
+		}
+		if (style.isStrikethrough()) {
+			builder.append(Formatting.STRIKETHROUGH);
+		}
+		return builder.toString();
 	}
 
 	@Override
-	public void drawText(GuiGraphics guiGraphics, FormattedCharSequence text, float x, float y, int color) {
-		boolean shadow = Jade.CONFIG.get().getOverlay().getTheme().text.shadow();
-		if (opacity() != 1) {
-			color = IConfigOverlay.applyAlpha(color, opacity());
-		}
-		betterTextShadow = true;
-		guiGraphics.drawString(CLIENT.font, text, (int) x, (int) y, color, shadow);
-		betterTextShadow = false;
+	public void drawText(String text, float x, float y, int color) {
+		drawText(new LiteralText(text), x, y, color);
 	}
 
-	public void drawGradientProgress(GuiGraphics guiGraphics, float left, float top, float width, float height, float progress, int progressColor) {
+	@Override
+	public void drawText(Text text, float x, float y, int color) {
+		try {
+			boolean shadow = Jade.CONFIG.get().getOverlay().getTheme().text.shadow();
+			float alpha = opacity();
+			if (alpha != 1) {
+				color = IConfigOverlay.applyAlpha(color, alpha);
+			}
+			TextRenderer font = Minecraft.getInstance().textRenderer;
+			float curX = x;
+			for (Text node : text) {
+				String content = node.getContent();
+				if (content.isEmpty()) {
+					continue;
+				}
+				String prefix;
+				int nodeColor;
+				if (node instanceof TrueColorText) {
+					//use the exact color, and drop the style's § color code so it cannot override it
+					prefix = formatPrefix(node.getStyle());
+					nodeColor = ((TrueColorText) node).getColor();
+				} else {
+					prefix = node.getStyle().asString();
+					nodeColor = color;
+				}
+				String string = prefix + content;
+				font.draw(string, curX, y, nodeColor, shadow);
+				//measure the string with its codes: bold adds one pixel per glyph and only §l says so
+				curX += font.getWidth(string);
+			}
+		} finally {
+			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		}
+	}
+
+	@Override
+	public Text stripColor(Text text) {
+		return new LiteralText(Formatting.strip(text.getFormattedString()));
+	}
+
+	@Override
+	public void blitSprite(Identifier sprite, int spriteWidth, int spriteHeight, int x, int y, int width, int height) {
+		float u1 = spriteWidth <= 0 ? 1 : Math.min(1F, (float) width / spriteWidth);
+		float v1 = spriteHeight <= 0 ? 1 : Math.min(1F, (float) height / spriteHeight);
+		drawTextureRegion(resolveSprite(sprite), x, y, width, height, 0, 0, u1, v1, opacity());
+	}
+
+	public static Identifier resolveSprite(Identifier sprite) {
+		if (sprite.getPath().endsWith(".png")) {
+			return sprite;
+		}
+		return new Identifier(sprite.getNamespace(), "textures/gui/sprites/" + sprite.getPath() + ".png");
+	}
+
+	@Override
+	public void drawTexture(Identifier texture, float x, float y, float width, float height, float alpha) {
+		drawTextureRegion(resolveSprite(texture), x, y, width, height, 0, 0, 1, 1, alpha);
+	}
+
+	private void drawTextureRegion(Identifier texture, float x, float y, float width, float height, float u1, float v1, float u2, float v2, float alpha) {
+		Minecraft mc = Minecraft.getInstance();
+		mc.getTextureManager().bind(texture);
+
+		boolean blend = GL11.glIsEnabled(GL11.GL_BLEND);
+		boolean alphaTest = GL11.glIsEnabled(GL11.GL_ALPHA_TEST);
+
+		GlStateManager.enableBlend();
+		GlStateManager.disableAlphaTest();
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+		GlStateManager.color4f(1, 1, 1, alpha);
+		Tesselator tesselator = Tesselator.getInstance();
+		BufferBuilder buffer = tesselator.getBuffer();
+		buffer.begin(GL11.GL_QUADS, DefaultVertexFormat.POSITION_TEX);
+		buffer.vertex(x, y + height, 0.0).texture(u1, v2).nextVertex();
+		buffer.vertex(x + width, y + height, 0.0).texture(u2, v2).nextVertex();
+		buffer.vertex(x + width, y, 0.0).texture(u2, v1).nextVertex();
+		buffer.vertex(x, y, 0.0).texture(u1, v1).nextVertex();
+		tesselator.end();
+		GlStateManager.color4f(1, 1, 1, 1);
+
+		if (alphaTest)
+			GlStateManager.enableAlphaTest();
+		else
+			GlStateManager.disableAlphaTest();
+		if (blend)
+			GlStateManager.enableBlend();
+		else
+			GlStateManager.disableBlend();
+	}
+
+	@Override
+	public void drawGradientProgress(float left, float top, float width, float height, float progress, int progressColor) {
 		Color color = Color.rgb(progressColor);
 		Color highlight = Color.hsl(color.getHue(), color.getSaturation(), Math.min(color.getLightness() + 0.2, 1), color.getOpacity());
 		if (progress < 0.1F) {
-			drawGradientRect(guiGraphics, left, top, width * progress, height, progressColor, highlight.toInt(), true);
+			drawGradientRect(left, top, width * progress, height, progressColor, highlight.toInt(), true);
 		} else {
 			float hlWidth = width * 0.1F;
 			float normalWidth = width * progress - hlWidth;
-			fill(guiGraphics, left, top, left + normalWidth, top + height, progressColor);
-			drawGradientRect(guiGraphics, left + normalWidth, top, hlWidth, height, progressColor, highlight.toInt(), true);
+			fill(left, top, left + normalWidth, top + height, progressColor);
+			drawGradientRect(left + normalWidth, top, hlWidth, height, progressColor, highlight.toInt(), true);
 		}
-	}
-
-	@Override
-	public MutableComponent stripColor(Component component) {
-		MutableComponent mutableComponent = Component.empty();
-		component.visit((style, string) -> {
-			if (!string.isEmpty()) {
-				MutableComponent literal = Component.literal(STRIP_COLOR.matcher(string).replaceAll(""));
-				literal.withStyle(style.withColor((TextColor) null));
-				mutableComponent.append(literal);
-			}
-			return Optional.empty();
-		}, Style.EMPTY);
-		return mutableComponent;
-	}
-
-	@Override
-	public void blitSprite(GuiGraphics guiGraphics, ResourceLocation resourceLocation, int i, int j, int k, int l) {
-		RenderSystem.enableBlend();
-		guiGraphics.setColor(1, 1, 1, opacity());
-		guiGraphics.blitSprite(resourceLocation, i, j, k, l);
-		guiGraphics.setColor(1, 1, 1, 1);
-	}
-
-	@Override
-	public void blitSprite(GuiGraphics guiGraphics, ResourceLocation resourceLocation, int i, int j, int k, int l, int m) {
-		RenderSystem.enableBlend();
-		guiGraphics.setColor(1, 1, 1, opacity());
-		guiGraphics.blitSprite(resourceLocation, i, j, k, l, m);
-		guiGraphics.setColor(1, 1, 1, 1);
-	}
-
-	@Override
-	public void blitSprite(GuiGraphics guiGraphics, ResourceLocation resourceLocation, int i, int j, int k, int l, int m, int n, int o, int p) {
-		RenderSystem.enableBlend();
-		guiGraphics.setColor(1, 1, 1, opacity());
-		guiGraphics.blitSprite(resourceLocation, i, j, k, l, m, n, o, p);
-		guiGraphics.setColor(1, 1, 1, 1);
-	}
-
-	@Override
-	public void blitSprite(GuiGraphics guiGraphics, ResourceLocation resourceLocation, int i, int j, int k, int l, int m, int n, int o, int p, int q) {
-		RenderSystem.enableBlend();
-		RenderSystem.setShaderColor(1, 1, 1, opacity());
-		guiGraphics.blitSprite(resourceLocation, i, j, k, l, m, n, o, p, q);
-		RenderSystem.setShaderColor(1, 1, 1, 1);
 	}
 
 	@Override

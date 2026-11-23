@@ -1,131 +1,66 @@
 package snownee.jade.util;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.function.BiConsumer;
-import java.util.function.Predicate;
-
-import org.jetbrains.annotations.Nullable;
-
 import com.google.common.base.Strings;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.platform.InputConstants;
-import com.mojang.brigadier.CommandDispatcher;
-
-import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientEntityEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
-import net.fabricmc.fabric.api.event.Event;
-import net.fabricmc.fabric.api.mininglevel.v1.FabricMineableTags;
-import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
-import net.fabricmc.fabric.api.resource.IdentifiableResourceReloadListener;
-import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
-import net.fabricmc.fabric.api.transfer.v1.client.fluid.FluidVariantRenderHandler;
-import net.fabricmc.fabric.api.transfer.v1.client.fluid.FluidVariantRendering;
-import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.fabricmc.loader.api.metadata.ModMetadata;
-import net.minecraft.client.KeyMapping;
+import net.minecraft.client.ClientPlayerInteractionManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.screens.ChatScreen;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.client.multiplayer.ClientPacketListener;
-import net.minecraft.client.multiplayer.MultiPlayerGameMode;
-import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.resources.language.I18n;
-import net.minecraft.commands.CommandBuildContext;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.packs.PackType;
-import net.minecraft.server.packs.resources.ReloadableResourceManager;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraft.util.LazyLoadedValue;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.LiquidBlock;
-import net.minecraft.world.level.material.Fluid;
-import net.minecraft.world.level.material.FluidState;
+import net.minecraft.client.gui.screen.ChatScreen;
+import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.resource.language.I18n;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.world.GameMode;
+import net.ornithemc.osl.entrypoints.api.client.ClientModInitializer;
+import net.ornithemc.osl.keybinds.api.KeybindEvents;
+import net.ornithemc.osl.keybinds.api.KeybindRegistry;
+import net.ornithemc.osl.lifecycle.api.client.MinecraftClientEvents;
+import net.ornithemc.osl.networking.api.PacketBuffer;
+import net.ornithemc.osl.networking.api.client.ClientConnectionEvents;
+import net.ornithemc.osl.networking.api.client.ClientPlayNetworking;
+import net.ornithemc.osl.resource.loader.api.client.ClientResourceLoaderEvents;
+import org.jetbrains.annotations.Nullable;
+import org.lwjgl.input.Keyboard;
 import snownee.jade.Jade;
 import snownee.jade.JadeClient;
 import snownee.jade.addon.harvest.HarvestToolProvider;
-import snownee.jade.addon.harvest.SimpleToolHandler;
-import snownee.jade.addon.harvest.ToolHandler;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.EntityAccessor;
 import snownee.jade.api.Identifiers;
-import snownee.jade.api.fluid.JadeFluidObject;
-import snownee.jade.api.ui.IElement;
-import snownee.jade.command.JadeClientCommand;
-import snownee.jade.compat.JEICompat;
+import snownee.jade.api.ui.Rect2i;
 import snownee.jade.gui.BaseOptionsScreen;
 import snownee.jade.impl.BlockAccessorImpl;
 import snownee.jade.impl.EntityAccessorImpl;
 import snownee.jade.impl.ObjectDataCenter;
 import snownee.jade.impl.config.PluginConfig;
 import snownee.jade.impl.theme.ThemeHelper;
-import snownee.jade.impl.ui.FluidStackElement;
-import snownee.jade.mixin.KeyAccess;
-import snownee.jade.overlay.DatapackBlockManager;
+import snownee.jade.mixin.BossEventOverlayAccess;
+import snownee.jade.overlay.DisplayHelper;
 import snownee.jade.overlay.OverlayRenderer;
 import snownee.jade.overlay.WailaTickHandler;
 
-public final class ClientProxy implements ClientModInitializer {
+import java.util.Optional;
 
-	public static boolean hasJEI = CommonProxy.isModLoaded("jei");
-	public static boolean hasREI = false; //isModLoaded("roughlyenoughitems");
+public final class ClientProxy implements ClientModInitializer {
+	public static boolean hasJEI = false;
+	public static boolean hasREI = false;
 	public static boolean hasFastScroll = CommonProxy.isModLoaded("fastscroll");
-	public static boolean maybeLowVisionUser = CommonProxy.isModLoaded("minecraft_access");
 
 	public static Optional<String> getModName(String namespace) {
-		String modMenuKey = "modmenu.nameTranslation.%s".formatted(namespace);
-		if (I18n.exists(modMenuKey)) {
-			return Optional.of(I18n.get(modMenuKey));
+		String modMenuKey = "modmenu.nameTranslation." + namespace;
+		if (I18n.hasTranslation(modMenuKey)) {
+			return Optional.of(I18n.translate(modMenuKey));
 		}
 		return FabricLoader.getInstance().getModContainer(namespace)
-				.map(ModContainer::getMetadata)
-				.map(ModMetadata::getName)
-				.filter(Predicate.not(Strings::isNullOrEmpty));
+			.map(ModContainer::getMetadata)
+			.map(ModMetadata::getName)
+			.filter(name -> !Strings.isNullOrEmpty(name));
 	}
 
-	public static void registerClientCommand(CommandDispatcher<FabricClientCommandSource> dispatcher, CommandBuildContext registryAccess) {
-		JadeClientCommand.register(dispatcher);
-	}
-
-	private static void onEntityJoin(Entity entity, ClientLevel level) {
-		DatapackBlockManager.onEntityJoin(entity);
-	}
-
-	private static void onEntityLeave(Entity entity, ClientLevel level) {
-		DatapackBlockManager.onEntityLeave(entity);
-	}
-
-	private static void onTooltip(ItemStack stack, TooltipFlag context, List<Component> lines) {
-		JadeClient.onTooltip(lines, stack, context);
-	}
-
-	public static void onRenderTick(GuiGraphics guiGraphics, float tickDelta) {
+	public static void onRenderTick() {
 		try {
-			OverlayRenderer.renderOverlay478757(guiGraphics);
+			OverlayRenderer.renderOverlay478757();
 		} catch (Throwable e) {
 			WailaExceptionHandler.handleErr(e, null, null);
 		}
@@ -134,33 +69,11 @@ public final class ClientProxy implements ClientModInitializer {
 	private static void onClientTick(Minecraft mc) {
 		try {
 			WailaTickHandler.instance().tickClient();
+			JadeClient.onKeyPressed(1);
+
 		} catch (Throwable e) {
 			WailaExceptionHandler.handleErr(e, null, null);
 		}
-	}
-
-	private static void onPlayerLeave(ClientPacketListener handler, Minecraft client) {
-		ObjectDataCenter.serverConnected = false;
-	}
-
-	private static void onKeyPressed(Minecraft mc) {
-		JadeClient.onKeyPressed(1);
-		if (JadeClient.showUses != null) {
-			//REICompat.onKeyPressed(1);
-			if (hasJEI) {
-				JEICompat.onKeyPressed(1);
-			}
-		}
-	}
-
-	private static void onGui(Screen screen) {
-		JadeClient.onGui(screen);
-	}
-
-	public static KeyMapping registerKeyBinding(String desc, int defaultKey) {
-		KeyMapping key = new KeyMapping("key.jade." + desc, InputConstants.Type.KEYSYM, defaultKey, "modmenu.nameTranslation.jade");
-		KeyBindingHelper.registerKeyBinding(key);
-		return key;
 	}
 
 	public static boolean shouldRegisterRecipeViewerKeys() {
@@ -168,121 +81,72 @@ public final class ClientProxy implements ClientModInitializer {
 	}
 
 	public static void requestBlockData(BlockAccessor accessor) {
-		FriendlyByteBuf buf = PacketByteBufs.create();
+		PacketBuffer buf = Networking.buffer();
 		new BlockAccessorImpl.SyncData(accessor).write(buf);
-		ClientPlayNetworking.send(Identifiers.PACKET_REQUEST_TILE, buf);
+		ClientPlayNetworking.send(Networking.channel(Identifiers.PACKET_REQUEST_TILE), buf);
 	}
 
 	public static void requestEntityData(EntityAccessor accessor) {
-		FriendlyByteBuf buf = PacketByteBufs.create();
+		PacketBuffer buf = Networking.buffer();
 		new EntityAccessorImpl.SyncData(accessor).write(buf);
-		ClientPlayNetworking.send(Identifiers.PACKET_REQUEST_ENTITY, buf);
-	}
-
-	public static IElement elementFromLiquid(LiquidBlock block) {
-		FluidState fluidState = block.getFluidState(block.defaultBlockState());
-		return new FluidStackElement(JadeFluidObject.of(fluidState.getType()));//.size(new Size(18, 18));
-	}
-
-	public static void registerReloadListener(ResourceManagerReloadListener listener) {
-		Minecraft.getInstance().execute(() -> {
-			ReloadableResourceManager manager = (ReloadableResourceManager) Minecraft.getInstance().getResourceManager();
-			manager.registerReloadListener(listener);
-			listener.onResourceManagerReload(manager);
-		});
+		ClientPlayNetworking.send(Networking.channel(Identifiers.PACKET_REQUEST_ENTITY), buf);
 	}
 
 	@Nullable
 	public static Rect2i getBossBarRect() {
 		Minecraft mc = Minecraft.getInstance();
-		int size = mc.gui.getBossOverlay().events.size();
+		if (!(mc.gui.getBossEventOverlay() instanceof BossEventOverlayAccess)) {
+			return null;
+		}
+		int size = ((BossEventOverlayAccess) mc.gui.getBossEventOverlay()).getBossEvents().size();
 		if (size == 0) {
 			return null;
 		}
-		int i = mc.getWindow().getGuiScaledWidth();
-		int k = i / 2 - 91;
-		int height = 10 + mc.font.lineHeight;
-		size = Math.min(size, (mc.getWindow().getGuiScaledHeight() / 3 - 12) / height + 1);
-		return new Rect2i(k, 12, 182, height * size);
+		int width = DisplayHelper.guiWidth();
+		int height = DisplayHelper.guiHeight();
+		int barHeight = 10 + mc.textRenderer.fontHeight;
+		size = Math.min(size, (height / 3 - 12) / barHeight + 1);
+		return new Rect2i(width / 2 - 91, 12, 182, barHeight * size);
 	}
 
 	public static boolean isShowDetailsPressed() {
-		return Screen.hasShiftDown() || JadeClient.showDetails.isDown();
+		return Screen.isShiftDown() || (JadeClient.showDetails != null && JadeClient.showDetails.isPressed());
 	}
 
 	public static boolean shouldShowWithOverlay(Minecraft mc, @Nullable Screen screen) {
 		return screen == null || screen instanceof BaseOptionsScreen || screen instanceof ChatScreen;
 	}
 
-	@SuppressWarnings("UnstableApiUsage")
-	public static void getFluidSpriteAndColor(JadeFluidObject fluid, BiConsumer<@Nullable TextureAtlasSprite, Integer> consumer) {
-		Fluid type = fluid.getType();
-		FluidVariant variant = FluidVariant.of(type, fluid.getTag());
-		FluidVariantRenderHandler handler = FluidVariantRendering.getHandlerOrDefault(type);
-		TextureAtlasSprite[] sprites = handler.getSprites(variant);
-		TextureAtlasSprite fluidStillSprite = sprites == null ? null : sprites[0];
-		int fluidColor = handler.getColor(variant, Minecraft.getInstance().level, null);
-		consumer.accept(fluidStillSprite, fluidColor);
-	}
-
-	public static ToolHandler createSwordToolHandler() {
-		return SimpleToolHandler.create(Identifiers.JADE("sword"), false, List.of(Items.WOODEN_SWORD))
-				.addBlock(Blocks.COBWEB)
-				.addBlock(Blocks.BAMBOO)
-				.addBlockTag(FabricMineableTags.SWORD_MINEABLE);
-	}
-
-	public static KeyMapping registerDetailsKeyBinding() {
-		return registerKeyBinding("show_details_alternative", InputConstants.UNKNOWN.getValue());
-	}
-
-	public static void renderItemDecorationsExtra(GuiGraphics guiGraphics, Font font, ItemStack stack, int x, int y, String text) {
-		// NO-OP
-	}
-
-	public static InputConstants.Key getBoundKeyOf(KeyMapping keyMapping) {
-		return KeyBindingHelper.getBoundKeyOf(keyMapping);
-	}
-
-	public static GameType getGameMode() {
-		MultiPlayerGameMode gameMode = Minecraft.getInstance().gameMode;
-		return gameMode == null ? GameType.SURVIVAL : gameMode.getPlayerMode();
+	public static GameMode getGameMode() {
+		ClientPlayerInteractionManager interactionManager = Minecraft.getInstance().interactionManager;
+		return interactionManager == null ? GameMode.SURVIVAL : interactionManager.getGameMode();
 	}
 
 	@Override
-	public void onInitializeClient() {
-		ClientLifecycleEvents.CLIENT_STARTED.register(mc -> CommonProxy.loadComplete());
-		ClientEntityEvents.ENTITY_LOAD.register(ClientProxy::onEntityJoin);
-		ClientEntityEvents.ENTITY_UNLOAD.register(ClientProxy::onEntityLeave);
-		ResourceLocation lowest = new ResourceLocation(Jade.MODID, "mod_name");
-		ItemTooltipCallback.EVENT.addPhaseOrdering(Event.DEFAULT_PHASE, lowest);
-		ItemTooltipCallback.EVENT.register(lowest, ClientProxy::onTooltip);
-		ClientPlayConnectionEvents.DISCONNECT.register(ClientProxy::onPlayerLeave);
-		ClientTickEvents.END_CLIENT_TICK.register(ClientProxy::onClientTick);
-		ClientTickEvents.END_CLIENT_TICK.register(ClientProxy::onKeyPressed);
-		ScreenEvents.AFTER_INIT.register((Minecraft client, Screen screen, int scaledWidth, int scaledHeight) -> onGui(screen));
-		ClientCommandRegistrationCallback.EVENT.register(ClientProxy::registerClientCommand);
-		HudRenderCallback.EVENT.register((guiGraphics, tickDelta) -> {
-			if (Minecraft.getInstance().screen == null) {
-				onRenderTick(guiGraphics, tickDelta);
-			}
-		});
-		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-			if (shouldShowWithOverlay(client, screen)) {
-				ScreenEvents.afterRender(screen).register((screen1, guiGraphics, mouseX, mouseY, tickDelta) -> {
-					onRenderTick(guiGraphics, tickDelta);
-				});
-			}
+	public void initClient() {
+		KeybindEvents.REGISTER_KEYBINDS.register(() -> {
+			JadeClient.openConfig = KeybindRegistry.register("key.jade.config", Keyboard.KEY_NUMPAD0, "Jade");
+			JadeClient.showOverlay = KeybindRegistry.register("key.jade.show_overlay", Keyboard.KEY_NUMPAD1, "Jade");
+			JadeClient.toggleLiquid = KeybindRegistry.register("key.jade.toggle_liquid", Keyboard.KEY_NUMPAD2, "Jade");
+			JadeClient.narrate = KeybindRegistry.register("key.jade.narrate", Keyboard.KEY_NUMPAD5, "Jade");
+			JadeClient.showDetails = KeybindRegistry.register("key.jade.show_details_alternative", Keyboard.KEY_NONE, "Jade");
 		});
 
-		ClientPlayNetworking.registerGlobalReceiver(Identifiers.PACKET_RECEIVE_DATA, (client, handler, buf, responseSender) -> {
-			CompoundTag nbt = buf.readNbt();
-			client.execute(() -> {
-				ObjectDataCenter.setServerData(nbt);
-			});
+		MinecraftClientEvents.READY.register(mc -> {
+			CommonProxy.loadComplete();
+			ThemeHelper.INSTANCE.reload();
 		});
-		ClientPlayNetworking.registerGlobalReceiver(Identifiers.PACKET_SERVER_PING, (client, handler, buf, responseSender) -> {
-			String s = buf.readUtf();
+		MinecraftClientEvents.TICK_END.register(ClientProxy::onClientTick);
+
+		ClientConnectionEvents.DISCONNECT.register(context -> ObjectDataCenter.serverConnected = false);
+		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_RECEIVE_DATA), (ctx, buf) -> {
+			ctx.ensureOnMainThread();
+			NbtCompound nbt = buf.readNbtCompound();
+			ObjectDataCenter.setServerData(nbt);
+		});
+		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_SERVER_PING), (ctx, buf) -> {
+			ctx.ensureOnMainThread();
+			String s = buf.readString(32767);
 			JsonObject json;
 			try {
 				json = s.isEmpty() ? null : JsonConfig.DEFAULT_GSON.fromJson(s, JsonObject.class);
@@ -290,30 +154,26 @@ public final class ClientProxy implements ClientModInitializer {
 				Jade.LOGGER.error("Received malformed config from the server: {}", s);
 				return;
 			}
-			client.execute(() -> {
-				ObjectDataCenter.serverConnected = true;
-				PluginConfig.INSTANCE.reload(); // clear the server config last time we applied
-				if (json != null && !json.keySet().isEmpty())
-					PluginConfig.INSTANCE.applyServerConfigs(json);
-				Jade.LOGGER.info("Received config from the server: {}", s);
-			});
+			final JsonObject json0 = json;
+			ObjectDataCenter.serverConnected = true;
+			PluginConfig.INSTANCE.reload();
+			if (json0 != null && !json0.keySet().isEmpty())
+				PluginConfig.INSTANCE.applyServerConfigs(json0);
+			Jade.LOGGER.info("Received config from the server: {}", s);
 		});
-		ClientPlayNetworking.registerGlobalReceiver(Identifiers.PACKET_SHOW_OVERLAY, (client, handler, buf, responseSender) -> {
+		ClientPlayNetworking.registerListener(Networking.channel(Identifiers.PACKET_SHOW_OVERLAY), (ctx, buf) -> {
+			ctx.ensureOnMainThread();
 			boolean show = buf.readBoolean();
 			Jade.LOGGER.info("Received request from the server to {} overlay", show ? "show" : "hide");
-			client.execute(() -> {
-				Jade.CONFIG.get().getGeneral().setDisplayTooltip(show);
-				Jade.CONFIG.save();
-			});
+			Jade.CONFIG.get().getGeneral().setDisplayTooltip(show);
+			Jade.CONFIG.save();
 		});
 
-		for (int i = 320; i < 330; i++) {
-			InputConstants.Key key = InputConstants.Type.KEYSYM.getOrCreate(i);
-			//noinspection deprecation
-			((KeyAccess) (Object) key).setDisplayName(new LazyLoadedValue<>(() -> Component.translatable(key.getName())));
-		}
-		JadeClient.init();
-		ResourceManagerHelper.get(PackType.CLIENT_RESOURCES).registerReloadListener((IdentifiableResourceReloadListener) ThemeHelper.INSTANCE);
-		ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener((IdentifiableResourceReloadListener) HarvestToolProvider.INSTANCE);
+		ClientResourceLoaderEvents.END_RESOURCE_RELOAD.register((manager, context) -> {
+			ThemeHelper.INSTANCE.reload();
+			ModIdentification.INSTANCE.onResourceManagerReload();
+			HarvestToolProvider.INSTANCE.onResourceManagerReload();
+		});
 	}
+
 }

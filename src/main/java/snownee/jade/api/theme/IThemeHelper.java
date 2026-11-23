@@ -1,12 +1,11 @@
 package snownee.jade.api.theme;
 
-import java.util.Collection;
-
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
-
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
 import snownee.jade.Internals;
+
+import java.util.Collection;
 
 public interface IThemeHelper {
 	static IThemeHelper get() {
@@ -22,23 +21,23 @@ public interface IThemeHelper {
 	Collection<Theme> getThemes();
 
 	@NotNull
-	Theme getTheme(ResourceLocation id);
+	Theme getTheme(Identifier id);
 
-	MutableComponent info(Object componentOrString);
+	Text info(Object componentOrString);
 
-	MutableComponent success(Object componentOrString);
+	Text success(Object componentOrString);
 
-	MutableComponent warning(Object componentOrString);
+	Text warning(Object componentOrString);
 
-	MutableComponent danger(Object componentOrString);
+	Text danger(Object componentOrString);
 
-	MutableComponent failure(Object componentOrString);
+	Text failure(Object componentOrString);
 
-	MutableComponent title(Object componentOrString);
+	Text title(Object componentOrString);
 
-	MutableComponent modName(Object componentOrString);
+	Text modName(Object componentOrString);
 
-	MutableComponent seconds(int ticks);
+	Text seconds(int ticks);
 
 	default boolean isLightColorScheme() {
 		return theme().lightColorScheme;

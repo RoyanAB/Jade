@@ -1,17 +1,12 @@
 package snownee.jade.api.ui;
 
-import java.text.Format;
-
+import net.minecraft.item.ItemStack;
+import net.minecraft.resource.Identifier;
+import net.minecraft.text.Text;
 import org.jetbrains.annotations.Nullable;
-
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.FormattedText;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FormattedCharSequence;
-import net.minecraft.world.item.ItemStack;
 import snownee.jade.Internals;
+
+import java.text.Format;
 
 public interface IDisplayHelper {
 
@@ -19,31 +14,27 @@ public interface IDisplayHelper {
 		return Internals.getDisplayHelper();
 	}
 
-	void drawItem(GuiGraphics guiGraphics, float x, float y, ItemStack stack, float scale, @Nullable String text);
+	void drawItem(float x, float y, ItemStack stack, float scale, @Nullable String text);
 
-	void drawGradientRect(GuiGraphics guiGraphics, float left, float top, float right, float bottom, int startColor, int endColor);
+	void drawGradientRect(float left, float top, float right, float bottom, int startColor, int endColor);
 
-	void drawBorder(GuiGraphics guiGraphics, float minX, float minY, float maxX, float maxY, float width, int color, boolean corner);
+	void drawBorder(float minX, float minY, float maxX, float maxY, float width, int color, boolean corner);
 
 	String humanReadableNumber(double number, String unit, boolean milli);
 
 	String humanReadableNumber(double number, String unit, boolean milli, @Nullable Format formatter);
 
-	void drawText(GuiGraphics guiGraphics, String text, float x, float y, int color);
+	void drawText(String text, float x, float y, int color);
 
-	void drawText(GuiGraphics guiGraphics, FormattedText text, float x, float y, int color);
+	void drawText(Text text, float x, float y, int color);
 
-	void drawText(GuiGraphics guiGraphics, FormattedCharSequence text, float x, float y, int color);
+	Text stripColor(Text text);
 
-	MutableComponent stripColor(Component component);
+	void blitSprite(Identifier sprite, int spriteWidth, int spriteHeight, int x, int y, int width, int height);
 
-	void blitSprite(GuiGraphics guiGraphics, ResourceLocation resourceLocation, int i, int j, int k, int l);
+	void drawTexture(Identifier texture, float x, float y, float width, float height, float alpha);
 
-	void blitSprite(GuiGraphics guiGraphics, ResourceLocation resourceLocation, int i, int j, int k, int l, int m);
-
-	void blitSprite(GuiGraphics guiGraphics, ResourceLocation resourceLocation, int i, int j, int k, int l, int m, int n, int o, int p);
-
-	void blitSprite(GuiGraphics guiGraphics, ResourceLocation resourceLocation, int i, int j, int k, int l, int m, int n, int o, int p, int q);
+	void drawGradientProgress(float x, float y, float w, float h, float progress, int color);
 
 	float opacity();
 }

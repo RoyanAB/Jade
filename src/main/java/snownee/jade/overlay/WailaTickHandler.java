@@ -1,26 +1,22 @@
 package snownee.jade.overlay;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
 import com.mojang.text2speech.Narrator;
-
+import net.minecraft.block.Blocks;
+import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.block.state.BlockState;
 import net.minecraft.client.Minecraft;
-import net.minecraft.core.Direction;
-import net.minecraft.util.StringUtil;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
-import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.entity.Entity;
+import net.minecraft.text.Formatting;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.HitResult;
+import net.minecraft.world.World;
 import snownee.jade.Jade;
 import snownee.jade.api.Accessor;
+import snownee.jade.api.AccessorClientHandler;
 import snownee.jade.api.ITooltip;
 import snownee.jade.api.Identifiers;
 import snownee.jade.api.callback.JadeRayTraceCallback;
@@ -28,7 +24,6 @@ import snownee.jade.api.callback.JadeTooltipCollectedCallback;
 import snownee.jade.api.config.IWailaConfig;
 import snownee.jade.api.config.IWailaConfig.DisplayMode;
 import snownee.jade.api.config.IWailaConfig.IConfigGeneral;
-import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.api.theme.Theme;
 import snownee.jade.gui.BaseOptionsScreen;
 import snownee.jade.impl.ObjectDataCenter;
@@ -37,6 +32,9 @@ import snownee.jade.impl.WailaClientRegistration;
 import snownee.jade.impl.WailaCommonRegistration;
 import snownee.jade.impl.ui.BoxElement;
 import snownee.jade.util.ClientProxy;
+
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 public class WailaTickHandler {
 
@@ -54,8 +52,9 @@ public class WailaTickHandler {
 	}
 
 	public static void narrate(ITooltip tooltip, boolean dedupe) {
-		if (!NARRATOR.get().active() || tooltip.isEmpty())
+		if (!NARRATOR.get().active() || tooltip.isEmpty()) {
 			return;
+		}
 		if (System.currentTimeMillis() - lastNarrationTime < 500) {
 			return;
 		}
@@ -66,7 +65,7 @@ public class WailaTickHandler {
 		CompletableFuture.runAsync(() -> {
 			Narrator narrator = NARRATOR.get();
 			narrator.clear();
-			narrator.say(StringUtil.stripColor(narration), false);
+			narrator.say(Formatting.strip(narration));
 		});
 		lastNarration = narration;
 		lastNarrationTime = System.currentTimeMillis();
@@ -90,8 +89,8 @@ public class WailaTickHandler {
 			return;
 		}
 
-		Level world = client.level;
-		Entity entity = client.getCameraEntity();
+		World world = client.world;
+		Entity entity = client.getCamera();
 		if (world == null || entity == null) {
 			rootElement = null;
 			return;
@@ -108,32 +107,27 @@ public class WailaTickHandler {
 		}
 
 		Accessor<?> accessor = null;
-		if (target instanceof BlockHitResult blockTarget && blockTarget.getType() != HitResult.Type.MISS) {
-			BlockState state = RayTracing.wrapBlock(world, blockTarget, CollisionContext.of(entity));
-			BlockEntity tileEntity = world.getBlockEntity(blockTarget.getBlockPos());
-			/* off */
+		if (target.type == HitResult.Type.BLOCK) {
+			BlockState state = RayTracing.wrapBlock(world, target);
+			BlockEntity tileEntity = world.getBlockEntity(target.getPos());
 			accessor = WailaClientRegistration.instance().blockAccessor()
-					.blockState(state)
-					.blockEntity(tileEntity)
-					.hit(blockTarget)
-					.requireVerification()
-					.build();
-			/* on */
-		} else if (target instanceof EntityHitResult entityTarget) {
-			/* off */
+				.blockState(state)
+				.blockEntity(tileEntity)
+				.hit(target)
+				.requireVerification()
+				.build();
+		} else if (target.type == HitResult.Type.ENTITY && target.entity != null) {
 			accessor = WailaClientRegistration.instance().entityAccessor()
-					.hit(entityTarget)
-					.entity(entityTarget.getEntity())
-					.requireVerification()
-					.build();
-			/* on */
+				.hit(target)
+				.entity(target.entity)
+				.requireVerification()
+				.build();
 		} else if (client.screen instanceof BaseOptionsScreen) {
-			/* off */
+			BlockPos pos = new BlockPos(entity.x, entity.y, entity.z);
 			accessor = WailaClientRegistration.instance().blockAccessor()
-					.blockState(Blocks.GRASS_BLOCK.defaultBlockState())
-					.hit(new BlockHitResult(entity.position(), Direction.UP, entity.blockPosition(), false))
-					.build();
-			/* on */
+				.blockState(Blocks.GRASS.defaultState())
+				.hit(new HitResult(new Vec3d(entity.x, entity.y + entity.getEyeHeight(), entity.z), Direction.UP, pos))
+				.build();
 		}
 
 		Accessor<?> originalAccessor = accessor;
@@ -146,14 +140,14 @@ public class WailaTickHandler {
 			return;
 		}
 
-		var handler = WailaClientRegistration.instance().getAccessorHandler(accessor.getAccessorType());
+		AccessorClientHandler<Accessor<?>> handler = WailaClientRegistration.instance().getAccessorHandler(accessor.getAccessorType());
 		if (!handler.shouldDisplay(accessor)) {
 			rootElement = null;
 			return;
 		}
 		if (accessor.isServerConnected()) {
 			if (!accessor.verifyData(accessor.getServerData())) {
-				accessor.getServerData().getAllKeys().clear();
+				accessor.getServerData().getKeys().clear();
 			}
 			boolean request = handler.shouldRequestData(accessor);
 			if (ObjectDataCenter.isTimeElapsed(ObjectDataCenter.rateLimiter)) {
@@ -190,9 +184,9 @@ public class WailaTickHandler {
 			handler.gatherComponents(accessor, $ -> tooltip);
 		}
 
-		rootElement = new BoxElement(tooltip, IThemeHelper.get().theme().tooltipStyle);
+		rootElement = new BoxElement(tooltip, theme.tooltipStyle);
 		rootElement.tag(Identifiers.ROOT);
-		rootElement.setThemeIcon(RayTracing.INSTANCE.getIcon(), IThemeHelper.get().theme());
+		rootElement.setThemeIcon(RayTracing.INSTANCE.getIcon(), theme);
 		for (JadeTooltipCollectedCallback callback : WailaClientRegistration.instance().tooltipCollectedCallback.callbacks()) {
 			callback.onTooltipCollected(rootElement, accessor);
 		}

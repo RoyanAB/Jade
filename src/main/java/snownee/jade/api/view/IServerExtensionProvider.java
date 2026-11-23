@@ -1,11 +1,10 @@
 package snownee.jade.api.view;
 
-import java.util.List;
-
 import org.jetbrains.annotations.Nullable;
-
 import snownee.jade.api.Accessor;
 import snownee.jade.api.IJadeProvider;
+
+import java.util.List;
 
 public interface IServerExtensionProvider<IN, OUT> extends IJadeProvider {
 

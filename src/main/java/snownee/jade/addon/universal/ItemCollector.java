@@ -1,17 +1,16 @@
 package snownee.jade.addon.universal;
 
-import java.util.List;
-import java.util.Locale;
+import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import org.jetbrains.annotations.Nullable;
+import snownee.jade.api.view.ViewGroup;
+
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
-
-import org.jetbrains.annotations.Nullable;
-
-import it.unimi.dsi.fastutil.objects.Object2IntLinkedOpenHashMap;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import snownee.jade.api.view.ViewGroup;
 
 public class ItemCollector<T> {
 	public static final int MAX_SIZE = 54;
@@ -20,10 +19,10 @@ public class ItemCollector<T> {
 		if (stack.isEmpty()) {
 			return false;
 		}
-		CompoundTag tag = stack.getTag();
+		NbtCompound tag = stack.getNbt();
 		if (tag != null && tag.contains("CustomModelData")) {
-			for (String key : stack.getTag().getAllKeys()) {
-				if (key.toLowerCase(Locale.ENGLISH).endsWith("clear") && stack.getTag().getBoolean(key)) {
+			for (String key : tag.getKeys()) {
+				if (key.toLowerCase(Locale.ENGLISH).endsWith("clear") && tag.getBoolean(key)) {
 					return false;
 				}
 			}
@@ -63,7 +62,7 @@ public class ItemCollector<T> {
 			count.incrementAndGet();
 			if (NON_EMPTY.test(stack)) {
 				ItemDefinition def = new ItemDefinition(stack);
-				items.addTo(def, stack.getCount());
+				items.addTo(def, stack.getSize());
 			}
 		});
 		iterator.afterPopulate(count.get());
@@ -71,11 +70,14 @@ public class ItemCollector<T> {
 			updateCollectingProgress(mergedResult.get(0));
 			return mergedResult;
 		}
-		List<ItemStack> partialResult = items.object2IntEntrySet().stream().limit(54).map(entry -> {
-			ItemDefinition def = entry.getKey();
-			return def.toStack(entry.getIntValue());
-		}).toList();
-		List<ViewGroup<ItemStack>> groups = List.of(updateCollectingProgress(new ViewGroup<>(partialResult)));
+		List<ItemStack> partialResult = new ArrayList<>(Math.min(MAX_SIZE, items.size()));
+		for (Object2IntMap.Entry<ItemDefinition> entry : items.object2IntEntrySet()) {
+			if (partialResult.size() >= MAX_SIZE) {
+				break;
+			}
+			partialResult.add(entry.getKey().toStack(entry.getIntValue()));
+		}
+		List<ViewGroup<ItemStack>> groups = Collections.singletonList(updateCollectingProgress(new ViewGroup<>(partialResult)));
 		if (iterator.isFinished()) {
 			mergedResult = groups;
 			version = currentVersion;
@@ -87,7 +89,7 @@ public class ItemCollector<T> {
 
 	protected ViewGroup<ItemStack> updateCollectingProgress(ViewGroup<ItemStack> group) {
 		float progress = iterator.getCollectingProgress();
-		CompoundTag data = group.getExtraData();
+		NbtCompound data = group.getExtraData();
 		if (Float.isNaN(progress)) {
 			progress = 0;
 		}
@@ -99,16 +101,48 @@ public class ItemCollector<T> {
 		return group;
 	}
 
-	public record ItemDefinition(Item item, @Nullable CompoundTag tag) {
+	// 1.12 has no records, so equals/hashCode are written out by hand; the collector uses this as a
+	// map key, value equality is required
+	public static class ItemDefinition {
+		public final Item item;
+		//port: 1.12 shares one Item between all wood types, the metadata is what tells acacia from oak
+		public final int metadata;
+		@Nullable
+		public final NbtCompound tag;
+
 		ItemDefinition(ItemStack stack) {
-			this(stack.getItem(), stack.getTag());
+			this(stack.getItem(), stack.getMetadata(), stack.getNbt());
+		}
+
+		public ItemDefinition(Item item, int metadata, @Nullable NbtCompound tag) {
+			this.item = item;
+			this.metadata = metadata;
+			this.tag = tag;
 		}
 
 		public ItemStack toStack(int count) {
-			ItemStack stack = new ItemStack(item);
-			stack.setCount(count);
-			stack.setTag(tag);
+			ItemStack stack = new ItemStack(item, 1, metadata);
+			stack.setSize(count);
+			stack.setNbt(tag);
 			return stack;
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (!(o instanceof ItemDefinition)) {
+				return false;
+			}
+			ItemDefinition that = (ItemDefinition) o;
+			return item == that.item && metadata == that.metadata && Objects.equals(tag, that.tag);
+		}
+
+		@Override
+		public int hashCode() {
+			int result = 31 * System.identityHashCode(item) + metadata;
+			return 31 * result + Objects.hashCode(tag);
 		}
 	}
 }

@@ -1,16 +1,9 @@
 package snownee.jade.addon.core;
 
 import com.google.common.base.Strings;
-
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
-import snownee.jade.api.BlockAccessor;
-import snownee.jade.api.EntityAccessor;
-import snownee.jade.api.IBlockComponentProvider;
-import snownee.jade.api.IEntityComponentProvider;
-import snownee.jade.api.ITooltip;
-import snownee.jade.api.Identifiers;
-import snownee.jade.api.TooltipPosition;
+import net.minecraft.item.ItemStack;
+import net.minecraft.resource.Identifier;
+import snownee.jade.api.*;
 import snownee.jade.api.config.IPluginConfig;
 import snownee.jade.api.theme.IThemeHelper;
 import snownee.jade.impl.WailaClientRegistration;
@@ -23,10 +16,7 @@ public enum ModNameProvider implements IBlockComponentProvider, IEntityComponent
 	@Override
 	public void appendTooltip(ITooltip tooltip, BlockAccessor accessor, IPluginConfig config) {
 		String modName = null;
-		if (accessor.isFakeBlock()) {
-			modName = ModIdentification.getModName(accessor.getFakeBlock());
-		}
-		if (modName == null && WailaClientRegistration.instance().shouldPick(accessor.getBlockState())) {
+		if (WailaClientRegistration.instance().shouldPick(accessor.getBlockState())) {
 			ItemStack pick = accessor.getPickedResult();
 			if (!pick.isEmpty())
 				modName = ModIdentification.getModName(pick);
@@ -46,7 +36,7 @@ public enum ModNameProvider implements IBlockComponentProvider, IEntityComponent
 	}
 
 	@Override
-	public ResourceLocation getUid() {
+	public Identifier getUid() {
 		return Identifiers.CORE_MOD_NAME;
 	}
 

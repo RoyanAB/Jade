@@ -1,40 +1,38 @@
 package snownee.jade.util;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-
-import org.jetbrains.annotations.Nullable;
-
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.yggdrasil.ProfileResult;
-
+import it.unimi.dsi.fastutil.objects.Object2ObjectLinkedOpenHashMap;
 import net.minecraft.client.Minecraft;
+import org.jetbrains.annotations.Nullable;
 import snownee.jade.Jade;
 import snownee.jade.api.Identifiers;
 import snownee.jade.impl.config.PluginConfig;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.*;
+
 public final class UsernameCache {
 
-	private static final HashMap<UUID, String> map = new HashMap<>();
-	private static final Set<UUID> downloadingList = Collections.synchronizedSet(new HashSet<>());
+	public static final String DUMMY_NAME = "???";
 
-	private static final Path saveFile = CommonProxy.getConfigDirectory().toPath().resolve(Jade.MODID + "/usernamecache.json");
+	private static final int CACHE_SIZE = 1024;
+	private static final Object2ObjectLinkedOpenHashMap<UUID, String> map = new Object2ObjectLinkedOpenHashMap<>(CACHE_SIZE);
+	private static final Set<UUID> downloadingList = Collections.synchronizedSet(new HashSet<>());
+	private static final Set<UUID> failedList = Collections.synchronizedSet(new HashSet<>());
+
+	private static final Path saveFile = new File(CommonProxy.getConfigDirectory(), Jade.MODID + "/usernamecache.json").toPath();
 	private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 	private static boolean loading = false;
 
@@ -53,6 +51,10 @@ public final class UsernameCache {
 
 		if (!isValidName(username))
 			return;
+
+		if (!map.containsKey(uuid) && map.size() >= CACHE_SIZE) {
+			map.remove(map.firstKey());
+		}
 
 		String prev = map.put(uuid, username);
 		if (!loading && !Objects.equals(prev, username)) {
@@ -94,8 +96,27 @@ public final class UsernameCache {
 	public static String getLastKnownUsername(UUID uuid) {
 		Objects.requireNonNull(uuid);
 		String name = map.get(uuid);
-		if (name == null && PluginConfig.INSTANCE.get(Identifiers.MC_ANIMAL_OWNER_FETCH_NAMES)) {
+		if (name == null && CommonProxy.isPhysicallyClient() && PluginConfig.INSTANCE.get(Identifiers.MC_ANIMAL_OWNER_FETCH_NAMES)) {
 			download(uuid);
+		}
+		return name;
+	}
+
+	/**
+	 * Get a player's name for display, asking for it when it is not cached yet.
+	 * <p>
+	 * This never blocks. The lookup runs on its own thread, so the caller gets
+	 * <code>null</code> until it finishes and can simply leave the line out for now.
+	 *
+	 * @param uuid the player's {@link java.util.UUID UUID}
+	 * @return the cached name, {@code "???"} once the lookup has failed, or
+	 * <code>null</code> while the lookup is still running
+	 */
+	@Nullable
+	public static String lookupUsername(UUID uuid) {
+		String name = getLastKnownUsername(uuid);
+		if (name == null && failedList.contains(uuid)) {
+			return DUMMY_NAME;
 		}
 		return name;
 	}
@@ -124,7 +145,11 @@ public final class UsernameCache {
 	 * Save the cache to file
 	 */
 	public static void save() {
-		new SaveThread(gson.toJson(map)).start();
+		try {
+			new SaveThread(gson.toJson(map)).start();
+		} catch (Exception e) {
+			Jade.LOGGER.error("Failed to save username cache to file!", e);
+		}
 	}
 
 	/**
@@ -135,7 +160,7 @@ public final class UsernameCache {
 			return;
 
 		loading = true;
-		try (final BufferedReader reader = Files.newBufferedReader(saveFile, Charsets.UTF_8)) {
+		try (final BufferedReader reader = Files.newBufferedReader(saveFile, StandardCharsets.UTF_8)) {
 			@SuppressWarnings("serial")
 			Type type = new TypeToken<Map<UUID, String>>() {
 			}.getType();
@@ -146,11 +171,10 @@ public final class UsernameCache {
 			}
 		} catch (Exception e) {
 			Jade.LOGGER.error("Could not parse username cache file as valid json, deleting file {}", saveFile, e);
-			WailaExceptionHandler.handleErr(e, null, null);
 			try {
 				Files.delete(saveFile);
 			} catch (IOException e1) {
-				Jade.LOGGER.error("Could not delete file {}", saveFile.toString());
+				Jade.LOGGER.error("Could not delete file {}", saveFile, e1);
 			}
 		} finally {
 			loading = false;
@@ -163,10 +187,9 @@ public final class UsernameCache {
 	 * It should only attempt one Download
 	 */
 	private static void download(UUID uuid) {
-		if (downloadingList.contains(uuid)) {
+		if (!downloadingList.add(uuid)) {
 			return;
 		}
-		downloadingList.add(uuid);
 		new DownloadThread(uuid).start();
 	}
 
@@ -184,20 +207,20 @@ public final class UsernameCache {
 		@Override
 		public void run() {
 			try {
-				//if the downloading fails for some reason and throws an error,
-				ProfileResult profileResult = Minecraft.getInstance().getMinecraftSessionService().fetchProfile(uuid, true);
-				if (profileResult == null) {
+				GameProfile profile = Minecraft.getInstance().getSessionService().fillProfileProperties(new GameProfile(uuid, null), true);
+				String name = profile == null ? null : profile.getName();
+				if (name == null || name.equals(DUMMY_NAME) || !isValidName(name)) {
+					//remember the failure so the tooltip can show "???" instead of nothing
+					failedList.add(uuid);
 					return;
 				}
-				GameProfile profile = profileResult.profile();
-				if (profile.getName() == null || profile.getName().equals("???")) {
-					return;
-				}
-				//only remove from list if it was successfull
-				//if it failed for some reason leave it in the channel so no repeated tries are made
-				UsernameCache.setUsername(profile.getId(), profile.getName());
+				//only leave the list on success, a failed lookup stays in it so it is never retried.
+				//cache under the uuid we were asked about: setUsername drops invalid names, and then
+				//removing the entry here would start a new thread on every frame
+				setUsername(uuid, name);
 				downloadingList.remove(uuid);
 			} catch (Exception e) {
+				failedList.add(uuid);
 			}
 		}
 	}
@@ -219,13 +242,26 @@ public final class UsernameCache {
 
 		@Override
 		public void run() {
+			Path temp = saveFile.resolveSibling(saveFile.getFileName() + ".tmp");
 			try {
-				// Make sure we don't save when another thread is still saving
 				synchronized (saveFile) {
-					Files.write(saveFile, data.getBytes(StandardCharsets.UTF_8));
+					Path parent = saveFile.getParent();
+					if (parent != null) {
+						Files.createDirectories(parent);
+					}
+					Files.write(temp, data.getBytes(StandardCharsets.UTF_8));
+					try {
+						Files.move(temp, saveFile, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+					} catch (AtomicMoveNotSupportedException e) {
+						Files.move(temp, saveFile, StandardCopyOption.REPLACE_EXISTING);
+					}
 				}
-			} catch (IOException e) {
-				Jade.LOGGER.error("Failed to save username cache to file!");
+			} catch (Throwable e) {
+				Jade.LOGGER.error("Failed to save username cache to file!", e);
+				try {
+					Files.deleteIfExists(temp);
+				} catch (Throwable ignored) {
+				}
 			}
 		}
 	}
